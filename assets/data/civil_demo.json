@@ -1,0 +1,30 @@
+{
+  "_note": "Datos de demostración. No son información oficial de CENAPRED ni de protección civil.",
+  "volcano": { "name": "Popocatépetl", "center": [-98.62344, 19.02341] },
+  "alert": { "color": "amarillo", "phase": 2, "label": "Amarillo · Fase 2" },
+  "zones": [
+    { "level": 1, "name": "Mayor peligro", "radiusKm": 6.5, "color": "#e5352b" },
+    { "level": 2, "name": "Peligro intermedio", "radiusKm": 13, "color": "#f28b1b" },
+    { "level": 3, "name": "Menor peligro", "radiusKm": 24, "color": "#f5c518" }
+  ],
+  "ashPlume": { "lengthKm": 30, "fromBearing": 50, "toBearing": 95 },
+  "shelters": [
+    { "id": "amecameca", "name": "Amecameca", "place": "Auditorio municipal", "capacity": 1200, "occupied": 310, "at": [-98.7656, 19.1239] },
+    { "id": "nexapa", "name": "San Pedro Nexapa", "place": "Escuela primaria", "capacity": 400, "occupied": 160, "at": [-98.7333, 19.0833] },
+    { "id": "ozumba", "name": "Ozumba", "place": "Unidad deportiva", "capacity": 900, "occupied": 120, "at": [-98.7936, 19.0397] },
+    { "id": "ranchos", "name": "San Nicolás de los Ranchos", "place": "Casa de cultura", "capacity": 350, "occupied": 290, "at": [-98.4867, 19.0675] },
+    { "id": "xalitzintla", "name": "Santiago Xalitzintla", "place": "Salón ejidal", "capacity": 250, "occupied": 40, "at": [-98.5144, 19.0844] }
+  ],
+  "reports": [
+    { "id": "r1", "type": "Caída de ceniza", "color": "#8a8f94", "at": [-98.545, 19.045], "minutesAgo": 12, "by": "Vecino verificado" },
+    { "id": "r2", "type": "Camino bloqueado", "color": "#e5352b", "at": [-98.6466, 19.1005], "minutesAgo": 38, "by": "Brigada Paso de Cortés" },
+    { "id": "r3", "type": "Persona extraviada", "color": "#b03fd6", "at": [-98.6447, 19.1445], "minutesAgo": 65, "by": "Guía de montaña" },
+    { "id": "r4", "type": "Deslave en barranca", "color": "#c56a1d", "at": [-98.5905, 19.0705], "minutesAgo": 140, "by": "Protección civil Puebla" }
+  ],
+  "evacuationRoutes": [
+    [[-98.5144, 19.0844], [-98.5050, 19.0760], [-98.4867, 19.0675]],
+    [[-98.6471, 19.0884], [-98.6800, 19.0950], [-98.7100, 19.1050], [-98.7656, 19.1239]],
+    [[-98.6900, 19.0300], [-98.7330, 19.0833]],
+    [[-98.7330, 19.0833], [-98.7650, 19.0600], [-98.7936, 19.0397]]
+  ]
+}
