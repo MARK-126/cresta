@@ -11,6 +11,7 @@ class Expedition {
     this.notes = '',
     List<String>? regionIds,
     this.routeAsset,
+    this.turnaroundMinutes,
     this.sample = false,
     DateTime? createdAt,
   }) : regionIds = regionIds ?? [],
@@ -25,6 +26,7 @@ class Expedition {
       for (final r in j['regionIds'] as List? ?? const []) r as String,
     ],
     routeAsset: j['routeAsset'] as String?,
+    turnaroundMinutes: j['turnaroundMinutes'] as int?,
     sample: j['sample'] as bool? ?? false,
     createdAt: DateTime.tryParse('${j['createdAt']}'),
   );
@@ -38,6 +40,19 @@ class Expedition {
   /// Ruta incluida en la app (solo el ejemplo, hasta que exista el planificador de rutas).
   final String? routeAsset;
   final bool sample;
+
+  /// Hora límite para emprender el regreso, en minutos desde la medianoche (p. ej. 660 = 11:00).
+  /// En alta montaña es la regla de seguridad más importante: si no llegaste, regresas.
+  int? turnaroundMinutes;
+
+  /// La hora límite aplicada al día de [day].
+  DateTime? turnaroundOn(DateTime day) => turnaroundMinutes == null
+      ? null
+      : DateTime(
+          day.year,
+          day.month,
+          day.day,
+        ).add(Duration(minutes: turnaroundMinutes!));
   final DateTime createdAt;
 
   Map<String, dynamic> toJson() => {
@@ -47,6 +62,7 @@ class Expedition {
     'notes': notes,
     'regionIds': regionIds,
     'routeAsset': routeAsset,
+    'turnaroundMinutes': turnaroundMinutes,
     'sample': sample,
     'createdAt': createdAt.toIso8601String(),
   };

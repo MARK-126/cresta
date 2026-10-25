@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
@@ -12,16 +13,24 @@ import '../group/group_simulator.dart';
 import '../location/location_service.dart';
 import '../map/map_bridge.dart';
 import '../map/map_layers.dart';
+import '../offline/tile_math.dart';
+import '../tracking/track.dart';
+import '../tracking/track_recorder.dart';
 import 'area_picker_screen.dart';
 import 'format.dart';
 import 'offline_widgets.dart';
 import 'panels.dart';
+import 'recording_panel.dart';
 import 'theme.dart';
+import 'track_screen.dart';
 
 /// El mapa de una expedición, en 2D o 3D, con lo descargado y (si hay red) lo demás.
 class MapScreen extends StatefulWidget {
-  const MapScreen({super.key, required this.expeditionId});
+  const MapScreen({super.key, required this.expeditionId, this.showTrackId});
   final String expeditionId;
+
+  /// Recorrido ya grabado que se muestra al abrir (desde su detalle).
+  final String? showTrackId;
 
   @override
   State<MapScreen> createState() => _MapScreenState();
@@ -31,7 +40,11 @@ class _MapScreenState extends State<MapScreen> {
   static const _sheetMin = 0.14, _sheetInitial = 0.38, _sheetMax = 0.9;
 
   final _bridge = MapBridge();
-  final _location = LocationService();
+  late final LocationService _location = _services.location;
+  late final TrackRecorder _recorder = _services.recorder;
+  DateTime _lastTrackPush = DateTime.fromMillisecondsSinceEpoch(0);
+  bool _following = false;
+  bool _centeredOnFirstFix = false;
   final _subs = <StreamSubscription<dynamic>>[];
   late AppServices _services;
   late Expedition _expedition;
@@ -58,6 +71,7 @@ class _MapScreenState extends State<MapScreen> {
     _services = AppScope.of(context);
     _expedition = _services.expeditions.byId(widget.expeditionId)!;
     _services.maps.addListener(_pushRegions);
+    _recorder.addListener(_onRecorder);
     _bridge.load(_services.server.baseUri);
     _subs.add(_bridge.events.listen(_onMapEvent));
     _boot();
@@ -110,11 +124,164 @@ class _MapScreenState extends State<MapScreen> {
       _pushMembers(_group!.members);
       _group!.start();
     }
+    if (_recordingHere) {
+      // Recorrido en curso o recuperado tras cerrar la app: vuelve a tener ruta y hora límite
+      _recorder.route ??= _route;
+      _recorder.turnaround ??= _expedition.turnaroundOn(
+        _recorder.track!.startedAt,
+      );
+      await _bridge.setTrack(_recorder.points);
+      final fix = _recorder.lastFix;
+      if (fix != null) await _bridge.setMyLocation(fix.lng, fix.lat);
+      _following = _centeredOnFirstFix = true;
+      await _bridge.setFollow(true, zoom: 15);
+    } else if (widget.showTrackId != null) {
+      final points = await _services.tracks.readPoints(widget.showTrackId!);
+      await _bridge.setTrack(points);
+      if (points.length > 1) await _bridge.fitBounds(_boundsOf(points));
+    }
   }
+
+  BBox _boundsOf(List<TrackPoint> pts) {
+    var w = pts.first.lng, e = w, s = pts.first.lat, n = s;
+    for (final p in pts) {
+      w = math.min(w, p.lng);
+      e = math.max(e, p.lng);
+      s = math.min(s, p.lat);
+      n = math.max(n, p.lat);
+    }
+    // Un recorrido muy corto se agranda para que el encuadre tenga sentido
+    return BBox(
+      w,
+      s,
+      e == w ? e + 0.001 : e,
+      n == s ? n + 0.001 : n,
+    ).expandKm(0.3);
+  }
+
+  // ------------------------------------------------------------ Grabación
+
+  /// Hay un recorrido en curso de esta expedición.
+  bool get _recordingHere =>
+      _recorder.isActive && _recorder.track?.expeditionId == _expedition.id;
+
+  void _onRecorder() {
+    if (!mounted) return;
+    setState(() {});
+    if (!_recordingHere) return;
+    final fix = _recorder.lastFix;
+    if (fix != null) {
+      _bridge.setMyLocation(fix.lng, fix.lat);
+      if (_following && !_centeredOnFirstFix) {
+        _centeredOnFirstFix = true;
+        _bridge.setFollow(true, zoom: 15);
+      }
+    }
+    // Redibujar la línea a lo sumo cada 2 s
+    final now = DateTime.now();
+    if (now.difference(_lastTrackPush) > const Duration(seconds: 2)) {
+      _lastTrackPush = now;
+      _bridge.setTrack(_recorder.points);
+    }
+  }
+
+  Future<void> _startRecording() async {
+    final messenger = ScaffoldMessenger.of(context);
+    if (_recorder.isActive) {
+      final other = _services.expeditions.byId(_recorder.track!.expeditionId);
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            'Ya hay un recorrido en curso en "${other?.name ?? 'otra expedición'}". Termínalo primero.',
+          ),
+        ),
+      );
+      return;
+    }
+    final status = await _location.ensurePermission();
+    if (!mounted) return;
+    if (status != LocationStatus.granted) {
+      messenger.showSnackBar(
+        SnackBar(content: Text(_permissionMessage(status))),
+      );
+      return;
+    }
+    final mode = await askRecordingMode(context);
+    if (mode == null || !mounted) return;
+    final now = DateTime.now();
+    final n = _services.tracks.forExpedition(_expedition.id).length + 1;
+    _following = true;
+    _centeredOnFirstFix = false;
+    await _recorder.start(
+      expeditionId: _expedition.id,
+      name: 'Recorrido $n · ${fmtDate(now)}',
+      route: _route,
+      turnaround: _expedition.turnaroundOn(now),
+      mode: mode,
+    );
+    await _bridge.setTrack(const []);
+    _setLayer('track', true);
+  }
+
+  Future<void> _stopRecording() async {
+    final choice = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Terminar recorrido'),
+        content: Text(
+          '${fmtKm(_recorder.stats.meters, decimals: 2)} km · +${fmtInt(_recorder.stats.gain)} m · ${fmtDuration(_recorder.stats.moving)} en movimiento',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, 'discard'),
+            child: const Text('Descartar'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Seguir grabando'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, 'save'),
+            child: const Text('Guardar'),
+          ),
+        ],
+      ),
+    );
+    if (choice == null || !mounted) return;
+    if (choice == 'discard') {
+      final ok = await confirmDialog(
+        context,
+        title: '¿Descartar el recorrido?',
+        body: 'Se borra todo lo grabado. No se puede deshacer.',
+        action: 'Descartar',
+      );
+      if (!ok) return;
+      await _recorder.discard();
+      await _bridge.setTrack(const []);
+      return;
+    }
+    final t = await _recorder.stop();
+    if (!mounted) return;
+    Navigator.push(
+      context,
+      MaterialPageRoute<void>(builder: (_) => TrackScreen(trackId: t.id)),
+    );
+  }
+
+  String _permissionMessage(LocationStatus status) => switch (status) {
+    LocationStatus.serviceOff =>
+      'Activa la ubicación del teléfono para verte en el mapa.',
+    LocationStatus.denied =>
+      'Sin permiso de ubicación. Puedes darlo cuando quieras.',
+    LocationStatus.deniedForever =>
+      'El permiso de ubicación está bloqueado. Actívalo en Ajustes.',
+    LocationStatus.granted => '',
+  };
 
   @override
   void dispose() {
     _services.maps.removeListener(_pushRegions);
+    _recorder.removeListener(_onRecorder);
     for (final s in _subs) {
       s.cancel();
     }
@@ -134,6 +301,8 @@ class _MapScreenState extends State<MapScreen> {
         setState(() => _cursor = (e.data['meters'] as num).toDouble());
       case 'flyEnd':
         setState(() => _flying = false);
+      case 'followOff':
+        setState(() => _following = false);
       case 'markerTap':
         _showMarkerInfo(e.data['kind'] as String, e.data['id'] as String);
     }
@@ -195,20 +364,17 @@ class _MapScreenState extends State<MapScreen> {
   }
 
   Future<void> _locateMe() async {
+    if (_recordingHere) {
+      // Mientras se graba, el botón vuelve a centrar y seguir tu posición
+      setState(() => _following = true);
+      await _bridge.setFollow(true, zoom: 15);
+      return;
+    }
     final status = await _location.ensurePermission();
     if (!mounted) return;
-    final message = switch (status) {
-      LocationStatus.serviceOff =>
-        'Activa la ubicación del teléfono para verte en el mapa.',
-      LocationStatus.denied =>
-        'Sin permiso de ubicación. Puedes darlo cuando quieras.',
-      LocationStatus.deniedForever =>
-        'El permiso de ubicación está bloqueado. Actívalo en Ajustes.',
-      LocationStatus.granted => null,
-    };
-    if (message != null) {
+    if (status != LocationStatus.granted) {
       ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(message)));
+          .showSnackBar(SnackBar(content: Text(_permissionMessage(status))));
       return;
     }
     if (_locating) return;
@@ -374,11 +540,24 @@ class _MapScreenState extends State<MapScreen> {
                   child: Column(
                     children: [
                       _MapButton(
-                        icon: _locating
+                        icon: (_recordingHere ? _following : _locating)
                             ? Icons.my_location_rounded
                             : Icons.location_searching_rounded,
-                        tooltip: 'Mi ubicación',
+                        tooltip: _recordingHere && !_following
+                            ? 'Seguir mi posición'
+                            : 'Mi ubicación',
                         onPressed: _locateMe,
+                      ),
+                      const SizedBox(height: 8),
+                      _MapButton(
+                        icon: _recordingHere
+                            ? Icons.fiber_manual_record_rounded
+                            : Icons.radio_button_checked_rounded,
+                        color: recordColor,
+                        tooltip: _recordingHere
+                            ? 'Grabando'
+                            : 'Grabar recorrido',
+                        onPressed: _recordingHere ? () {} : _startRecording,
                       ),
                       const SizedBox(height: 8),
                       _MapButton(
@@ -422,6 +601,13 @@ class _MapScreenState extends State<MapScreen> {
                             ),
                           ),
                         ),
+                        if (_recordingHere)
+                          RecordingPanel(
+                            recorder: _recorder,
+                            onPause: _recorder.pause,
+                            onResume: _recorder.resume,
+                            onStop: _stopRecording,
+                          ),
                         if (civil && _civil != null) ...[
                           VolcanoAlertCard(civil: _civil!),
                           ShelterList(
@@ -580,11 +766,13 @@ class _MapButton extends StatelessWidget {
   const _MapButton({
     this.icon,
     this.label,
+    this.color,
     required this.tooltip,
     required this.onPressed,
   });
   final IconData? icon;
   final String? label;
+  final Color? color;
   final String tooltip;
   final VoidCallback onPressed;
 
@@ -605,7 +793,7 @@ class _MapButton extends StatelessWidget {
             height: 44,
             child: Center(
               child: icon != null
-                  ? Icon(icon, size: 22)
+                  ? Icon(icon, size: 22, color: color)
                   : Text(
                       label!,
                       style: const TextStyle(fontWeight: FontWeight.w700),

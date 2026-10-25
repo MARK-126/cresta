@@ -4,7 +4,9 @@ App móvil de mapas 3D para **montañismo y senderismo**, pensada para funcionar
 preparas la expedición en casa con Wi-Fi, descargas los mapas de la zona y en la montaña todo sigue
 funcionando sin conexión.
 
-## Qué hace hoy (Fase 1)
+## Qué hace hoy
+
+### Fase 1: expediciones y mapas sin conexión
 
 - **Expediciones:** nombre, fecha de salida, notas y una lista "Antes de salir" que dice si ya está lista para
   usarse sin conexión.
@@ -19,6 +21,22 @@ funcionando sin conexión.
   así que funcionan en cualquier zona descargada sin bajar nada extra.
 - **Ejemplo incluido:** Iztaccíhuatl por La Arista del Sol, con sus mapas dentro de la app, la ruta real de
   OpenStreetMap, perfil de elevación, vuelo 3D y el modo de protección civil de demostración.
+
+### Fase 2: grabar el recorrido
+
+- **Grabar sin señal y con la pantalla apagada:** botón rojo en el mapa. En iOS usa la ubicación en segundo plano
+  (indicador azul); en Android, un servicio en primer plano con notificación fija. Modo normal (un punto cada
+  ~5 m) o ahorro de batería (~20 m).
+- **En vivo:** distancia, tiempo en movimiento, altitud, subida y bajada, velocidad vertical (m/h), precisión del
+  GPS y, si la expedición tiene ruta, cuánto falta (km y metros de subida) y aviso si te sales más de 80 m.
+- **Hora límite de retorno** por expedición: aviso 30 min antes y alerta roja cuando pasa.
+- **Altitud confiable:** se toma del relieve descargado (el mismo del 3D) en lugar de la del GPS, que salta
+  ±15 m; si no hay relieve de esa zona, se usa la del GPS. El desnivel ignora variaciones menores a 5 m.
+- **A prueba de cierres:** los puntos se guardan en disco cada 10 s; si la app se cierra o se acaba la batería,
+  el recorrido se recupera en pausa al volver a abrirla.
+- **Pausar y reanudar:** cada reanudación empieza un tramo nuevo (no se une el hueco con una línea recta).
+- **Recorridos guardados:** lista por expedición, detalle con cifras y perfil de elevación, ver en el mapa 3D
+  y **exportar GPX** (Wikiloc, Strava, Garmin, Google Earth).
 
 ## Fuentes de mapas (libres, uso personal)
 
@@ -59,6 +77,7 @@ cuando el SDK nativo lo soporte se puede cambiar el motor sin tocar las pantalla
 | `lib/src/search/` | Búsqueda de lugares (Nominatim) |
 | `lib/src/map/` | `MapBridge` y definición de capas |
 | `lib/src/ui/` | Pantallas: expediciones, detalle, elegir zona, mapas descargados, mapa |
+| `lib/src/tracking/` | Grabador, estadísticas, avance sobre la ruta, altitud del terreno, almacenamiento y GPX |
 | `lib/src/data/`, `group/`, `location/` | Ruta de ejemplo, datos de protección civil, grupo simulado y GPS |
 | `assets/web/` | Página del mapa, MapLibre, maplibre-contour y tipografías del mapa |
 | `assets/packs/izta_popo.zip` | Mapas del ejemplo (relieve, satélite y topográfico) |
@@ -94,11 +113,12 @@ flutter analyze
 - Las descargas avanzan con la app abierta (la pantalla se mantiene encendida mientras descarga). Si se cierra,
   la zona queda en pausa y se reanuda al volver.
 - Límite de 40,000 mosaicos por zona (unos 100 × 100 km en detalle) para no abusar de los servicios gratuitos.
-- Probado en el simulador de iPhone. Android compila desde el mismo código, pero falta probarlo en un equipo.
+- Probado en el simulador de iPhone (con caminatas simuladas por la ruta). La grabación con la pantalla bloqueada
+  y la altitud real del GPS solo se pueden comprobar en un teléfono físico. Android compila desde el mismo código,
+  pero falta probarlo en un equipo.
 
 ## Siguientes fases
 
-2. Grabar el recorrido con GPS (sin señal, en segundo plano), estadísticas y exportar GPX.
 3. Planificador de rutas: dibujar sobre el mapa, ajustar a senderos, importar GPX/KML.
 4. Clima por altitud guardado con la expedición, referencias (fotos, PDFs, contactos) y lista de equipo.
 

@@ -240,3 +240,19 @@ Future<bool> confirmDialog(
   );
   return ok ?? false;
 }
+
+/// Avisos arriba del contenido (sin conexión, grabando…). Van en el cuerpo y no en la barra
+/// superior para que tengan su altura real y no se desborden.
+class WithBanners extends StatelessWidget {
+  const WithBanners({super.key, required this.banners, required this.child});
+  final List<Widget> banners;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) => Column(
+    children: [
+      ...banners,
+      Expanded(child: child),
+    ],
+  );
+}

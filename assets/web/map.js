@@ -85,6 +85,7 @@
         topo: { type: 'vector', tiles: [`${ORIGIN}/tiles/topo/{z}/{x}/{y}`], maxzoom: 14, attribution: '© OpenMapTiles © colaboradores de OpenStreetMap' },
         contours: { type: 'vector', tiles: [contourTiles], maxzoom: 15 },
         route: { type: 'geojson', data: empty },
+        track: { type: 'geojson', data: empty },
         regions: { type: 'geojson', data: empty },
         zones: { type: 'geojson', data: empty },
         ash: { type: 'geojson', data: empty },
@@ -126,6 +127,9 @@
         { id: 'regions-line', type: 'line', source: 'regions', paint: { 'line-color': ['case', ['get', 'complete'], '#2e8b57', '#e07a10'], 'line-width': 2, 'line-dasharray': [4, 2] } },
         { id: 'route-casing', type: 'line', source: 'route', layout: { 'line-join': 'round', 'line-cap': 'round' }, paint: { 'line-color': '#ffffff', 'line-width': 6.5, 'line-opacity': 0.85 } },
         { id: 'route', type: 'line', source: 'route', layout: { 'line-join': 'round', 'line-cap': 'round' }, paint: { 'line-color': '#d0245a', 'line-width': 3.5 } },
+        // Recorrido grabado (azul, encima de la ruta planeada)
+        { id: 'track-casing', type: 'line', source: 'track', layout: { 'line-join': 'round', 'line-cap': 'round' }, paint: { 'line-color': '#ffffff', 'line-width': 7, 'line-opacity': 0.9 } },
+        { id: 'track', type: 'line', source: 'track', layout: { 'line-join': 'round', 'line-cap': 'round' }, paint: { 'line-color': '#1f6fd6', 'line-width': 4 } },
         { id: 'evac', type: 'line', source: 'evac', layout: { visibility: 'none', 'line-cap': 'round' }, paint: { 'line-color': '#22c06a', 'line-width': 4, 'line-dasharray': [1.5, 1] } },
         // Nombres
         { id: 'water-names', type: 'symbol', source: 'topo', 'source-layer': 'water_name', layout: { 'text-field': ['get', 'name'], 'text-font': font('italic'), 'text-size': 11 },
@@ -154,6 +158,7 @@
   // Capas lógicas (las que ve el usuario) → capas de MapLibre o grupos de marcadores
   const LAYER_MAP = {
     route: { layers: ['route', 'route-casing'] },
+    track: { layers: ['track', 'track-casing'] },
     trails: { layers: ['trails', 'tracks'] },
     contours: { layers: ['contours', 'contour-labels'] },
     labels: { layers: ['peaks', 'peaks-dot', 'places', 'water-names'] },
@@ -242,7 +247,12 @@
     };
     flying = requestAnimationFrame(step);
   }
-  map.on('dragstart', stopFly);
+  // Seguir la posición mientras se graba; si el usuario mueve el mapa, se deja de seguir
+  let following = false;
+  map.on('dragstart', () => {
+    stopFly();
+    if (following) { following = false; emit('followOff'); }
+  });
   map.on('moveend', () => {
     const b = map.getBounds();
     emit('moveEnd', { zoom: map.getZoom(), bounds: [b.getWest(), b.getSouth(), b.getEast(), b.getNorth()] });
@@ -292,6 +302,10 @@
       whenReady(() => map.getSource('route').setData(data
         ? { type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: data.coordinates } }
         : empty));
+    },
+    /// Tramos del recorrido: lista de listas de [lng, lat] (una por cada tramo entre pausas).
+    setTrack(segments) {
+      whenReady(() => map.getSource('track').setData({ type: 'Feature', properties: {}, geometry: { type: 'MultiLineString', coordinates: segments } }));
     },
     setRegions(list) {
       whenReady(() => map.getSource('regions').setData({
@@ -359,6 +373,11 @@
         me = mk(el, [lng, lat], 'center').addTo(map);
       }
       me.setLngLat([lng, lat]);
+      if (following && !flying) map.easeTo({ center: [lng, lat], padding, duration: ms(600) });
+    },
+    setFollow(on, zoom) {
+      following = on;
+      if (on && me) map.easeTo({ center: me.getLngLat(), padding, ...(zoom ? { zoom } : {}), duration: ms(800) });
     },
     pulseReport(id) {
       const el = document.querySelector(`.report[data-id="${id}"]`);

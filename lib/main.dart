@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 
 import 'src/app_services.dart';
 import 'src/ui/expeditions_screen.dart';
@@ -26,6 +27,10 @@ class _CrestaAppState extends State<CrestaApp> {
       builder: (context, snap) => MaterialApp(
         title: 'Cresta',
         debugShowCheckedModeBanner: false,
+        // Diálogos del sistema (fecha, hora, Cancelar/Aceptar) en español
+        locale: const Locale('es', 'MX'),
+        supportedLocales: const [Locale('es', 'MX'), Locale('es')],
+        localizationsDelegates: GlobalMaterialLocalizations.delegates,
         theme: crestaTheme(Brightness.light, civil: false),
         darkTheme: crestaTheme(Brightness.dark, civil: false),
         // AppScope por encima del Navigator, para que todas las pantallas lo vean

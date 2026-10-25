@@ -7,6 +7,7 @@ import 'package:webview_flutter/webview_flutter.dart';
 
 import '../offline/offline_region.dart';
 import '../offline/tile_math.dart';
+import '../tracking/track.dart';
 import 'map_layers.dart';
 
 /// Evento enviado por `assets/web/map.js` a través del canal `CrestaBridge`.
@@ -87,6 +88,21 @@ class MapBridge {
   Future<void> set3d(bool on) => _call('set3d', [on]);
   Future<void> setExaggeration(double x) => _call('setExaggeration', [x]);
   Future<void> setPickerMode(bool on) => _call('setPickerMode', [on]);
+
+  /// Dibuja un recorrido grabado; cada pausa empieza un tramo nuevo.
+  Future<void> setTrack(List<TrackPoint> points) {
+    final segments = <List<List<double>>>[];
+    int? seg;
+    for (final p in points) {
+      if (p.segment != seg) {
+        segments.add([]);
+        seg = p.segment;
+      }
+      segments.last.add([p.lng, p.lat]);
+    }
+    return _call('setTrack', [segments]);
+  }
+
   Future<void> setRoute(Map<String, dynamic>? route) =>
       _call('setRoute', [route]);
   Future<void> setCivil(Map<String, dynamic> civil) =>
@@ -117,6 +133,10 @@ class MapBridge {
       _call('setMembers', [members]);
   Future<void> setMyLocation(double lng, double lat) =>
       _call('setMyLocation', [lng, lat]);
+
+  /// Centra el mapa en tu posición en cada lectura, hasta que muevas el mapa con el dedo.
+  Future<void> setFollow(bool on, {double? zoom}) =>
+      _call('setFollow', [on, zoom]);
   Future<void> pulseReport(String id) => _call('pulseReport', [id]);
 
   /// Zona geográfica que queda dentro de un rectángulo de la pantalla.

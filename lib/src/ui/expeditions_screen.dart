@@ -6,6 +6,9 @@ import 'downloads_screen.dart';
 import 'expedition_screen.dart';
 import 'format.dart';
 import 'offline_widgets.dart';
+import '../tracking/track_recorder.dart';
+import 'map_screen.dart';
+import 'recording_panel.dart';
 import 'theme.dart';
 
 /// Inicio: la lista de expediciones.
@@ -19,7 +22,7 @@ class ExpeditionsScreen extends StatelessWidget {
     final scheme = Theme.of(context).colorScheme;
 
     return ListenableBuilder(
-      listenable: store,
+      listenable: Listenable.merge([store, services.recorder]),
       builder: (context, _) {
         final items = store.all;
         return Scaffold(
@@ -50,25 +53,28 @@ class ExpeditionsScreen extends StatelessWidget {
                 ),
               ),
             ],
-            bottom: PreferredSize(
-              preferredSize: const Size.fromHeight(0),
-              child: NetworkBanner(maps: services.maps),
-            ),
           ),
           floatingActionButton: FloatingActionButton.extended(
             onPressed: () => _create(context),
             icon: const Icon(Icons.add_rounded),
             label: const Text('Nueva expedición'),
           ),
-          body: items.isEmpty
-              ? const _Empty()
-              : ListView.separated(
-                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 96),
-                  itemCount: items.length,
-                  separatorBuilder: (_, _) => const SizedBox(height: 10),
-                  itemBuilder: (context, i) =>
-                      _ExpeditionCard(expedition: items[i]),
-                ),
+          body: WithBanners(
+            banners: [
+              NetworkBanner(maps: services.maps),
+              if (services.recorder.isActive)
+                _RecordingBanner(services: services),
+            ],
+            child: items.isEmpty
+                ? const _Empty()
+                : ListView.separated(
+                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 96),
+                    itemCount: items.length,
+                    separatorBuilder: (_, _) => const SizedBox(height: 10),
+                    itemBuilder: (context, i) =>
+                        _ExpeditionCard(expedition: items[i]),
+                  ),
+          ),
         );
       },
     );
@@ -308,6 +314,57 @@ class _ExpeditionFormState extends State<ExpeditionForm> {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Recordatorio de que hay un recorrido grabándose (o en pausa); lleva de vuelta al mapa.
+class _RecordingBanner extends StatelessWidget {
+  const _RecordingBanner({required this.services});
+  final AppServices services;
+
+  @override
+  Widget build(BuildContext context) {
+    final r = services.recorder;
+    final e = services.expeditions.byId(r.track!.expeditionId);
+    final paused = r.state == RecorderState.paused;
+    return Material(
+      color: recordColor.withValues(alpha: .12),
+      child: InkWell(
+        onTap: e == null
+            ? null
+            : () => Navigator.push(
+                context,
+                MaterialPageRoute<void>(
+                  builder: (_) => MapScreen(expeditionId: e.id),
+                ),
+              ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          child: Row(
+            children: [
+              Icon(
+                paused
+                    ? Icons.pause_circle_outline_rounded
+                    : Icons.fiber_manual_record_rounded,
+                color: recordColor,
+                size: 18,
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  '${paused ? 'Recorrido en pausa' : 'Grabando'} en ${e?.name ?? 'una expedición'} · ${fmtKm(r.stats.meters)} km',
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              const Icon(Icons.chevron_right_rounded),
+            ],
+          ),
+        ),
       ),
     );
   }

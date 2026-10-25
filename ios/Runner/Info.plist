@@ -67,7 +67,13 @@
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>Cresta usa tu ubicación para mostrarte en el mapa y compartirla con tu grupo.</string>
+	<string>Cresta usa tu ubicación para mostrarte en el mapa y grabar tu recorrido, también sin señal.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>Para seguir grabando tu recorrido con la pantalla apagada, Cresta necesita tu ubicación en segundo plano.</string>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>location</string>
+	</array>
 	<key>NSAppTransportSecurity</key>
 	<dict>
 		<key>NSAllowsLocalNetworking</key>

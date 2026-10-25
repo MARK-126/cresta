@@ -17,13 +17,18 @@ class JsonStore {
     }
   }
 
-  Future<void> write(Object? value) async {
+  Future<void> _last = Future.value();
+
+  /// Las escrituras se hacen una tras otra: dos a la vez se pisarían el archivo temporal.
+  Future<void> write(Object? value) {
+    final encoded = const JsonEncoder.withIndent(' ').convert(value);
+    return _last = _last.catchError((_) {}).then((_) => _write(encoded));
+  }
+
+  Future<void> _write(String encoded) async {
     await file.parent.create(recursive: true);
     final tmp = File('${file.path}.tmp');
-    await tmp.writeAsString(
-      const JsonEncoder.withIndent(' ').convert(value),
-      flush: true,
-    );
+    await tmp.writeAsString(encoded, flush: true);
     await tmp.rename(file.path);
   }
 }

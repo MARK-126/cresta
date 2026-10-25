@@ -43,6 +43,12 @@ const mapLayers = <MapLayer>[
     needsRoute: true,
   ),
   MapLayer(
+    'track',
+    LayerGroup.mountain,
+    'Recorrido grabado',
+    Color(0xFF1F6FD6),
+  ),
+  MapLayer(
     'trails',
     LayerGroup.mountain,
     'Senderos y brechas',
@@ -118,6 +124,7 @@ Map<String, bool> layerPreset(AppMode mode) {
   final on = switch (mode) {
     AppMode.mountain => {
       'route',
+      'track',
       'trails',
       'contours',
       'labels',

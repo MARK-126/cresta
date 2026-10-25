@@ -40,72 +40,69 @@ class _DownloadsScreenState extends State<DownloadsScreen> {
         final total = regions.fold(0, (s, r) => s + r.bytes);
         final muted = Theme.of(context).colorScheme.onSurfaceVariant;
         return Scaffold(
-          appBar: AppBar(
-            title: const Text('Mapas descargados'),
-            bottom: PreferredSize(
-              preferredSize: const Size.fromHeight(0),
-              child: NetworkBanner(maps: maps),
+          appBar: AppBar(title: const Text('Mapas descargados')),
+          body: WithBanners(
+            banners: [NetworkBanner(maps: maps)],
+            child: ListView(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: _Figure(
+                        fmtBytes(total),
+                        'en ${regions.length} ${regions.length == 1 ? 'zona' : 'zonas'}',
+                      ),
+                    ),
+                    Expanded(
+                      child: _Figure(
+                        _cacheBytes == null ? '…' : fmtBytes(_cacheBytes!),
+                        'caché de navegación',
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
+                  value: maps.wifiOnly,
+                  onChanged: maps.setWifiOnly,
+                  title: const Text('Descargar solo con Wi-Fi'),
+                  subtitle: const Text(
+                    'Con datos móviles las descargas esperan en la cola.',
+                  ),
+                ),
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: const Text('Borrar caché de navegación'),
+                  subtitle: const Text(
+                    'Lo que se vio con conexión pero no se descargó. Las zonas descargadas no se tocan.',
+                  ),
+                  trailing: TextButton(
+                    onPressed: (_cacheBytes ?? 0) == 0
+                        ? null
+                        : () async {
+                            await services.cache.clear();
+                            _measureCache();
+                          },
+                    child: const Text('Borrar'),
+                  ),
+                ),
+                const SectionTitle('Zonas'),
+                if (regions.isEmpty)
+                  Text(
+                    'No hay zonas descargadas. Agrégalas desde una expedición.',
+                    style: TextStyle(color: muted),
+                  ),
+                for (final r in regions)
+                  RegionTile(
+                    region: r,
+                    maps: maps,
+                    subtitle: _usedBy(context, r),
+                    onDelete: () => _delete(context, r),
+                  ),
+              ],
             ),
-          ),
-          body: ListView(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
-            children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: _Figure(
-                      fmtBytes(total),
-                      'en ${regions.length} ${regions.length == 1 ? 'zona' : 'zonas'}',
-                    ),
-                  ),
-                  Expanded(
-                    child: _Figure(
-                      _cacheBytes == null ? '…' : fmtBytes(_cacheBytes!),
-                      'caché de navegación',
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              SwitchListTile(
-                contentPadding: EdgeInsets.zero,
-                value: maps.wifiOnly,
-                onChanged: maps.setWifiOnly,
-                title: const Text('Descargar solo con Wi-Fi'),
-                subtitle: const Text(
-                  'Con datos móviles las descargas esperan en la cola.',
-                ),
-              ),
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                title: const Text('Borrar caché de navegación'),
-                subtitle: const Text(
-                  'Lo que se vio con conexión pero no se descargó. Las zonas descargadas no se tocan.',
-                ),
-                trailing: TextButton(
-                  onPressed: (_cacheBytes ?? 0) == 0
-                      ? null
-                      : () async {
-                          await services.cache.clear();
-                          _measureCache();
-                        },
-                  child: const Text('Borrar'),
-                ),
-              ),
-              const SectionTitle('Zonas'),
-              if (regions.isEmpty)
-                Text(
-                  'No hay zonas descargadas. Agrégalas desde una expedición.',
-                  style: TextStyle(color: muted),
-                ),
-              for (final r in regions)
-                RegionTile(
-                  region: r,
-                  maps: maps,
-                  subtitle: _usedBy(context, r),
-                  onDelete: () => _delete(context, r),
-                ),
-            ],
           ),
         );
       },

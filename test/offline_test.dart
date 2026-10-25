@@ -28,6 +28,19 @@ OfflineRegion _region({
 );
 
 void main() {
+  test(
+    'JsonStore: escrituras simultáneas se ordenan y gana la última',
+    () async {
+      final tmp = Directory.systemTemp.createTempSync('cresta');
+      final store = JsonStore(File('${tmp.path}/x.json'));
+      await Future.wait([
+        for (var i = 0; i < 20; i++) store.write({'n': i}),
+      ]);
+      expect(await store.read(), {'n': 19});
+      tmp.deleteSync(recursive: true);
+    },
+  );
+
   group('tile_math', () {
     test('convierte coordenadas a mosaicos', () {
       // Mosaico conocido del relieve que contiene la cumbre del Popocatépetl

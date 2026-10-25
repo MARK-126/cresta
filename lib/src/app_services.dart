@@ -8,6 +8,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 
 import 'expeditions/expedition_store.dart';
+import 'location/location_service.dart';
 import 'offline/map_sources.dart';
 import 'offline/offline_maps.dart';
 import 'offline/region_downloader.dart';
@@ -15,6 +16,9 @@ import 'offline/sample_data.dart';
 import 'offline/tile_store.dart';
 import 'storage/json_store.dart';
 import 'tiles/tile_server.dart';
+import 'tracking/terrain_elevation.dart';
+import 'tracking/track_recorder.dart';
+import 'tracking/track_store.dart';
 
 NetworkKind networkKindOf(List<ConnectivityResult> r) {
   if (r.contains(ConnectivityResult.wifi) ||
@@ -31,11 +35,22 @@ NetworkKind networkKindOf(List<ConnectivityResult> r) {
 
 /// Todo lo que vive mientras la app está abierta.
 class AppServices {
-  AppServices._(this.server, this.maps, this.expeditions, this.cache);
+  AppServices._(
+    this.server,
+    this.maps,
+    this.expeditions,
+    this.cache,
+    this.tracks,
+    this.recorder,
+    this.location,
+  );
 
   final TileServer server;
   final OfflineMaps maps;
   final ExpeditionStore expeditions;
+  final TrackStore tracks;
+  final TrackRecorder recorder;
+  final LocationService location;
 
   /// Mosaicos vistos con conexión (no cuentan como descargados; se pueden borrar).
   final TileStore cache;
@@ -78,6 +93,16 @@ class AppServices {
       expeditions: expeditions,
     );
 
+    final tracks = TrackStore(Directory('${support.path}/tracks'));
+    await tracks.load();
+    final location = LocationService();
+    final recorder = TrackRecorder(
+      store: tracks,
+      positions: location.recording,
+      terrain: TerrainElevation([offline, cache]).at,
+    );
+    await recorder.recover();
+
     final server = TileServer(
       offline: offline,
       cache: cache,
@@ -86,7 +111,15 @@ class AppServices {
     );
     await server.start();
     unawaited(topo.get()); // deja lista la URL del mapa topográfico si hay red
-    return AppServices._(server, maps, expeditions, cache);
+    return AppServices._(
+      server,
+      maps,
+      expeditions,
+      cache,
+      tracks,
+      recorder,
+      location,
+    );
   }
 }
 
