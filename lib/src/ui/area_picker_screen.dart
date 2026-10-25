@@ -53,6 +53,16 @@ class _AreaPickerScreenState extends State<AreaPickerScreen> {
         .listen((_) => _updateBounds());
     _bridge.ready.then((_) async {
       await _bridge.setPickerMode(true);
+      if (!mounted) return;
+      // Lo que se busca queda al centro del recuadro
+      final mq = MediaQuery.of(context);
+      final frame = _frame(mq.size, mq.padding);
+      await _bridge.setPadding(
+        top: frame.top,
+        bottom: mq.size.height - frame.bottom,
+        left: frame.left,
+        right: mq.size.width - frame.right,
+      );
       await _bridge.setLayers({
         'contours': false,
         'trails': true,
@@ -109,7 +119,7 @@ class _AreaPickerScreenState extends State<AreaPickerScreen> {
       _searchError = null;
     });
     try {
-      final r = await _search.search(q.trim(), near: _bbox);
+      final r = await _search.search(q.trim());
       setState(() => _results = r);
       if (r.isEmpty) _searchError = 'Sin resultados para "$q"';
     } on Exception {
@@ -126,9 +136,10 @@ class _AreaPickerScreenState extends State<AreaPickerScreen> {
     });
     FocusScope.of(context).unfocus();
     final b = p.bbox;
-    // Un punto (cumbre) o un área pequeña se abre con unos km alrededor
+    // Una cumbre o un área pequeña se abre con unos 25 km alrededor:
+    // una expedición incluye la aproximación y los campamentos, no solo la cima
     if (b == null || b.widthKm < 4) {
-      _bridge.flyTo(p.lng, p.lat, zoom: 12, pitch: 0);
+      _bridge.flyTo(p.lng, p.lat, zoom: 10.3, pitch: 0);
     } else {
       _bridge.fitBounds(b);
     }
@@ -290,7 +301,9 @@ class _AreaPickerScreenState extends State<AreaPickerScreen> {
                                       dense: true,
                                       title: Text(p.name),
                                       subtitle: Text(
-                                        p.detail,
+                                        [p.kind, p.detail]
+                                            .where((s) => s.isNotEmpty)
+                                            .join(' · '),
                                         maxLines: 1,
                                         overflow: TextOverflow.ellipsis,
                                       ),

@@ -330,7 +330,8 @@
     stopFly,
     flyTo(lng, lat, zoom = 13.5, pitch = 55, bearingDeg) {
       stopFly();
-      map.flyTo({ center: [lng, lat], zoom, pitch: is3d ? pitch : 0, ...(bearingDeg == null ? {} : { bearing: bearingDeg }), duration: ms(1600) });
+      // Con padding el punto queda al centro de la parte visible (no tapada por paneles)
+      map.flyTo({ center: [lng, lat], zoom, padding, pitch: is3d ? pitch : 0, ...(bearingDeg == null ? {} : { bearing: bearingDeg }), duration: ms(1600) });
     },
     jumpTo(lng, lat, zoom) { map.jumpTo({ center: [lng, lat], zoom }); },
     showCursorAtMeters(m) { if (route) showCursorAt(along(m).pt); },
