@@ -5,6 +5,10 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/painting.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
+import '../offline/offline_region.dart';
+import '../offline/tile_math.dart';
+import 'map_layers.dart';
+
 /// Evento enviado por `assets/web/map.js` a través del canal `CrestaBridge`.
 class MapEvent {
   MapEvent(this.type, this.data);
@@ -20,7 +24,7 @@ class MapBridge {
   MapBridge() {
     controller = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
-      ..setBackgroundColor(const Color(0xFF1D2426))
+      ..setBackgroundColor(const Color(0xFFECE8DF))
       ..addJavaScriptChannel('CrestaBridge', onMessageReceived: _onMessage);
   }
 
@@ -31,18 +35,20 @@ class MapBridge {
   Stream<MapEvent> get events => _events.stream;
   Future<void> get ready => _ready.future;
 
-  Future<void> load(Uri baseUri) => controller.loadRequest(baseUri.resolve('/index.html'));
+  Future<void> load(Uri baseUri) =>
+      controller.loadRequest(baseUri.resolve('/index.html'));
 
   void _onMessage(JavaScriptMessage message) {
     final json = jsonDecode(message.message) as Map<String, dynamic>;
     final event = MapEvent(json['type'] as String, json);
     if (event.type == 'ready' && !_ready.isCompleted) _ready.complete();
     if (event.type == 'error') debugPrint('Mapa: ${json['message']}');
-    _events.add(event);
+    if (!_events.isClosed) _events.add(event);
   }
 
   Future<void> _call(String method, [List<Object?> args = const []]) async {
-    final js = 'window.cresta && window.cresta.$method(${args.map(jsonEncode).join(',')});';
+    final js =
+        'window.cresta && window.cresta.$method(${args.map(jsonEncode).join(',')});';
     try {
       await controller.runJavaScript(js);
     } catch (e) {
@@ -50,23 +56,75 @@ class MapBridge {
     }
   }
 
-  Future<void> setPadding({double top = 40, double bottom = 40, double left = 40, double right = 40}) =>
-      _call('setPadding', [{'top': top, 'bottom': bottom, 'left': left, 'right': right}]);
-  Future<void> setLayers(Map<String, bool> states) => _call('setLayers', [states]);
+  /// Llama a un método que devuelve datos. iOS entrega el texto tal cual y Android lo entrega
+  /// entre comillas, por eso se decodifica hasta obtener el objeto.
+  Future<Object?> _query(String method, [List<Object?> args = const []]) async {
+    final js =
+        'JSON.stringify(window.cresta.$method(${args.map(jsonEncode).join(',')}))';
+    Object? value = await controller.runJavaScriptReturningResult(js);
+    while (value is String) {
+      try {
+        value = jsonDecode(value);
+      } on FormatException {
+        break;
+      }
+    }
+    return value;
+  }
+
+  Future<void> setPadding({
+    double top = 40,
+    double bottom = 40,
+    double left = 40,
+    double right = 40,
+  }) => _call('setPadding', [
+    {'top': top, 'bottom': bottom, 'left': left, 'right': right},
+  ]);
+  Future<void> setLayers(Map<String, bool> states) =>
+      _call('setLayers', [states]);
   Future<void> setLayer(String id, bool on) => _call('setLayer', [id, on]);
-  Future<void> setSatellite(bool satellite) => _call('setBase', [satellite ? 'sat' : 'rel']);
+  Future<void> setBase(MapBase base) => _call('setBase', [base.name]);
   Future<void> set3d(bool on) => _call('set3d', [on]);
   Future<void> setExaggeration(double x) => _call('setExaggeration', [x]);
+  Future<void> setPickerMode(bool on) => _call('setPickerMode', [on]);
+  Future<void> setRoute(Map<String, dynamic>? route) =>
+      _call('setRoute', [route]);
+  Future<void> setCivil(Map<String, dynamic> civil) =>
+      _call('setCivil', [civil]);
+  Future<void> setRegions(List<OfflineRegion> regions) => _call('setRegions', [
+    [
+      for (final r in regions)
+        {'name': r.name, 'bbox': r.bbox.toJson(), 'complete': r.isComplete},
+    ],
+  ]);
+  Future<void> fitBounds(BBox b) =>
+      _call('fitBounds', [b.west, b.south, b.east, b.north]);
   Future<void> fitRoute() => _call('fitRoute');
   Future<void> flyRoute() => _call('flyRoute');
   Future<void> stopFly() => _call('stopFly');
-  Future<void> flyTo(double lng, double lat, {double zoom = 13.5, double pitch = 55, double? bearing}) =>
-      _call('flyTo', [lng, lat, zoom, pitch, bearing]);
+  Future<void> flyTo(
+    double lng,
+    double lat, {
+    double zoom = 13.5,
+    double pitch = 55,
+    double? bearing,
+  }) => _call('flyTo', [lng, lat, zoom, pitch, bearing]);
+  Future<void> jumpTo(double lng, double lat, double zoom) =>
+      _call('jumpTo', [lng, lat, zoom]);
   Future<void> showCursorAtMeters(double m) => _call('showCursorAtMeters', [m]);
   Future<void> hideCursor() => _call('hideCursor');
-  Future<void> setMembers(List<Map<String, Object>> members) => _call('setMembers', [members]);
-  Future<void> setMyLocation(double lng, double lat) => _call('setMyLocation', [lng, lat]);
+  Future<void> setMembers(List<Map<String, Object>> members) =>
+      _call('setMembers', [members]);
+  Future<void> setMyLocation(double lng, double lat) =>
+      _call('setMyLocation', [lng, lat]);
   Future<void> pulseReport(String id) => _call('pulseReport', [id]);
+
+  /// Zona geográfica que queda dentro de un rectángulo de la pantalla.
+  Future<BBox?> boundsOfRect(Rect r) async {
+    final v = await _query('boundsOfRect', [r.left, r.top, r.right, r.bottom]);
+    if (v is! List || v.length != 4) return null;
+    return BBox.fromJson(v);
+  }
 
   void dispose() => _events.close();
 }

@@ -13,7 +13,9 @@ class CrestaColors {
 
 ThemeData crestaTheme(Brightness brightness, {required bool civil}) {
   final dark = brightness == Brightness.dark;
-  final seed = civil ? (dark ? CrestaColors.civilDark : CrestaColors.civil) : (dark ? CrestaColors.routeDark : CrestaColors.route);
+  final seed = civil
+      ? (dark ? CrestaColors.civilDark : CrestaColors.civil)
+      : (dark ? CrestaColors.routeDark : CrestaColors.route);
   final scheme = ColorScheme.fromSeed(
     seedColor: seed,
     brightness: brightness,
@@ -29,7 +31,9 @@ ThemeData crestaTheme(Brightness brightness, {required bool civil}) {
     segmentedButtonTheme: const SegmentedButtonThemeData(
       style: ButtonStyle(
         visualDensity: VisualDensity.compact,
-        textStyle: WidgetStatePropertyAll(TextStyle(fontWeight: FontWeight.w600)),
+        textStyle: WidgetStatePropertyAll(
+          TextStyle(fontWeight: FontWeight.w600),
+        ),
       ),
     ),
   );
@@ -37,14 +41,15 @@ ThemeData crestaTheme(Brightness brightness, {required bool civil}) {
 
 /// Títulos tipo señalética de sendero: condensados y en mayúsculas.
 TextStyle signage(BuildContext context, {double size = 20}) => TextStyle(
-      fontSize: size,
-      fontWeight: FontWeight.w700,
-      letterSpacing: 0.4,
-      height: 1.05,
-      color: Theme.of(context).colorScheme.onSurface,
-    );
+  fontSize: size,
+  fontWeight: FontWeight.w700,
+  letterSpacing: 0.4,
+  height: 1.05,
+  color: Theme.of(context).colorScheme.onSurface,
+);
 
-TextStyle dataStyle(BuildContext context, {double size = 13, Color? color}) => TextStyle(
+TextStyle dataStyle(BuildContext context, {double size = 13, Color? color}) =>
+    TextStyle(
       fontSize: size,
       fontFeatures: const [FontFeature.tabularFigures()],
       fontFamily: 'monospace',
@@ -52,8 +57,8 @@ TextStyle dataStyle(BuildContext context, {double size = 13, Color? color}) => T
     );
 
 TextStyle labelStyle(BuildContext context) => TextStyle(
-      fontSize: 11,
-      fontWeight: FontWeight.w600,
-      letterSpacing: 1.0,
-      color: Theme.of(context).colorScheme.onSurfaceVariant,
-    );
+  fontSize: 11,
+  fontWeight: FontWeight.w600,
+  letterSpacing: 1.0,
+  color: Theme.of(context).colorScheme.onSurfaceVariant,
+);

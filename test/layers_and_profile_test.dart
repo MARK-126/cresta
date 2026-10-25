@@ -36,12 +36,23 @@ void main() {
       source: '',
     );
     double? got;
-    await tester.pumpWidget(MaterialApp(
-      home: Scaffold(body: SizedBox(width: 300, child: ElevationProfile(route: route, onScrub: (m) => got = m))),
-    ));
-    await tester.tapAt(tester.getTopLeft(find.byType(ElevationProfile)) + const Offset(299, 60));
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: SizedBox(
+            width: 300,
+            child: ElevationProfile(route: route, onScrub: (m) => got = m),
+          ),
+        ),
+      ),
+    );
+    await tester.tapAt(
+      tester.getTopLeft(find.byType(ElevationProfile)) + const Offset(299, 60),
+    );
     expect(got, closeTo(10000, 1));
-    await tester.tapAt(tester.getTopLeft(find.byType(ElevationProfile)) + const Offset(0, 60));
+    await tester.tapAt(
+      tester.getTopLeft(find.byType(ElevationProfile)) + const Offset(0, 60),
+    );
     expect(got, 0);
   });
 }

@@ -5,15 +5,15 @@ import 'package:cresta/src/data/trail_route.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 TrailRoute _ramp() => TrailRoute(
-      id: 't',
-      name: 'Rampa',
-      summary: '',
-      coordinates: const [LngLat(0, 0), LngLat(0, 0.01), LngLat(0, 0.02)],
-      distances: [0, 1000, 2000],
-      elevations: [3000, 3100, 3100],
-      gain: 100,
-      source: '',
-    );
+  id: 't',
+  name: 'Rampa',
+  summary: '',
+  coordinates: const [LngLat(0, 0), LngLat(0, 0.01), LngLat(0, 0.02)],
+  distances: [0, 1000, 2000],
+  elevations: [3000, 3100, 3100],
+  gain: 100,
+  source: '',
+);
 
 void main() {
   group('TrailRoute', () {
@@ -42,11 +42,16 @@ void main() {
     });
 
     test('la ruta incluida en assets es coherente', () {
-      final json = jsonDecode(File('assets/data/arista_del_sol.json').readAsStringSync()) as Map<String, dynamic>;
+      final json = jsonDecode(
+        File('assets/data/arista_del_sol.json').readAsStringSync(),
+      ) as Map<String, dynamic>;
       final r = TrailRoute.fromJson(json);
       expect(r.totalMeters, inInclusiveRange(11000, 13000));
       expect(r.maxElevation, greaterThan(5100));
-      expect(r.coordinates.first.lat, lessThan(r.coordinates.last.lat)); // de Paso de Cortés hacia el norte
+      expect(
+        r.coordinates.first.lat,
+        lessThan(r.coordinates.last.lat),
+      ); // de Paso de Cortés hacia el norte
     });
   });
 }

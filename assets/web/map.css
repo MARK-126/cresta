@@ -5,15 +5,6 @@ html, body { margin: 0; height: 100%; background: #1d2426; overflow: hidden; }
 .maplibregl-ctrl-top-left { top: calc(env(safe-area-inset-top, 0px) + 60px); }
 .maplibregl-ctrl-top-left .maplibregl-ctrl-attrib.maplibregl-compact-show { max-width: calc(100vw - 90px); }
 
-.mk { cursor: pointer; display: flex; flex-direction: column; align-items: center; font-family: -apple-system, Roboto, sans-serif; }
-.mk .lbl { background: rgba(14, 20, 23, .82); color: #fff; font-weight: 600; font-size: 11px; padding: 2px 6px; border-radius: 4px; white-space: nowrap; }
-.mk .lbl em { font-style: normal; font-weight: 400; font-size: 10px; opacity: .8; margin-left: 4px; }
-.mk .stem { width: 1px; height: 8px; background: rgba(14, 20, 23, .8); }
-.mk .tri { width: 0; height: 0; border-left: 6px solid transparent; border-right: 6px solid transparent; border-bottom: 10px solid #fff; filter: drop-shadow(0 0 1px #000); }
-.mk.hut .tri { border-bottom-color: #ffd23f; }
-.mk.trailhead .tri { border-bottom-color: #7fdcff; }
-.mk.closed .lbl { background: rgba(140, 20, 20, .9); }
-
 .member { position: relative; width: 28px; height: 28px; border-radius: 50%; border: 2px solid #fff; display: grid; place-items: center; color: #fff; font: 600 11px -apple-system, Roboto, sans-serif; box-shadow: 0 2px 6px rgba(0,0,0,.4); }
 .member::after { content: ""; position: absolute; inset: -8px; border-radius: 50%; border: 2px solid var(--c); opacity: 0; animation: ping 2.4s infinite; }
 @keyframes ping { 0% { transform: scale(.6); opacity: .7 } 100% { transform: scale(1.4); opacity: 0 } }

@@ -9,8 +9,55 @@ String fmtInt(num n) {
   return out.toString();
 }
 
-String fmtKm(double meters, {int decimals = 1}) => (meters / 1000).toStringAsFixed(decimals);
+String fmtKm(double meters, {int decimals = 1}) =>
+    (meters / 1000).toStringAsFixed(decimals);
 
-String fmtDuration(Duration d) => '${d.inHours} h ${(d.inMinutes % 60).toString().padLeft(2, '0')}';
+String fmtDuration(Duration d) =>
+    '${d.inHours} h ${(d.inMinutes % 60).toString().padLeft(2, '0')}';
 
-String fmtAgo(int minutes) => minutes < 60 ? 'hace $minutes min' : 'hace ${minutes ~/ 60} h ${(minutes % 60).toString().padLeft(2, '0')}';
+String fmtAgo(int minutes) => minutes < 60
+    ? 'hace $minutes min'
+    : 'hace ${minutes ~/ 60} h ${(minutes % 60).toString().padLeft(2, '0')}';
+
+String fmtBytes(int bytes) {
+  if (bytes < 1024 * 1024) return '${(bytes / 1024).ceil()} KB';
+  if (bytes < 1024 * 1024 * 1024) {
+    return '${(bytes / (1024 * 1024)).toStringAsFixed(bytes < 10 * 1024 * 1024 ? 1 : 0)} MB';
+  }
+  return '${(bytes / (1024 * 1024 * 1024)).toStringAsFixed(1)} GB';
+}
+
+const _days = ['lun', 'mar', 'mié', 'jue', 'vie', 'sáb', 'dom'];
+const _months = [
+  'ene',
+  'feb',
+  'mar',
+  'abr',
+  'may',
+  'jun',
+  'jul',
+  'ago',
+  'sep',
+  'oct',
+  'nov',
+  'dic',
+];
+
+/// "sáb 15 nov 2026"
+String fmtDate(DateTime d) =>
+    '${_days[d.weekday - 1]} ${d.day} ${_months[d.month - 1]} ${d.year}';
+
+/// "en 21 días", "mañana", "hoy", "hace 3 días"
+String fmtRelativeDay(DateTime d, {DateTime? now}) {
+  final today = _dateOnly(now ?? DateTime.now());
+  final diff = _dateOnly(d).difference(today).inDays;
+  return switch (diff) {
+    0 => 'hoy',
+    1 => 'mañana',
+    -1 => 'ayer',
+    > 1 => 'en $diff días',
+    _ => 'hace ${-diff} días',
+  };
+}
+
+DateTime _dateOnly(DateTime d) => DateTime(d.year, d.month, d.day);

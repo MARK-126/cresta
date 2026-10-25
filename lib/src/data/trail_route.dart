@@ -11,10 +11,14 @@ class TrailRoute {
     required this.elevations,
     required this.gain,
     required this.source,
-  }) : assert(coordinates.length == distances.length && distances.length == elevations.length);
+  }) : assert(
+         coordinates.length == distances.length &&
+             distances.length == elevations.length,
+       );
 
   factory TrailRoute.fromJson(Map<String, dynamic> json) {
-    List<double> nums(String key) => (json[key] as List).map((v) => (v as num).toDouble()).toList();
+    List<double> nums(String key) =>
+        (json[key] as List).map((v) => (v as num).toDouble()).toList();
     return TrailRoute(
       id: json['id'] as String,
       name: json['name'] as String,
@@ -69,7 +73,10 @@ class TrailRoute {
     final b = coordinates[i];
     return RoutePoint(
       meters: m,
-      position: LngLat(a.lng + (b.lng - a.lng) * t, a.lat + (b.lat - a.lat) * t),
+      position: LngLat(
+        a.lng + (b.lng - a.lng) * t,
+        a.lat + (b.lat - a.lat) * t,
+      ),
       elevation: elevations[i - 1] + (elevations[i] - elevations[i - 1]) * t,
     );
   }
@@ -88,7 +95,8 @@ class LngLat {
   const LngLat(this.lng, this.lat);
 
   /// Desde un par GeoJSON `[lng, lat]`.
-  factory LngLat.fromJson(List pair) => LngLat((pair[0] as num).toDouble(), (pair[1] as num).toDouble());
+  factory LngLat.fromJson(List pair) =>
+      LngLat((pair[0] as num).toDouble(), (pair[1] as num).toDouble());
 
   final double lng;
   final double lat;
@@ -98,7 +106,11 @@ class LngLat {
 }
 
 class RoutePoint {
-  const RoutePoint({required this.meters, required this.position, required this.elevation});
+  const RoutePoint({
+    required this.meters,
+    required this.position,
+    required this.elevation,
+  });
   final double meters;
   final LngLat position;
   final double elevation;

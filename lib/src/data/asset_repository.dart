@@ -5,22 +5,24 @@ import 'package:flutter/services.dart';
 import 'civil_data.dart';
 import 'trail_route.dart';
 
-/// Todo lo que la app necesita al arrancar, leído de `assets/data`.
-class AppData {
-  AppData({required this.route, required this.civil, required this.peaks});
+/// Datos incluidos en `assets/data`.
+class AssetData {
+  const AssetData([this._bundle]);
 
-  final TrailRoute route;
-  final CivilData civil;
-  final List<Peak> peaks;
+  final AssetBundle? _bundle;
 
-  static Future<AppData> load([AssetBundle? bundle]) async {
-    final b = bundle ?? rootBundle;
-    Future<dynamic> json(String name) async => jsonDecode(await b.loadString('assets/data/$name'));
-    final results = await Future.wait([json('arista_del_sol.json'), json('civil_demo.json'), json('peaks.json')]);
-    return AppData(
-      route: TrailRoute.fromJson(results[0] as Map<String, dynamic>),
-      civil: CivilData.fromJson(results[1] as Map<String, dynamic>),
-      peaks: [for (final p in results[2] as List) Peak.fromJson(p as Map<String, dynamic>)],
-    );
+  Future<Map<String, dynamic>> _json(String key) async =>
+      jsonDecode(await (_bundle ?? rootBundle).loadString(key))
+          as Map<String, dynamic>;
+
+  /// Devuelve la ruta y el JSON original (que se pasa tal cual al mapa).
+  Future<(TrailRoute, Map<String, dynamic>)> route(String asset) async {
+    final json = await _json(asset);
+    return (TrailRoute.fromJson(json), json);
+  }
+
+  Future<(CivilData, Map<String, dynamic>)> civil() async {
+    final json = await _json('assets/data/civil_demo.json');
+    return (CivilData.fromJson(json), json);
   }
 }

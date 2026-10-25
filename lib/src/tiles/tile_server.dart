@@ -5,19 +5,15 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 
-/// Fuentes de mosaicos en línea. Revisa los términos de uso antes de publicar:
-/// Esri World Imagery exige una cuenta de ArcGIS para uso en apps.
-const tileUpstreams = <String, String>{
-  'dem': 'https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png',
-  'sat': 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-};
+import '../offline/map_sources.dart';
+import '../offline/tile_store.dart';
 
-/// Ruta de un mosaico pedido por el mapa: `/tiles/<tipo>/<z>/<x>/<y>`.
+/// Ruta de un mosaico pedido por el mapa: `/tiles/<fuente>/<z>/<x>/<y>`.
 @immutable
 class TilePath {
-  const TilePath(this.type, this.z, this.x, this.y);
+  const TilePath(this.source, this.z, this.x, this.y);
 
-  final String type;
+  final MapSource source;
   final int z;
   final int x;
   final int y;
@@ -25,34 +21,44 @@ class TilePath {
   /// Devuelve null si la ruta no es un mosaico válido (incluye intentos de `..`).
   static TilePath? parse(String path) {
     final parts = path.split('/').where((p) => p.isNotEmpty).toList();
-    if (parts.length != 5 || parts[0] != 'tiles' || !tileUpstreams.containsKey(parts[1])) return null;
+    if (parts.length != 5 || parts[0] != 'tiles') return null;
+    final source = MapSource.byId(parts[1]);
     final z = int.tryParse(parts[2]);
     final x = int.tryParse(parts[3]);
     final y = int.tryParse(parts[4]);
-    if (z == null || x == null || y == null || z < 0 || z > 22) return null;
+    if (source == null ||
+        z == null ||
+        x == null ||
+        y == null ||
+        z < 0 ||
+        z > 22) {
+      return null;
+    }
     final max = 1 << z;
     if (x < 0 || y < 0 || x >= max || y >= max) return null;
-    return TilePath(parts[1], z, x, y);
+    return TilePath(source, z, x, y);
   }
-
-  String get relative => '$type/$z/$x/$y';
-  Uri get upstream => Uri.parse(
-      tileUpstreams[type]!.replaceAll('{z}', '$z').replaceAll('{x}', '$x').replaceAll('{y}', '$y'));
 }
 
 /// Servidor HTTP en 127.0.0.1 que alimenta al WebView del mapa.
 ///
-/// - `/` y archivos de `assets/web` (página del mapa y MapLibre GL JS)
+/// - `/` y archivos de `assets/web` (página del mapa, MapLibre y tipografías)
 /// - `/data/<archivo>` desde `assets/data`
-/// - `/tiles/<tipo>/<z>/<x>/<y>`: primero el paquete sin conexión, luego la caché en disco
-///   y por último la red (guardando en caché lo descargado).
+/// - `/tiles/<fuente>/<z>/<x>/<y>`: primero las zonas descargadas, luego la caché de navegación
+///   y por último la red (lo que se ve con conexión se guarda en la caché).
 class TileServer {
-  TileServer({required this.packDirs, required this.cacheDir, AssetBundle? bundle, http.Client? client})
-      : _bundle = bundle ?? rootBundle,
-        _client = client ?? http.Client();
+  TileServer({
+    required this.offline,
+    required this.cache,
+    required this.topoTemplate,
+    AssetBundle? bundle,
+    http.Client? client,
+  }) : _bundle = bundle ?? rootBundle,
+       _client = client ?? http.Client();
 
-  final List<Directory> packDirs;
-  final Directory cacheDir;
+  final TileStore offline;
+  final TileStore cache;
+  final Future<String?> Function() topoTemplate;
   final AssetBundle _bundle;
   final http.Client _client;
   HttpServer? _server;
@@ -72,19 +78,51 @@ class TileServer {
   Future<void> _handle(HttpRequest req) async {
     final res = req.response;
     try {
-      final path = req.uri.path;
+      final path = Uri.decodeComponent(req.uri.path);
       if (path.startsWith('/tiles/')) {
         await _serveTile(path, res);
       } else if (path.startsWith('/data/')) {
         await _serveAsset('assets/data/${path.substring(6)}', res);
+      } else if (path.startsWith('/fonts/')) {
+        await _serveFont(path, res);
       } else {
-        await _serveAsset('assets/web/${path == '/' ? 'index.html' : path.substring(1)}', res);
+        await _serveAsset(
+          'assets/web/${path == '/' ? 'index.html' : path.substring(1)}',
+          res,
+        );
       }
     } catch (e) {
       debugPrint('TileServer: $e');
       res.statusCode = HttpStatus.internalServerError;
     }
     await res.close();
+  }
+
+  /// `/fonts/Noto Sans Regular,Arial Unicode MS Regular/0-255.pbf` → `assets/web/fonts/noto-sans-regular/0-255.pbf`.
+  /// Solo se incluyen los rangos del alfabeto latino; para los demás se responde vacío.
+  Future<void> _serveFont(String path, HttpResponse res) async {
+    final parts = path.split('/'); // ['', 'fonts', stack, range]
+    if (parts.length != 4) {
+      res.statusCode = HttpStatus.notFound;
+      return;
+    }
+    final font = parts[2]
+        .split(',')
+        .first
+        .trim()
+        .toLowerCase()
+        .replaceAll(' ', '-');
+    final key = 'assets/web/fonts/$font/${parts[3]}';
+    try {
+      final data = await _bundle.load(key);
+      res.headers.contentType = ContentType('application', 'x-protobuf');
+      res.add(data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes));
+    } on FlutterError {
+      res.headers.contentType = ContentType(
+        'application',
+        'x-protobuf',
+      ); // glifo ausente: MapLibre lo omite
+    }
   }
 
   Future<void> _serveAsset(String key, HttpResponse res) async {
@@ -104,36 +142,39 @@ class TileServer {
   }
 
   Future<void> _serveTile(String path, HttpResponse res) async {
-    final tile = TilePath.parse(path);
-    if (tile == null) {
+    final t = TilePath.parse(path);
+    if (t == null) {
       res.statusCode = HttpStatus.notFound;
       return;
     }
-    final bytes = await _readLocal(tile) ?? await _fetchAndCache(tile);
+    final bytes =
+        await offline.read(t.source, t.z, t.x, t.y) ??
+        await cache.read(t.source, t.z, t.x, t.y) ??
+        await _fetchAndCache(t);
     if (bytes == null) {
-      res.statusCode = HttpStatus.notFound;
+      // 204 en vez de 404: MapLibre deja el hueco sin llenar la consola de errores
+      res.statusCode = HttpStatus.noContent;
       return;
     }
-    res.headers.contentType = _sniffImage(bytes);
+    res.headers.contentType = switch (t.source) {
+      MapSource.topo => ContentType('application', 'x-protobuf'),
+      MapSource.dem => ContentType('image', 'png'),
+      MapSource.sat => ContentType('image', 'jpeg'),
+    };
     res.headers.set(HttpHeaders.cacheControlHeader, 'max-age=86400');
     res.add(bytes);
   }
 
-  Future<Uint8List?> _readLocal(TilePath tile) async {
-    for (final dir in [...packDirs, cacheDir]) {
-      final f = File('${dir.path}/${tile.relative}');
-      if (await f.exists()) return f.readAsBytes();
-    }
-    return null;
-  }
-
-  Future<Uint8List?> _fetchAndCache(TilePath tile) async {
+  Future<Uint8List?> _fetchAndCache(TilePath t) async {
+    final topo = t.source == MapSource.topo ? await topoTemplate() : null;
+    final url = tileUrl(t.source, t.z, t.x, t.y, topoTemplate: topo);
+    if (url == null) return null;
     try {
-      final r = await _client.get(tile.upstream).timeout(const Duration(seconds: 15));
-      if (r.statusCode != 200) return null;
-      final f = File('${cacheDir.path}/${tile.relative}');
-      await f.parent.create(recursive: true);
-      await f.writeAsBytes(r.bodyBytes);
+      final r = await _client
+          .get(url, headers: {'User-Agent': userAgent})
+          .timeout(const Duration(seconds: 15));
+      if (r.statusCode != 200 || r.bodyBytes.isEmpty) return null;
+      await cache.write(t.source, t.z, t.x, t.y, r.bodyBytes);
       return r.bodyBytes;
     } on Exception {
       return null; // sin conexión: el mapa deja ese mosaico vacío
@@ -150,7 +191,4 @@ class TileServer {
       _ => ContentType.binary,
     };
   }
-
-  static ContentType _sniffImage(Uint8List b) =>
-      b.length > 3 && b[0] == 0x89 && b[1] == 0x50 ? ContentType('image', 'png') : ContentType('image', 'jpeg');
 }

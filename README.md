@@ -1,48 +1,71 @@
 # Cresta
 
-App móvil de mapas 3D para **montañismo y senderismo** y para **protección civil**.
-El primer paquete de mapas cubre el Iztaccíhuatl y el Popocatépetl y funciona sin conexión.
+App móvil de mapas 3D para **montañismo y senderismo**, pensada para funcionar **sin señal**:
+preparas la expedición en casa con Wi-Fi, descargas los mapas de la zona y en la montaña todo sigue
+funcionando sin conexión.
 
-- **Modo Montaña:** terreno 3D, ruta La Arista del Sol (datos reales de OpenStreetMap), perfil de elevación
-  que se recorre con el dedo, vuelo 3D sobre la ruta, curvas de nivel, senderos, cumbres y refugios, y el grupo
-  en tiempo real (simulado por ahora).
-- **Modo Protección civil:** semáforo volcánico, zonas de peligro, dispersión de ceniza, rutas de evacuación,
-  albergues con ocupación y reportes ciudadanos. **Todos estos datos son de demostración**, no oficiales.
-- **General:** satélite o relieve, 2D/3D, exageración del relieve, capas que se encienden y apagan,
-  y tu ubicación por GPS.
+## Qué hace hoy (Fase 1)
+
+- **Expediciones:** nombre, fecha de salida, notas y una lista "Antes de salir" que dice si ya está lista para
+  usarse sin conexión.
+- **Descargar mapas por zona:** buscas el lugar (o mueves el mapa), encuadras la zona y eliges el detalle.
+  La app muestra antes de bajar el tamaño aproximado y el área en km. Las descargas:
+  - se reanudan donde quedaron si se corta la red o se cierra la app,
+  - pueden limitarse a Wi-Fi (opción por defecto),
+  - comparten mosaicos entre zonas que se traslapan, y al borrar una zona solo se libera lo que nadie más usa.
+- **Mapas descargados:** espacio usado por zona, a qué expediciones pertenece y caché de navegación aparte.
+- **Mapa 2D/3D** de cualquier zona con tres bases: topográfico (senderos, brechas, cumbres con altitud, ríos,
+  bosque), satélite y relieve. Las **curvas de nivel se calculan en el teléfono** a partir del relieve,
+  así que funcionan en cualquier zona descargada sin bajar nada extra.
+- **Ejemplo incluido:** Iztaccíhuatl por La Arista del Sol, con sus mapas dentro de la app, la ruta real de
+  OpenStreetMap, perfil de elevación, vuelo 3D y el modo de protección civil de demostración.
+
+## Fuentes de mapas (libres, uso personal)
+
+| Capa | Fuente | Licencia | Zoom máx. |
+|---|---|---|---|
+| Topográfico y senderos | OpenFreeMap (vectorial, datos OpenStreetMap) | ODbL / OpenMapTiles | 14 |
+| Satélite | Sentinel-2 cloudless 2024 de EOX | CC BY-NC-SA 4.0 (**no comercial**) | 14 |
+| Relieve 3D y curvas | Mapzen Terrain Tiles (AWS Open Data) | Abierta | 12 |
+| Búsqueda de lugares | Nominatim (OpenStreetMap) | Política de uso: 1 búsqueda/s | — |
+
+Si la app se vuelve comercial hay que cambiar el satélite (por ejemplo MapTiler con licencia offline).
+Las URLs y zooms están en `lib/src/offline/map_sources.dart`.
 
 ## Arquitectura
 
 ```
-Flutter (UI nativa, GPS, estado)
+Flutter (pantallas, expediciones, descargas, GPS)
    │  MapBridge: llamadas JS ⇄ eventos por el canal "CrestaBridge"
    ▼
-WebView ── MapLibre GL JS 4.7.1 (assets/web)  ← terreno 3D
+WebView ── MapLibre GL JS 4.7.1 + maplibre-contour (assets/web)  ← terreno 3D y curvas
    │  http://127.0.0.1:<puerto>
    ▼
 TileServer (Dart, solo loopback)
-   1. paquete sin conexión (assets/packs/*.zip, se extrae al primer arranque)
-   2. caché en disco (lo que ya se descargó)
-   3. red: Terrain Tiles de AWS y Esri World Imagery (y lo guarda en caché)
+   1. zonas descargadas   (Application Support/tiles/<fuente>/<z>/<x>/<y>)
+   2. caché de navegación (Caches/tiles; se puede borrar)
+   3. red, si hay         (y lo guarda en la caché)
 ```
 
 **¿Por qué un WebView y no el plugin nativo `maplibre_gl`?** MapLibre Native (iOS/Android) todavía no tiene
-terreno 3D; en 2026 sigue en una rama experimental. MapLibre GL JS sí lo tiene. Toda la comunicación con el mapa
-pasa por `lib/src/map/map_bridge.dart`, así que cuando el SDK nativo soporte terreno se puede cambiar el motor
-sin tocar las pantallas.
+terreno 3D. MapLibre GL JS sí. Toda la comunicación con el mapa pasa por `lib/src/map/map_bridge.dart`, así que
+cuando el SDK nativo lo soporte se puede cambiar el motor sin tocar las pantallas.
 
 | Carpeta | Contenido |
 |---|---|
-| `lib/src/data/` | Modelos: ruta y su perfil, datos de protección civil, cumbres |
-| `lib/src/map/` | `MapBridge` (puente con el WebView) y definición de capas por modo |
-| `lib/src/tiles/` | Servidor local de mosaicos y paquete sin conexión |
-| `lib/src/group/` | Simulador del grupo (se reemplazará por ubicaciones reales) |
-| `lib/src/location/` | Permisos y GPS (`geolocator`) |
-| `lib/src/ui/` | Pantalla del mapa, paneles, perfil de elevación, tema |
-| `assets/web/` | Página del mapa (`map.js`) y MapLibre GL JS incluido localmente |
-| `assets/data/` | Ruta, senderos, curvas de nivel, cumbres y datos de demostración de protección civil |
-| `assets/packs/` | Paquete de mosaicos Izta–Popo (relieve z10–12, satélite z10–14) |
-| `tool/` | Scripts de Python con los que se generaron los datos |
+| `lib/src/expeditions/` | Modelo de expedición, su estado sin conexión y su almacenamiento |
+| `lib/src/offline/` | Zonas, cálculo de mosaicos, motor de descargas, almacén en disco, fuentes y paquete de ejemplo |
+| `lib/src/tiles/` | Servidor local que alimenta al mapa |
+| `lib/src/search/` | Búsqueda de lugares (Nominatim) |
+| `lib/src/map/` | `MapBridge` y definición de capas |
+| `lib/src/ui/` | Pantallas: expediciones, detalle, elegir zona, mapas descargados, mapa |
+| `lib/src/data/`, `group/`, `location/` | Ruta de ejemplo, datos de protección civil, grupo simulado y GPS |
+| `assets/web/` | Página del mapa, MapLibre, maplibre-contour y tipografías del mapa |
+| `assets/packs/izta_popo.zip` | Mapas del ejemplo (relieve, satélite y topográfico) |
+| `tool/` | Scripts con los que se generaron la ruta y el paquete de ejemplo |
+
+Todo se guarda en el teléfono como JSON (`expeditions.json`, `regions.json`, `settings.json`); no hay
+cuenta ni servidor propio.
 
 ## Correr la app
 
@@ -66,31 +89,22 @@ flutter test
 flutter analyze
 ```
 
-## Regenerar los datos
+## Limitaciones conocidas
 
-`tool/download_tiles.py` descarga los mosaicos del área y `tool/build_route_data.py` arma la ruta, el perfil de
-elevación y las curvas de nivel a partir de un `osm.json` exportado de Overpass. Ambos se ejecutan desde una
-carpeta de trabajo que contenga `tiles/` y `osm.json`. Después, comprime `tiles/dem` y `tiles/sat` en
-`assets/packs/izta_popo.zip` y sube `OfflinePack.version`.
+- Las descargas avanzan con la app abierta (la pantalla se mantiene encendida mientras descarga). Si se cierra,
+  la zona queda en pausa y se reanuda al volver.
+- Límite de 40,000 mosaicos por zona (unos 100 × 100 km en detalle) para no abusar de los servicios gratuitos.
+- Probado en el simulador de iPhone. Android compila desde el mismo código, pero falta probarlo en un equipo.
 
-## Antes de publicar en las tiendas
+## Siguientes fases
 
-- **Esri World Imagery** pide una cuenta de ArcGIS para usarse en apps. Cambia la fuente en
-  `tileUpstreams` (`lib/src/tiles/tile_server.dart`) o consigue la licencia. Alternativas: MapTiler,
-  Sentinel-2 cloudless o un servidor de mosaicos propio.
-- Los datos de protección civil deben venir de fuentes oficiales (CENAPRED, protección civil estatal).
-- Ubicación en segundo plano: hoy solo se usa con la app abierta. Compartir ubicación con el grupo en segundo
-  plano requiere permisos adicionales y justificarlos ante Apple y Google.
-
-## Siguientes pasos
-
-1. Backend para grupos: ubicación compartida en tiempo real (p. ej. Supabase Realtime o Firebase) y reemplazar `GroupSimulator`.
-2. Descargar zonas sin conexión desde la app (elegir un área y bajar sus mosaicos a la caché).
-3. Grabar recorridos GPS y exportarlos a GPX.
-4. Más rutas y un buscador; cargar GPX/KML del usuario.
-5. Protección civil: reportes ciudadanos reales con foto y ubicación, y notificaciones push por zona.
+2. Grabar el recorrido con GPS (sin señal, en segundo plano), estadísticas y exportar GPX.
+3. Planificador de rutas: dibujar sobre el mapa, ajustar a senderos, importar GPX/KML.
+4. Clima por altitud guardado con la expedición, referencias (fotos, PDFs, contactos) y lista de equipo.
 
 ## Créditos
 
-Senderos y cumbres © colaboradores de OpenStreetMap (ODbL). Relieve: Mapzen Terrain Tiles (AWS Open Data).
-Imagen satelital: Esri, Maxar, Earthstar Geographics. MapLibre GL JS (licencia BSD-3, `assets/web/vendor`).
+Mapa © OpenMapTiles, © colaboradores de OpenStreetMap (ODbL), servido por OpenFreeMap.
+Satélite: Sentinel-2 cloudless 2024 de EOX IT Services GmbH (contiene datos Copernicus Sentinel modificados).
+Relieve: Mapzen Terrain Tiles (AWS Open Data). MapLibre GL JS y maplibre-contour (licencia BSD-3, `assets/web/vendor`).
+Tipografía del mapa: Noto Sans (SIL Open Font License).
