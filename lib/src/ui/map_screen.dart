@@ -40,6 +40,7 @@ class _MapScreenState extends State<MapScreen> {
   static const _sheetMin = 0.14, _sheetInitial = 0.38, _sheetMax = 0.9;
 
   final _bridge = MapBridge();
+  final _sheet = DraggableScrollableController();
   late final LocationService _location = _services.location;
   late final TrackRecorder _recorder = _services.recorder;
   DateTime _lastTrackPush = DateTime.fromMillisecondsSinceEpoch(0);
@@ -301,6 +302,7 @@ class _MapScreenState extends State<MapScreen> {
         setState(() => _cursor = (e.data['meters'] as num).toDouble());
       case 'flyEnd':
         setState(() => _flying = false);
+        _moveSheet(_sheetInitial);
       case 'followOff':
         setState(() => _following = false);
       case 'markerTap':
@@ -350,15 +352,27 @@ class _MapScreenState extends State<MapScreen> {
     _bridge.set3d(on);
   }
 
+  /// Baja el panel durante el vuelo 3D para que no lo tape, y lo sube al terminar.
+  void _moveSheet(double size) {
+    if (!_sheet.isAttached) return;
+    _sheet.animateTo(
+      size,
+      duration: const Duration(milliseconds: 350),
+      curve: Curves.easeOut,
+    );
+  }
+
   void _toggleFly() {
     if (_flying) {
       _bridge.stopFly();
       setState(() => _flying = false);
+      _moveSheet(_sheetInitial);
     } else {
       setState(() {
         _flying = true;
         _is3d = true;
       });
+      _moveSheet(_sheetMin);
       _bridge.flyRoute();
     }
   }
@@ -569,6 +583,7 @@ class _MapScreenState extends State<MapScreen> {
                   ),
                 ),
                 DraggableScrollableSheet(
+                  controller: _sheet,
                   minChildSize: _sheetMin,
                   initialChildSize: _sheetInitial,
                   maxChildSize: _sheetMax,

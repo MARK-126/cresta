@@ -239,7 +239,8 @@
       const a = along(m);
       const target = bearing(a.pt, along(m + 700).pt);
       brg += (((target - brg + 540) % 360) - 180) * 0.03;
-      map.jumpTo({ center: a.pt, zoom: 14.3, pitch: 68, bearing: brg });
+      // A zoom ~13.4 se aprovecha el detalle descargado (relieve z12, mapa z14) sin verse borroso
+      map.jumpTo({ center: a.pt, zoom: 13.4, pitch: 66, bearing: brg });
       showCursorAt(a.pt);
       emit('flyProgress', { meters: Math.round(m) });
       if (k < 1) flying = requestAnimationFrame(step);
