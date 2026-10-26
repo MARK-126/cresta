@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Montaña cian de 44 dp, dentro de la zona segura (66 dp) del ícono adaptativo -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <group
+        android:scaleX="2"
+        android:scaleY="2"
+        android:translateX="30"
+        android:translateY="29">
+        <path
+            android:fillColor="#FF46EAE5"
+            android:pathData="M14,6l-3.75,5 2.85,3.8 -1.6,1.2C9.81,13.75 7,10 7,10l-6,8h22L14,6z" />
+    </group>
+</vector>

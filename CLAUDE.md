@@ -35,3 +35,6 @@ Antes de cada commit: `dart format lib test`, `flutter analyze` sin problemas y 
 - Escrituras de JSON con `JsonStore` (se serializan para no pisarse).
 - Datos de protección civil, grupo y semáforo son **de demostración**; nunca presentarlos como oficiales.
 - Ramas por fase (`feat/...`); commits con la línea `Co-Authored-By` que indique el entorno.
+- **UI "Andes Industrial", solo tema oscuro:** colores de `Andes` y componentes de `lib/src/ui/theme.dart`
+  (`TonalCard`, `Figure`, `GlowButton`, `Glass`). Nada de bordes de 1 px, sombras ni colores sueltos.
+  Detalles en la sección "Diseño" de `docs/CONTEXTO.md`.

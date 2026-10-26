@@ -1,7 +1,7 @@
 # Contexto del proyecto Cresta
 
 Resumen de lo decidido y construido, para continuar en otra computadora o sesión.
-Actualizado: 25 oct 2026.
+Actualizado: 26 oct 2026.
 
 ## Qué quiere el usuario
 
@@ -26,10 +26,33 @@ Meshtastic.
 | 0 | Prototipo web + app base (mapa 3D en WebView, ejemplo Izta–Popo, modo protección civil de demostración) | Hecha | `main` |
 | 1 | Expediciones, descarga de mapas por zona, gestor de mapas, mapa topográfico propio | Hecha | `feat/expediciones-mapas-offline` |
 | 2 | Grabar recorrido (segundo plano, estadísticas, hora límite, salida de ruta, GPX) | Hecha | `feat/grabar-recorrido` (incluye la 1) |
+| UI | Rediseño "Andes Industrial" (Stitch), pestañas, bitácora, resumen, splash, ícono | Hecha | `feat/rediseno-ui`, `feat/icono-y-contexto` |
 | 3 | Planificador de rutas: dibujar, ajustar a senderos OSM offline, importar GPX/KML | Pendiente | |
 | 4 | Clima por altitud guardado con la expedición (Open-Meteo), referencias (fotos, PDF, contactos), lista de equipo | Pendiente | |
 
-`feat/grabar-recorrido` contiene todo lo hecho. Aún no se ha hecho merge a `main` (falta abrir el pull request).
+Todo lo anterior a la Fase 3 ya está en `main` (merge por avance directo, sin pull request).
+
+## Diseño (UI)
+
+- Sistema **"Andes Industrial"** del proyecto de Google Stitch del usuario ("Live Geolocation Tracking"):
+  solo tema oscuro, pizarra `#0E1416`, Cian Cumbre `#46EAE5` (acción, rastreo, lo que está listo),
+  Oro Inca `#F0BF63` (lo importante, pendientes) y Terracota (alertas y grabación). Tokens en `Andes`
+  (`lib/src/ui/theme.dart`).
+- Reglas: sin bordes de 1 px ni sombras; los bloques se separan por tono (`TonalCard`, con barra lateral de
+  acento opcional). Cifras con `Figure`/`dataStyle` (Inter con números tabulares). Botón principal `GlowButton`.
+  Lo que flota sobre el mapa usa `Glass`, y el panel inferior del mapa es **opaco** (sobre el WebView cualquier
+  transparencia deja ver las etiquetas).
+- Tipografía **Inter** incluida en la app (`assets/fonts/inter`, licencia OFL), para que funcione sin conexión.
+- Pestañas (`HomeShell`): Expediciones · Bitácora · Resumen · Mapas. El resumen (`ActivitySummary`) solo usa
+  recorridos terminados y datos reales: sin metas ni rankings.
+- Splash: Android 12+ muestra **obligatoriamente** su pantalla con el ícono (no se puede quitar). La montaña de
+  ese splash (`drawable/splash_icon.xml`) tiene el mismo tamaño y posición que la del splash de Flutter
+  (`SplashScreen`), para que se vea como una sola animación. Dura al menos 2 s y lleva la firma "BY FRUTAL".
+- Ícono: `tool/make_icon.py` genera los PNG de Android e iOS; el adaptativo de Android 8+ está en XML
+  (`mipmap-anydpi-v26`, `drawable/ic_launcher_*`).
+- Las pantallas de Stitch de logística (flotas, tablero ejecutivo) no se adaptan: solo lo que existe en Cresta.
+  Candidatas futuras: "Route Details" (con la Fase 3), "Fleet Asset Management" como lista de equipo (Fase 4)
+  y "Athlete Registration" como perfil con datos de emergencia.
 
 ## Decisiones técnicas clave
 
@@ -56,6 +79,11 @@ Meshtastic.
 - **Grabación en segundo plano:** iOS con `UIBackgroundModes: location` (indicador azul); Android con servicio
   en primer plano de `geolocator` (notificación fija). Puntos guardados cada 10 s; si la app se cierra, el
   recorrido se recupera en pausa.
+- **Reloj de grabación:** muestra el tiempo activo desde que se toca "Grabar" (sin pausas), guardado en el
+  recorrido (`activeS`). Las lecturas con error mayor a ±50 m no se guardan: bajo techo el panel avisa
+  "Esperando una señal GPS precisa".
+- **Permiso de notificaciones (Android 13+):** se pide al empezar a grabar con un canal propio
+  (`cresta/permissions` en `MainActivity.kt`); si se niega, se graba igual y se avisa.
 
 ## Estructura
 
@@ -68,25 +96,39 @@ lib/src/tiles/tile_server.dart servidor local para el WebView
 lib/src/tracking/              grabador, estadísticas, avance en ruta, altitud del terreno, GPX
 lib/src/search/                búsqueda de lugares
 lib/src/map/                   MapBridge y capas
-lib/src/ui/                    pantallas
+lib/src/ui/                    pantallas; theme.dart tiene la paleta y los componentes del diseño
 assets/web/                    map.js, MapLibre, maplibre-contour, tipografías Noto Sans (pbf)
 assets/data/                   ruta de ejemplo (La Arista del Sol, OSM) y datos de demostración
 assets/packs/izta_popo.zip     mapas del ejemplo (~10 MB)
-tool/                          scripts de Python que generaron la ruta y el paquete
-test/                          46 pruebas
+assets/fonts/inter/            tipografía de la app
+assets/images/                 textura del splash
+tool/                          scripts de Python: ruta, paquete de mapas e ícono
+test/                          51 pruebas
 ```
+
+## Entorno de desarrollo (computadora con Windows)
+
+- El proyecto vive en WSL (`~/PRACTICE/PROJECTS/cresta`). Flutter en `~/flutter` y Android SDK en
+  `~/Android/Sdk` (sin Android Studio); `sdkmanager` está obsoleto, se usa `android sdk install ...`.
+- Git se usa **dentro de WSL**: desde Windows falla por "dubious ownership".
+- Teléfono de pruebas: Galaxy S23 Ultra (Android 16) por **depuración inalámbrica**. Vincular una vez con
+  `adb pair IP:PUERTO_VINCULAR CÓDIGO` y conectar cada vez con `adb connect IP:PUERTO` (el puerto cambia al
+  reactivar la depuración). Por USB, Windows no detectó el teléfono (probablemente cable solo de carga).
+- Recargar en caliente no cambia la app instalada: si se cierra y se vuelve a abrir, corre el último APK
+  instalado. Reinstalar (`flutter run` o `flutter build apk --debug` + `adb install -r`) antes de que el
+  usuario pruebe por su cuenta.
 
 ## Cómo se probó
 
 - iOS en el simulador de iPhone 16 Pro, con caminatas simuladas por la ruta usando
   `xcrun simctl location booted start --speed=15 --distance=10 <lat,lon> ...`.
 - Descargas reales probadas: Nevado de Toluca (71 mosaicos) y Aconcagua.
-- **Nunca probado:** Android, un teléfono físico, la grabación con pantalla bloqueada y sin señal real.
+- Android en el Samsung del usuario (oct 2026): mapa, descargas, permisos de ubicación y la UI completa.
+- **Pendiente de probar:** la grabación al aire libre con la pantalla bloqueada y sin señal real.
 
 ## Pendientes conocidos
 
-- Probar en Android (Samsung del usuario). Opción sin ocupar disco: compilar el APK con GitHub Actions y
-  descargarlo en el teléfono.
+- Prueba real de grabación al aire libre (pantalla bloqueada, notificación fija, bitácora y resumen con datos).
 - Descargas que sigan con la app cerrada (p. ej. `background_downloader`).
 - Altímetro barométrico como complemento (ahora: relieve o GPS).
 - Notificación local al pasar la hora límite (ahora el aviso es dentro de la app).
@@ -94,6 +136,9 @@ test/                          46 pruebas
 - Si la app se vuelve comercial: cambiar el satélite (licencia no comercial) y revisar términos de OpenFreeMap.
 
 ## Próximo paso sugerido
+
+Orden acordado con el usuario: prueba de grabación al aire libre → Fase 3 (planificador + pantalla "Route
+Details") → perfil con datos de emergencia y pantalla SOS sin señal → Fase 4.
 
 Fase 3, planificador de rutas: tocar puntos en el mapa; trazar a mano o ajustado a los senderos de la capa
 `transportation` de OpenMapTiles (ya descargada con la zona); perfil y tiempo estimado en vivo (reusar
