@@ -40,20 +40,29 @@ class _DownloadsScreenState extends State<DownloadsScreen> {
         final total = regions.fold(0, (s, r) => s + r.bytes);
         final muted = Theme.of(context).colorScheme.onSurfaceVariant;
         return Scaffold(
-          appBar: AppBar(title: const Text('Mapas descargados')),
+          appBar: AppBar(),
           body: WithBanners(
             banners: [NetworkBanner(maps: maps)],
             child: ListView(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 32),
               children: [
+                Text(
+                  'SIN CONEXIÓN',
+                  style: labelStyle(context, color: Andes.gold),
+                ),
+                const SizedBox(height: 6),
+                Text('Mapas descargados', style: signage(context, size: 30)),
+                const SizedBox(height: 20),
                 Row(
                   children: [
                     Expanded(
                       child: _Figure(
                         fmtBytes(total),
                         'en ${regions.length} ${regions.length == 1 ? 'zona' : 'zonas'}',
+                        accent: Andes.cyan,
                       ),
                     ),
+                    const SizedBox(width: 8),
                     Expanded(
                       child: _Figure(
                         _cacheBytes == null ? '…' : fmtBytes(_cacheBytes!),
@@ -62,7 +71,7 @@ class _DownloadsScreenState extends State<DownloadsScreen> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 12),
                 SwitchListTile(
                   contentPadding: EdgeInsets.zero,
                   value: maps.wifiOnly,
@@ -137,22 +146,17 @@ class _DownloadsScreenState extends State<DownloadsScreen> {
 }
 
 class _Figure extends StatelessWidget {
-  const _Figure(this.value, this.label);
+  const _Figure(this.value, this.label, {this.accent});
   final String value;
   final String label;
+  final Color? accent;
 
   @override
-  Widget build(BuildContext context) => Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      Text(value, style: signage(context, size: 26)),
-      Text(
-        label,
-        style: TextStyle(
-          fontSize: 12,
-          color: Theme.of(context).colorScheme.onSurfaceVariant,
-        ),
-      ),
-    ],
+  Widget build(BuildContext context) => TonalCard(
+    accent: accent,
+    child: SizedBox(
+      width: double.infinity,
+      child: Figure(value, label, size: 26),
+    ),
   );
 }

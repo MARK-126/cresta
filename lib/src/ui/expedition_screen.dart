@@ -32,7 +32,6 @@ class ExpeditionScreen extends StatelessWidget {
         final scheme = Theme.of(context).colorScheme;
         return Scaffold(
           appBar: AppBar(
-            title: Text(e.name, overflow: TextOverflow.ellipsis),
             actions: [
               PopupMenuButton<String>(
                 onSelected: (v) =>
@@ -53,13 +52,20 @@ class ExpeditionScreen extends StatelessWidget {
           body: WithBanners(
             banners: [NetworkBanner(maps: services.maps)],
             child: ListView(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 32),
               children: [
+                Text(
+                  e.sample ? 'EXPEDICIÓN DE EJEMPLO' : 'EXPEDICIÓN',
+                  style: labelStyle(context, color: Andes.gold),
+                ),
+                const SizedBox(height: 6),
+                Text(e.name, style: signage(context, size: 32)),
+                const SizedBox(height: 8),
                 Row(
                   children: [
                     Icon(
                       Icons.event_rounded,
-                      size: 18,
+                      size: 16,
                       color: scheme.onSurfaceVariant,
                     ),
                     const SizedBox(width: 8),
@@ -71,42 +77,45 @@ class ExpeditionScreen extends StatelessWidget {
                     ),
                   ],
                 ),
-                const SizedBox(height: 16),
-                FilledButton.icon(
+                const SizedBox(height: 20),
+                GlowButton(
                   onPressed: () => Navigator.push(
                     context,
                     MaterialPageRoute<void>(
                       builder: (_) => MapScreen(expeditionId: e.id),
                     ),
                   ),
-                  icon: const Icon(Icons.terrain_rounded),
-                  label: const Text('Abrir mapa'),
-                  style: FilledButton.styleFrom(
-                    minimumSize: const Size.fromHeight(48),
-                  ),
+                  icon: Icons.terrain_rounded,
+                  label: 'Abrir mapa',
                 ),
                 const SectionTitle('Antes de salir'),
-                _Check(
-                  done: status.readiness == Readiness.ready,
-                  title: 'Mapas sin conexión',
-                  detail: switch (status.readiness) {
-                    Readiness.ready =>
-                      'Todo descargado (${fmtBytes(status.bytes)}). Funciona sin señal.',
-                    Readiness.downloading =>
-                      'Descargando: ${(status.progress * 100).floor()} %. Mantén la app abierta.',
-                    Readiness.incomplete =>
-                      'Hay zonas a medias. Reanúdalas con conexión.',
-                    Readiness.noMaps =>
-                      'Agrega la zona de la expedición y descárgala con Wi-Fi.',
-                  },
+                TonalCard(
+                  padding: const EdgeInsets.fromLTRB(16, 18, 16, 6),
+                  child: Column(
+                    children: [
+                      _Check(
+                        done: status.readiness == Readiness.ready,
+                        title: 'Mapas sin conexión',
+                        detail: switch (status.readiness) {
+                          Readiness.ready =>
+                            'Todo descargado (${fmtBytes(status.bytes)}). Funciona sin señal.',
+                          Readiness.downloading =>
+                            'Descargando: ${(status.progress * 100).floor()} %. Mantén la app abierta.',
+                          Readiness.incomplete =>
+                            'Hay zonas a medias. Reanúdalas con conexión.',
+                          Readiness.noMaps => 'Agrega la zona de la expedición y descárgala con Wi-Fi.',
+                        },
+                      ),
+                      _Check(
+                        done: e.routeAsset != null,
+                        title: 'Ruta',
+                        detail: e.routeAsset != null ? 'Ruta cargada.' : 'El planificador de rutas llega en una próxima versión.',
+                        pending: e.routeAsset == null,
+                      ),
+                      _TurnaroundCheck(expedition: e),
+                    ],
+                  ),
                 ),
-                _Check(
-                  done: e.routeAsset != null,
-                  title: 'Ruta',
-                  detail: e.routeAsset != null ? 'Ruta cargada.' : 'El planificador de rutas llega en una próxima versión.',
-                  pending: e.routeAsset == null,
-                ),
-                _TurnaroundCheck(expedition: e),
                 SectionTitle(
                   'Mapas sin conexión',
                   trailing: status.bytes > 0
@@ -124,13 +133,12 @@ class ExpeditionScreen extends StatelessWidget {
                   ),
                 if (status.regions.isEmpty)
                   Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    padding: const EdgeInsets.only(bottom: 8),
                     child: Text(
                       'Todavía no hay zonas descargadas para esta expedición.',
                       style: TextStyle(color: scheme.onSurfaceVariant),
                     ),
                   ),
-                const SizedBox(height: 8),
                 OutlinedButton.icon(
                   onPressed: () => Navigator.push(
                     context,
@@ -231,7 +239,7 @@ class _Check extends StatelessWidget {
   Widget build(BuildContext context) {
     final muted = Theme.of(context).colorScheme.onSurfaceVariant;
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
+      padding: const EdgeInsets.only(bottom: 14),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -252,11 +260,16 @@ class _Check extends StatelessWidget {
                 Text(
                   title,
                   style: TextStyle(
-                    fontWeight: FontWeight.w600,
-                    color: pending ? muted : null,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 15,
+                    color: pending ? muted : (done ? null : warnColor),
                   ),
                 ),
-                Text(detail, style: TextStyle(fontSize: 12.5, color: muted)),
+                const SizedBox(height: 2),
+                Text(
+                  detail,
+                  style: TextStyle(fontSize: 12.5, color: muted, height: 1.3),
+                ),
               ],
             ),
           ),
@@ -309,7 +322,6 @@ class _NotesState extends State<_Notes> {
     textCapitalization: TextCapitalization.sentences,
     decoration: const InputDecoration(
       hintText: 'Permisos, punto de encuentro, teléfonos útiles…',
-      border: OutlineInputBorder(),
     ),
   );
 }
@@ -346,7 +358,7 @@ class _TurnaroundCheck extends StatelessWidget {
         }
       },
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 6),
+        padding: const EdgeInsets.only(bottom: 14),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -362,10 +374,15 @@ class _TurnaroundCheck extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
+                  Text(
                     'Hora límite de retorno',
-                    style: TextStyle(fontWeight: FontWeight.w600),
+                    style: TextStyle(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 15,
+                      color: m == null ? warnColor : null,
+                    ),
                   ),
+                  const SizedBox(height: 2),
                   Text(
                     text == null
                         ? 'Toca para fijarla. Si a esa hora no llegaste, regresas; la app te avisa mientras grabas.'
@@ -375,7 +392,16 @@ class _TurnaroundCheck extends StatelessWidget {
                 ],
               ),
             ),
-            if (text != null) Text(text, style: dataStyle(context, size: 16)),
+            if (text != null)
+              Text(
+                text,
+                style: dataStyle(
+                  context,
+                  size: 20,
+                  weight: FontWeight.w800,
+                  color: Andes.gold,
+                ),
+              ),
           ],
         ),
       ),

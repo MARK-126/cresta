@@ -124,12 +124,12 @@
           paint: { 'line-color': C.track, 'line-width': ['interpolate', ['linear'], ['zoom'], 11, 0.8, 15, 2.2], 'line-dasharray': [3, 1.5] } },
         { id: 'trails', type: 'line', source: 'topo', 'source-layer': 'transportation', filter: roadClass('path'), layout: { 'line-join': 'round' },
           paint: { 'line-color': C.path, 'line-width': ['interpolate', ['linear'], ['zoom'], 11, 1, 15, 2.4], 'line-dasharray': [2, 1.2] } },
-        { id: 'regions-line', type: 'line', source: 'regions', paint: { 'line-color': ['case', ['get', 'complete'], '#2e8b57', '#e07a10'], 'line-width': 2, 'line-dasharray': [4, 2] } },
-        { id: 'route-casing', type: 'line', source: 'route', layout: { 'line-join': 'round', 'line-cap': 'round' }, paint: { 'line-color': '#ffffff', 'line-width': 6.5, 'line-opacity': 0.85 } },
-        { id: 'route', type: 'line', source: 'route', layout: { 'line-join': 'round', 'line-cap': 'round' }, paint: { 'line-color': '#d0245a', 'line-width': 3.5 } },
+        { id: 'regions-line', type: 'line', source: 'regions', paint: { 'line-color': ['case', ['get', 'complete'], '#00a8a3', '#c99630'], 'line-width': 2, 'line-dasharray': [4, 2] } },
+        { id: 'route-casing', type: 'line', source: 'route', layout: { 'line-join': 'round', 'line-cap': 'round' }, paint: { 'line-color': '#0e1416', 'line-width': 7, 'line-opacity': 0.75 } },
+        { id: 'route', type: 'line', source: 'route', layout: { 'line-join': 'round', 'line-cap': 'round' }, paint: { 'line-color': '#f0bf63', 'line-width': 4 } },
         // Recorrido grabado (azul, encima de la ruta planeada)
-        { id: 'track-casing', type: 'line', source: 'track', layout: { 'line-join': 'round', 'line-cap': 'round' }, paint: { 'line-color': '#ffffff', 'line-width': 7, 'line-opacity': 0.9 } },
-        { id: 'track', type: 'line', source: 'track', layout: { 'line-join': 'round', 'line-cap': 'round' }, paint: { 'line-color': '#1f6fd6', 'line-width': 4 } },
+        { id: 'track-casing', type: 'line', source: 'track', layout: { 'line-join': 'round', 'line-cap': 'round' }, paint: { 'line-color': '#0e1416', 'line-width': 8, 'line-opacity': 0.8 } },
+        { id: 'track', type: 'line', source: 'track', layout: { 'line-join': 'round', 'line-cap': 'round' }, paint: { 'line-color': '#46eae5', 'line-width': 4.5 } },
         { id: 'evac', type: 'line', source: 'evac', layout: { visibility: 'none', 'line-cap': 'round' }, paint: { 'line-color': '#22c06a', 'line-width': 4, 'line-dasharray': [1.5, 1] } },
         // Nombres
         { id: 'water-names', type: 'symbol', source: 'topo', 'source-layer': 'water_name', layout: { 'text-field': ['get', 'name'], 'text-font': font('italic'), 'text-size': 11 },

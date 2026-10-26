@@ -1,4 +1,4 @@
-html, body { margin: 0; height: 100%; background: #1d2426; overflow: hidden; }
+html, body { margin: 0; height: 100%; background: #0e1416; overflow: hidden; }
 #map { position: fixed; inset: 0; }
 .maplibregl-ctrl-attrib { font-size: 10px; }
 /* Debajo de la barra superior de Flutter (marca + selector de modo) */
@@ -8,11 +8,11 @@ html, body { margin: 0; height: 100%; background: #1d2426; overflow: hidden; }
 .member { position: relative; width: 28px; height: 28px; border-radius: 50%; border: 2px solid #fff; display: grid; place-items: center; color: #fff; font: 600 11px -apple-system, Roboto, sans-serif; box-shadow: 0 2px 6px rgba(0,0,0,.4); }
 .member::after { content: ""; position: absolute; inset: -8px; border-radius: 50%; border: 2px solid var(--c); opacity: 0; animation: ping 2.4s infinite; }
 @keyframes ping { 0% { transform: scale(.6); opacity: .7 } 100% { transform: scale(1.4); opacity: 0 } }
-.me { width: 16px; height: 16px; border-radius: 50%; background: #1f7ae0; border: 3px solid #fff; box-shadow: 0 0 0 6px rgba(31,122,224,.25); }
+.me { width: 16px; height: 16px; border-radius: 50%; background: #46eae5; border: 3px solid #0e1416; box-shadow: 0 0 0 7px rgba(70,234,229,.28); }
 .shelter { width: 22px; height: 22px; border-radius: 5px; background: #1b7f4b; border: 2px solid #fff; color: #fff; display: grid; place-items: center; font: 700 12px -apple-system, Roboto, sans-serif; box-shadow: 0 1px 4px rgba(0,0,0,.4); }
 .report { width: 18px; height: 18px; transform: rotate(45deg); border: 2px solid #fff; box-shadow: 0 1px 4px rgba(0,0,0,.4); }
 .report.pulse { animation: blink .8s 6; }
 @keyframes blink { 50% { transform: rotate(45deg) scale(1.5) } }
-.cursor-mk { width: 14px; height: 14px; border-radius: 50%; background: #d0245a; border: 3px solid #fff; box-shadow: 0 0 0 1px rgba(0,0,0,.3); }
+.cursor-mk { width: 14px; height: 14px; border-radius: 50%; background: #f0bf63; border: 3px solid #0e1416; box-shadow: 0 0 0 1px rgba(0,0,0,.3); }
 
 @media (prefers-reduced-motion: reduce) { .member::after, .report.pulse { animation: none; } }

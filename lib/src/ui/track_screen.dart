@@ -13,6 +13,7 @@ import 'format.dart';
 import 'map_screen.dart';
 import 'offline_widgets.dart';
 import 'panels.dart';
+import 'recording_panel.dart';
 import 'theme.dart';
 
 /// Detalle de un recorrido grabado: cifras, perfil de elevación, ver en el mapa y exportar GPX.
@@ -49,7 +50,6 @@ class _TrackScreenState extends State<TrackScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(t.name, overflow: TextOverflow.ellipsis),
         actions: [
           PopupMenuButton<String>(
             onSelected: (v) => v == 'rename' ? _rename(t) : _delete(t),
@@ -61,25 +61,44 @@ class _TrackScreenState extends State<TrackScreen> {
         ],
       ),
       body: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
+        padding: const EdgeInsets.fromLTRB(20, 0, 20, 32),
         children: [
+          Text(
+            'RECORRIDO GRABADO',
+            style: labelStyle(context, color: Andes.gold),
+          ),
+          const SizedBox(height: 6),
+          Text(t.name, style: signage(context, size: 30)),
+          const SizedBox(height: 6),
           Text(
             '${fmtDate(t.startedAt)} · ${_hhmm(t.startedAt)}${t.endedAt == null ? '' : '–${_hhmm(t.endedAt!)}'}',
             style: TextStyle(color: muted),
           ),
-          const SizedBox(height: 16),
-          Wrap(
-            spacing: 20,
-            runSpacing: 14,
+          const SizedBox(height: 20),
+          Figure(
+            fmtKm(s.meters, decimals: 2),
+            'kilómetros',
+            size: 56,
+            labelColor: Theme.of(context).colorScheme.primary,
+          ),
+          const SizedBox(height: 18),
+          GridView.count(
+            crossAxisCount: 2,
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            mainAxisSpacing: 8,
+            crossAxisSpacing: 8,
+            childAspectRatio: 2.3,
             children: [
-              _Figure(fmtKm(s.meters, decimals: 2), 'km'),
+              _Figure(fmtDuration(s.elapsed), 'tiempo total'),
               _Figure(fmtDuration(s.moving), 'en movimiento'),
-              _Figure(fmtDuration(s.elapsed), 'total'),
-              _Figure('+${fmtInt(s.gain)}', 'subida m'),
-              _Figure('−${fmtInt(s.loss)}', 'bajada m'),
+              _Figure('+${fmtInt(s.gain)}', 'subida', unit: 'm', accent: true),
+              _Figure('−${fmtInt(s.loss)}', 'bajada', unit: 'm'),
               _Figure(
                 s.maxAltitude == null ? '–' : fmtInt(s.maxAltitude!),
-                'altitud máx. m',
+                'altitud máx.',
+                unit: 'm',
+                gold: true,
               ),
             ],
           ),
@@ -109,8 +128,8 @@ class _TrackScreenState extends State<TrackScreen> {
                 style: dataStyle(context, size: 12, color: muted),
               ),
           ],
-          const SizedBox(height: 20),
-          FilledButton.icon(
+          const SizedBox(height: 24),
+          GlowButton(
             onPressed: () => Navigator.push(
               context,
               MaterialPageRoute<void>(
@@ -118,11 +137,8 @@ class _TrackScreenState extends State<TrackScreen> {
                     MapScreen(expeditionId: t.expeditionId, showTrackId: t.id),
               ),
             ),
-            icon: const Icon(Icons.map_outlined),
-            label: const Text('Ver en el mapa'),
-            style: FilledButton.styleFrom(
-              minimumSize: const Size.fromHeight(48),
-            ),
+            icon: Icons.map_outlined,
+            label: 'Ver en el mapa',
           ),
           const SizedBox(height: 8),
           OutlinedButton.icon(
@@ -132,7 +148,7 @@ class _TrackScreenState extends State<TrackScreen> {
             icon: const Icon(Icons.ios_share_rounded),
             label: const Text('Exportar GPX'),
             style: OutlinedButton.styleFrom(
-              minimumSize: const Size.fromHeight(48),
+              minimumSize: const Size.fromHeight(52),
             ),
           ),
           Padding(
@@ -239,26 +255,28 @@ TrailRoute? profileOf(List<TrackPoint> points) {
 }
 
 class _Figure extends StatelessWidget {
-  const _Figure(this.value, this.label);
+  const _Figure(
+    this.value,
+    this.label, {
+    this.unit,
+    this.accent = false,
+    this.gold = false,
+  });
   final String value;
   final String label;
+  final String? unit;
+  final bool accent;
+  final bool gold;
 
   @override
-  Widget build(BuildContext context) => SizedBox(
-    width: 100,
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(value, style: dataStyle(context, size: 18)),
-        Text(
-          label.toUpperCase(),
-          style: TextStyle(
-            fontSize: 10,
-            letterSpacing: .6,
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
-          ),
-        ),
-      ],
+  Widget build(BuildContext context) => TonalCard(
+    accent: gold
+        ? Andes.gold
+        : (accent ? Theme.of(context).colorScheme.primary : null),
+    padding: const EdgeInsets.fromLTRB(14, 10, 10, 10),
+    child: Align(
+      alignment: Alignment.centerLeft,
+      child: Figure(value, label, unit: unit, size: 20),
     ),
   );
 }
@@ -285,37 +303,49 @@ class TrackList extends StatelessWidget {
         return Column(
           children: [
             for (final t in tracks)
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                leading: Icon(
-                  t.status == TrackStatus.finished
-                      ? Icons.route_rounded
-                      : Icons.fiber_manual_record_rounded,
-                  color: t.status == TrackStatus.finished
-                      ? const Color(0xFF1F6FD6)
-                      : const Color(0xFFD7263D),
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: TonalCard(
+                  accent: t.status == TrackStatus.finished
+                      ? Theme.of(context).colorScheme.primary
+                      : recordColor,
+                  padding: EdgeInsets.zero,
+                  child: ListTile(
+                    contentPadding: const EdgeInsets.fromLTRB(16, 4, 8, 4),
+                    leading: Icon(
+                      t.status == TrackStatus.finished
+                          ? Icons.route_rounded
+                          : Icons.fiber_manual_record_rounded,
+                      color: t.status == TrackStatus.finished
+                          ? Theme.of(context).colorScheme.primary
+                          : recordColor,
+                    ),
+                    title: Text(
+                      t.name,
+                      style: const TextStyle(fontWeight: FontWeight.w700),
+                    ),
+                    subtitle: Text(
+                      t.status == TrackStatus.finished
+                          ? '${fmtDate(t.startedAt)} · ${fmtKm(t.summary.meters)} km · +${fmtInt(t.summary.gain)} m · ${fmtDuration(t.summary.moving)}'
+                          : 'En curso · ${fmtKm(t.summary.meters)} km',
+                    ),
+                    trailing: const Icon(Icons.chevron_right_rounded),
+                    onTap: t.status == TrackStatus.finished
+                        ? () => Navigator.push(
+                            context,
+                            MaterialPageRoute<void>(
+                              builder: (_) => TrackScreen(trackId: t.id),
+                            ),
+                          )
+                        : () => Navigator.push(
+                            context,
+                            MaterialPageRoute<void>(
+                              builder: (_) =>
+                                  MapScreen(expeditionId: t.expeditionId),
+                            ),
+                          ),
+                  ),
                 ),
-                title: Text(t.name),
-                subtitle: Text(
-                  t.status == TrackStatus.finished
-                      ? '${fmtDate(t.startedAt)} · ${fmtKm(t.summary.meters)} km · +${fmtInt(t.summary.gain)} m · ${fmtDuration(t.summary.moving)}'
-                      : 'En curso · ${fmtKm(t.summary.meters)} km',
-                ),
-                trailing: const Icon(Icons.chevron_right_rounded),
-                onTap: t.status == TrackStatus.finished
-                    ? () => Navigator.push(
-                        context,
-                        MaterialPageRoute<void>(
-                          builder: (_) => TrackScreen(trackId: t.id),
-                        ),
-                      )
-                    : () => Navigator.push(
-                        context,
-                        MaterialPageRoute<void>(
-                          builder: (_) =>
-                              MapScreen(expeditionId: t.expeditionId),
-                        ),
-                      ),
               ),
           ],
         );

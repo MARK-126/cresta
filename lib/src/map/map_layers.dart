@@ -39,14 +39,14 @@ const mapLayers = <MapLayer>[
     'route',
     LayerGroup.mountain,
     'Ruta de la expedición',
-    Color(0xFFD0245A),
+    Color(0xFFF0BF63),
     needsRoute: true,
   ),
   MapLayer(
     'track',
     LayerGroup.mountain,
     'Recorrido grabado',
-    Color(0xFF1F6FD6),
+    Color(0xFF46EAE5),
   ),
   MapLayer(
     'trails',
@@ -108,7 +108,7 @@ const mapLayers = <MapLayer>[
     'regions',
     LayerGroup.general,
     'Zonas descargadas',
-    Color(0xFF2E8B57),
+    Color(0xFF00A8A3),
     note: 'contorno de los mapas sin conexión',
   ),
   MapLayer(

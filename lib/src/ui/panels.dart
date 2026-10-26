@@ -15,7 +15,7 @@ class SectionTitle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.only(top: 18, bottom: 8),
+    padding: const EdgeInsets.only(top: 28, bottom: 12),
     child: Row(
       children: [
         Expanded(child: Text(text.toUpperCase(), style: labelStyle(context))),
@@ -33,18 +33,14 @@ class Tag extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
         color: scheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(4),
+        borderRadius: BorderRadius.circular(6),
       ),
       child: Text(
         text.toUpperCase(),
-        style: TextStyle(
-          fontSize: 10,
-          letterSpacing: .6,
-          color: scheme.onSurfaceVariant,
-        ),
+        style: labelStyle(context).copyWith(fontSize: 9.5, letterSpacing: 1.0),
       ),
     );
   }
@@ -83,19 +79,22 @@ class RouteCard extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const SectionTitle('Ruta seleccionada', trailing: Tag('OSM')),
-        Text(route.name, style: signage(context, size: 22)),
-        const SizedBox(height: 2),
+        Text(route.name, style: signage(context, size: 26)),
+        const SizedBox(height: 4),
         Text(route.summary, style: TextStyle(color: muted, fontSize: 12.5)),
-        const SizedBox(height: 12),
-        Row(
-          children: [
-            _Stat(fmtKm(route.totalMeters), 'km'),
-            _Stat(fmtInt(route.gain), 'desnivel +'),
-            _Stat(fmtInt(route.maxElevation), 'máx. m'),
-            _Stat(fmtDuration(route.estimatedTime), 'estimado'),
-          ],
+        const SizedBox(height: 14),
+        TonalCard(
+          padding: const EdgeInsets.fromLTRB(14, 12, 8, 12),
+          child: Row(
+            children: [
+              _Stat(fmtKm(route.totalMeters), 'km'),
+              _Stat('+${fmtInt(route.gain)}', 'desnivel m'),
+              _Stat(fmtInt(route.maxElevation), 'máx. m'),
+              _Stat(fmtDuration(route.estimatedTime), 'estimado'),
+            ],
+          ),
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: 14),
         ElevationProfile(
           route: route,
           cursorMeters: cursorMeters,
@@ -139,22 +138,8 @@ class _Stat extends StatelessWidget {
   final String label;
 
   @override
-  Widget build(BuildContext context) => Expanded(
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(value, style: dataStyle(context, size: 15)),
-        Text(
-          label.toUpperCase(),
-          style: TextStyle(
-            fontSize: 10,
-            letterSpacing: .6,
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
-          ),
-        ),
-      ],
-    ),
-  );
+  Widget build(BuildContext context) =>
+      Expanded(child: Figure(value, label, size: 17));
 }
 
 class GroupList extends StatelessWidget {
@@ -241,18 +226,15 @@ class VolcanoAlertCard extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const SectionTitle('Semáforo volcánico', trailing: Tag('ejemplo')),
-        Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            border: Border.all(color: scheme.outlineVariant),
-            borderRadius: BorderRadius.circular(8),
-          ),
+        TonalCard(
+          accent: Andes.gold,
+          padding: const EdgeInsets.all(14),
           child: Row(
             children: [
               Container(
                 padding: const EdgeInsets.all(3),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF1D1F20),
+                  color: Andes.surfaceLowest,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Row(
@@ -482,10 +464,13 @@ class LayerList extends StatelessWidget {
           (g) => layers.any((l) => l.group == g.key),
         )) ...[
           Padding(
-            padding: const EdgeInsets.only(top: 6),
+            padding: const EdgeInsets.only(top: 8, bottom: 2),
             child: Text(
-              g.value,
-              style: dataStyle(context, size: 11, color: muted),
+              g.value.toUpperCase(),
+              style: labelStyle(
+                context,
+                color: muted,
+              ).copyWith(fontSize: 10, letterSpacing: 1.2),
             ),
           ),
           for (final l in layers.where((l) => l.group == g.key))
@@ -502,8 +487,7 @@ class LayerList extends StatelessWidget {
                 height: 10,
                 decoration: BoxDecoration(
                   color: l.color,
-                  borderRadius: BorderRadius.circular(2),
-                  border: Border.all(color: Colors.black26),
+                  borderRadius: BorderRadius.circular(3),
                 ),
               ),
             ),

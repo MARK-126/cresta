@@ -67,6 +67,22 @@ flutter:
   # the material Icons class.
   uses-material-design: true
 
+  # Inter incluida en la app (sin conexión). Licencia OFL en assets/fonts/inter/LICENSE.txt
+  fonts:
+    - family: Inter
+      fonts:
+        - asset: assets/fonts/inter/Inter-Regular.ttf
+        - asset: assets/fonts/inter/Inter-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/inter/Inter-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/inter/Inter-Bold.ttf
+          weight: 700
+        - asset: assets/fonts/inter/Inter-ExtraBold.ttf
+          weight: 800
+        - asset: assets/fonts/inter/Inter-Black.ttf
+          weight: 900
+
   assets:
     - assets/web/
     - assets/web/vendor/

@@ -31,8 +31,9 @@ class _CrestaAppState extends State<CrestaApp> {
         locale: const Locale('es', 'MX'),
         supportedLocales: const [Locale('es', 'MX'), Locale('es')],
         localizationsDelegates: GlobalMaterialLocalizations.delegates,
-        theme: crestaTheme(Brightness.light, civil: false),
-        darkTheme: crestaTheme(Brightness.dark, civil: false),
+        // Solo oscuro: pensado para leerse con poca luz y ahorrar batería en pantallas OLED
+        theme: crestaTheme(),
+        themeMode: ThemeMode.dark,
         // AppScope por encima del Navigator, para que todas las pantallas lo vean
         builder: (context, child) => snap.hasData
             ? AppScope(services: snap.data!, child: child!)
@@ -57,15 +58,30 @@ class _CrestaAppState extends State<CrestaApp> {
       );
     }
     if (!snap.hasData) {
-      return const Scaffold(
-        body: Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              CircularProgressIndicator(),
-              SizedBox(height: 16),
-              Text('Preparando mapas sin conexión…'),
-            ],
+      return Scaffold(
+        body: Builder(
+          builder: (context) => Padding(
+            padding: const EdgeInsets.all(32),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Spacer(),
+                const CrestaWordmark(size: 44),
+                const SizedBox(height: 10),
+                Text(
+                  'MAPAS DE MONTAÑA SIN CONEXIÓN',
+                  style: labelStyle(context),
+                ),
+                const Spacer(),
+                const LinearProgressIndicator(minHeight: 3),
+                const SizedBox(height: 12),
+                Text(
+                  'Preparando mapas sin conexión…',
+                  style: labelStyle(context).copyWith(letterSpacing: .4),
+                ),
+                const SizedBox(height: 24),
+              ],
+            ),
           ),
         ),
       );

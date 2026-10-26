@@ -237,16 +237,18 @@ class _AreaPickerScreenState extends State<AreaPickerScreen> {
                   children: [
                     Row(
                       children: [
-                        IconButton.filledTonal(
-                          onPressed: () => Navigator.pop(context),
-                          icon: const Icon(Icons.arrow_back_rounded),
+                        Glass(
+                          radius: 14,
+                          child: IconButton(
+                            onPressed: () => Navigator.pop(context),
+                            icon: const Icon(Icons.arrow_back_rounded),
+                          ),
                         ),
-                        const SizedBox(width: 6),
+                        const SizedBox(width: 8),
                         Expanded(
-                          child: Material(
-                            color: scheme.surface,
-                            elevation: 2,
-                            borderRadius: BorderRadius.circular(24),
+                          child: Glass(
+                            radius: 14,
+                            opacity: .9,
                             child: TextField(
                               controller: _query,
                               autocorrect: false,
@@ -267,6 +269,9 @@ class _AreaPickerScreenState extends State<AreaPickerScreen> {
                                       )
                                     : const Icon(Icons.search_rounded),
                                 border: InputBorder.none,
+                                enabledBorder: InputBorder.none,
+                                focusedBorder: InputBorder.none,
+                                filled: false,
                                 contentPadding: const EdgeInsets.symmetric(
                                   vertical: 14,
                                 ),
@@ -278,14 +283,11 @@ class _AreaPickerScreenState extends State<AreaPickerScreen> {
                     ),
                     if (_results != null || _searchError != null)
                       Container(
-                        margin: const EdgeInsets.only(left: 54, top: 6),
+                        margin: const EdgeInsets.only(left: 56, top: 6),
                         constraints: const BoxConstraints(maxHeight: 280),
                         decoration: BoxDecoration(
-                          color: scheme.surface,
-                          borderRadius: BorderRadius.circular(12),
-                          boxShadow: const [
-                            BoxShadow(blurRadius: 8, color: Colors.black26),
-                          ],
+                          color: Andes.surfaceHigh,
+                          borderRadius: BorderRadius.circular(14),
                         ),
                         child: _searchError != null
                             ? Padding(
@@ -323,24 +325,28 @@ class _AreaPickerScreenState extends State<AreaPickerScreen> {
             right: 0,
             bottom: 0,
             child: Material(
-              color: scheme.surface,
-              elevation: 8,
+              color: Andes.surfaceLow,
               borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(16),
+                top: Radius.circular(24),
               ),
               child: SizedBox(
                 height: _panelHeight + mq.padding.bottom + mq.viewInsets.bottom,
                 child: ListView(
                   padding: EdgeInsets.fromLTRB(
-                    16,
-                    14,
-                    16,
+                    20,
+                    18,
+                    20,
                     16 + mq.padding.bottom,
                   ),
                   children: [
                     Text(
+                      'NUEVA ZONA',
+                      style: labelStyle(context, color: Andes.gold),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
                       'Mueve el mapa para encuadrar la zona',
-                      style: signage(context, size: 18),
+                      style: signage(context, size: 20),
                     ),
                     const SizedBox(height: 2),
                     Text(
@@ -406,7 +412,6 @@ class _AreaPickerScreenState extends State<AreaPickerScreen> {
                         labelText: 'Nombre de la zona',
                         hintText: 'Ej. Nevado de Toluca',
                         isDense: true,
-                        border: OutlineInputBorder(),
                       ),
                     ),
                     const SizedBox(height: 10),

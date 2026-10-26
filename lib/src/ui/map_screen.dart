@@ -486,9 +486,8 @@ class _MapScreenState extends State<MapScreen> {
   @override
   Widget build(BuildContext context) {
     final civil = _mode == AppMode.civil;
-    final brightness = Theme.of(context).brightness;
     return Theme(
-      data: crestaTheme(brightness, civil: civil),
+      data: crestaTheme(civil: civil),
       child: Builder(
         builder: (context) {
           final scheme = Theme.of(context).colorScheme;
@@ -504,18 +503,15 @@ class _MapScreenState extends State<MapScreen> {
                     padding: const EdgeInsets.fromLTRB(8, 8, 12, 0),
                     child: Row(
                       children: [
-                        IconButton.filledTonal(
+                        _MapButton(
+                          icon: Icons.arrow_back_rounded,
+                          tooltip: 'Regresar',
                           onPressed: () => Navigator.pop(context),
-                          icon: const Icon(Icons.arrow_back_rounded),
                         ),
-                        const SizedBox(width: 6),
+                        const SizedBox(width: 8),
                         if (_civil != null)
                           Expanded(
-                            child: Container(
-                              decoration: BoxDecoration(
-                                color: scheme.surface.withValues(alpha: .94),
-                                borderRadius: BorderRadius.circular(22),
-                              ),
+                            child: Glass(
                               child: SegmentedButton<AppMode>(
                                 segments: const [
                                   ButtonSegment(
@@ -537,20 +533,36 @@ class _MapScreenState extends State<MapScreen> {
                           )
                         else
                           Flexible(
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 10,
-                              ),
-                              decoration: BoxDecoration(
-                                color: scheme.surface.withValues(alpha: .94),
-                                borderRadius: BorderRadius.circular(22),
-                              ),
-                              child: Text(
-                                _expedition.name,
-                                overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.w600,
+                            child: Glass(
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 14,
+                                  vertical: 8,
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      _recordingHere
+                                          ? 'GRABANDO'
+                                          : 'EXPEDICIÓN',
+                                      style: labelStyle(
+                                        context,
+                                        color: _recordingHere
+                                            ? recordColor
+                                            : Andes.gold,
+                                      ).copyWith(fontSize: 9.5),
+                                    ),
+                                    Text(
+                                      _expedition.name,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.w800,
+                                        fontSize: 15,
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
                             ),
@@ -601,25 +613,24 @@ class _MapScreenState extends State<MapScreen> {
                   snap: true,
                   snapSizes: const [_sheetMin, _sheetInitial, _sheetMax],
                   builder: (context, scroll) => Material(
-                    color: scheme.surface.withValues(alpha: .97),
-                    elevation: 8,
+                    color: Andes.surfaceLow.withValues(alpha: .98),
                     borderRadius: const BorderRadius.vertical(
-                      top: Radius.circular(16),
+                      top: Radius.circular(24),
                     ),
                     clipBehavior: Clip.antiAlias,
                     child: ListView(
                       controller: scroll,
                       padding: EdgeInsets.fromLTRB(
-                        16,
+                        20,
                         0,
-                        16,
+                        20,
                         24 + MediaQuery.paddingOf(context).bottom,
                       ),
                       children: [
                         Center(
                           child: Container(
-                            margin: const EdgeInsets.symmetric(vertical: 10),
-                            width: 36,
+                            margin: const EdgeInsets.symmetric(vertical: 12),
+                            width: 40,
                             height: 4,
                             decoration: BoxDecoration(
                               color: scheme.outlineVariant,
@@ -804,26 +815,28 @@ class _MapButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
     return Tooltip(
       message: tooltip,
-      child: Material(
-        color: scheme.surface.withValues(alpha: .94),
-        shape: const CircleBorder(),
-        elevation: 2,
-        child: InkWell(
-          customBorder: const CircleBorder(),
-          onTap: onPressed,
-          child: SizedBox(
-            width: 44,
-            height: 44,
-            child: Center(
-              child: icon != null
-                  ? Icon(icon, size: 22, color: color)
-                  : Text(
-                      label!,
-                      style: const TextStyle(fontWeight: FontWeight.w700),
-                    ),
+      child: Glass(
+        radius: 14,
+        child: Material(
+          type: MaterialType.transparency,
+          child: InkWell(
+            onTap: onPressed,
+            child: SizedBox(
+              width: 48,
+              height: 48,
+              child: Center(
+                child: icon != null
+                    ? Icon(icon, size: 22, color: color ?? Andes.onSurface)
+                    : Text(
+                        label!,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: .5,
+                        ),
+                      ),
+              ),
             ),
           ),
         ),

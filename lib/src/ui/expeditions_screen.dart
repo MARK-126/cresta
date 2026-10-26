@@ -19,28 +19,17 @@ class ExpeditionsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final services = AppScope.of(context);
     final store = services.expeditions;
-    final scheme = Theme.of(context).colorScheme;
-
     return ListenableBuilder(
       listenable: Listenable.merge([store, services.recorder]),
       builder: (context, _) {
         final items = store.all;
+        final ready = items
+            .where((e) => store.statusOf(e).readiness == Readiness.ready)
+            .length;
         return Scaffold(
           appBar: AppBar(
-            title: Text.rich(
-              TextSpan(
-                children: [
-                  TextSpan(text: 'CRESTA', style: signage(context, size: 24)),
-                  TextSpan(
-                    text: '.',
-                    style: signage(
-                      context,
-                      size: 24,
-                    ).copyWith(color: scheme.primary),
-                  ),
-                ],
-              ),
-            ),
+            titleSpacing: 24,
+            title: const CrestaWordmark(size: 24),
             actions: [
               IconButton(
                 tooltip: 'Mapas descargados',
@@ -52,28 +41,50 @@ class ExpeditionsScreen extends StatelessWidget {
                   ),
                 ),
               ),
+              const SizedBox(width: 12),
             ],
-          ),
-          floatingActionButton: FloatingActionButton.extended(
-            onPressed: () => _create(context),
-            icon: const Icon(Icons.add_rounded),
-            label: const Text('Nueva expedición'),
           ),
           body: WithBanners(
-            banners: [
-              NetworkBanner(maps: services.maps),
-              if (services.recorder.isActive)
-                _RecordingBanner(services: services),
-            ],
-            child: items.isEmpty
-                ? const _Empty()
-                : ListView.separated(
-                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 96),
-                    itemCount: items.length,
-                    separatorBuilder: (_, _) => const SizedBox(height: 10),
-                    itemBuilder: (context, i) =>
-                        _ExpeditionCard(expedition: items[i]),
+            banners: [NetworkBanner(maps: services.maps)],
+            child: ListView(
+              padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
+              children: [
+                Text('BITÁCORA DE MONTAÑA', style: labelStyle(context)),
+                const SizedBox(height: 6),
+                Text(
+                  items.isEmpty ? 'Tu primera cumbre' : 'Expediciones',
+                  style: signage(context, size: 34),
+                ),
+                if (items.isNotEmpty) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    '${items.length} en total · $ready ${ready == 1 ? 'lista' : 'listas'} sin conexión',
+                    style: dataStyle(
+                      context,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      weight: FontWeight.w500,
+                    ),
                   ),
+                ],
+                const SizedBox(height: 20),
+                if (services.recorder.isActive) ...[
+                  _RecordingBanner(services: services),
+                  const SizedBox(height: 12),
+                ],
+                _NewExpeditionCard(onTap: () => _create(context)),
+                const SizedBox(height: 28),
+                if (items.isEmpty)
+                  const _Empty()
+                else ...[
+                  Text('TUS EXPEDICIONES', style: labelStyle(context)),
+                  const SizedBox(height: 12),
+                  for (final e in items) ...[
+                    _ExpeditionCard(expedition: e),
+                    const SizedBox(height: 10),
+                  ],
+                ],
+              ],
+            ),
           ),
         );
       },
@@ -110,64 +121,155 @@ class _ExpeditionCard extends StatelessWidget {
     final status = services.expeditions.statusOf(expedition);
     final scheme = Theme.of(context).colorScheme;
     final e = expedition;
-    return Card(
-      margin: EdgeInsets.zero,
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: () => Navigator.push(
-          context,
-          MaterialPageRoute<void>(
-            builder: (_) => ExpeditionScreen(expeditionId: e.id),
-          ),
+    final tracks = services.tracks.forExpedition(e.id).length;
+    return TonalCard(
+      accent: switch (status.readiness) {
+        Readiness.ready => okColor,
+        Readiness.downloading || Readiness.incomplete => warnColor,
+        Readiness.noMaps => null,
+      },
+      padding: const EdgeInsets.fromLTRB(18, 16, 16, 16),
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute<void>(
+          builder: (_) => ExpeditionScreen(expeditionId: e.id),
         ),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(e.name, style: signage(context, size: 20)),
-                  ),
-                  if (e.sample)
-                    const Padding(
-                      padding: EdgeInsets.only(left: 8),
-                      child: _Tag('Ejemplo'),
-                    ),
-                ],
-              ),
-              const SizedBox(height: 4),
-              Text(
-                e.date == null
-                    ? 'Sin fecha'
-                    : '${fmtDate(e.date!)} · ${fmtRelativeDay(e.date!)}',
-                style: TextStyle(color: scheme.onSurfaceVariant),
-              ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  ReadinessChip(status),
-                  const Spacer(),
-                  if (status.bytes > 0)
+              Expanded(child: Text(e.name, style: signage(context, size: 21))),
+              if (e.sample)
+                const Padding(
+                  padding: EdgeInsets.only(left: 8, top: 2),
+                  child: _Tag('Ejemplo'),
+                ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            e.date == null
+                ? 'Sin fecha'
+                : '${fmtDate(e.date!)} · ${fmtRelativeDay(e.date!)}',
+            style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 13),
+          ),
+          const SizedBox(height: 14),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              ReadinessChip(status),
+              if (status.bytes > 0) _Telemetry(fmtBytes(status.bytes)),
+              if (tracks > 0)
+                _Telemetry(
+                  '$tracks ${tracks == 1 ? 'recorrido' : 'recorridos'}',
+                ),
+            ],
+          ),
+          if (status.readiness == Readiness.downloading) ...[
+            const SizedBox(height: 12),
+            LinearProgressIndicator(
+              value: status.progress,
+              minHeight: 4,
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+/// Chip de telemetría: dato pequeño y denso sobre el tono más alto.
+class _Telemetry extends StatelessWidget {
+  const _Telemetry(this.text);
+  final String text;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+    decoration: BoxDecoration(
+      color: Andes.surfaceHighest,
+      borderRadius: BorderRadius.circular(20),
+    ),
+    child: Text(
+      text.toUpperCase(),
+      style: labelStyle(context).copyWith(fontSize: 10.5, letterSpacing: 1.0),
+    ),
+  );
+}
+
+/// La acción principal del inicio, como la tarjeta "Start new route" del diseño.
+class _NewExpeditionCard extends StatelessWidget {
+  const _NewExpeditionCard({required this.onTap});
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final muted = Theme.of(context).colorScheme.onSurfaceVariant;
+    return Material(
+      borderRadius: BorderRadius.circular(16),
+      clipBehavior: Clip.antiAlias,
+      color: Andes.surfaceContainer,
+      child: InkWell(
+        onTap: onTap,
+        child: Ink(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Color(0xFF203A3C), Andes.surfaceContainer],
+            ),
+          ),
+          padding: const EdgeInsets.fromLTRB(20, 20, 18, 22),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
                     Text(
-                      fmtBytes(status.bytes),
-                      style: dataStyle(
+                      'PLANEA TU SALIDA',
+                      style: labelStyle(context, color: Andes.gold),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'NUEVA\nEXPEDICIÓN',
+                      style: signage(
                         context,
-                        size: 12,
-                        color: scheme.onSurfaceVariant,
+                        size: 28,
+                      ).copyWith(fontWeight: FontWeight.w900, height: 1.0),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Elige la zona y descarga sus mapas con Wi-Fi para usarlos sin señal.',
+                      style: TextStyle(
+                        color: muted,
+                        fontSize: 13,
+                        height: 1.35,
                       ),
                     ),
-                ],
-              ),
-              if (status.readiness == Readiness.downloading) ...[
-                const SizedBox(height: 10),
-                LinearProgressIndicator(
-                  value: status.progress,
-                  minHeight: 4,
-                  borderRadius: BorderRadius.circular(2),
+                  ],
                 ),
-              ],
+              ),
+              const SizedBox(width: 16),
+              Container(
+                width: 56,
+                height: 56,
+                decoration: BoxDecoration(
+                  color: Andes.gold,
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: const Icon(
+                  Icons.add_location_alt_rounded,
+                  color: Andes.onGold,
+                  size: 28,
+                ),
+              ),
             ],
           ),
         ),
@@ -207,26 +309,31 @@ class _Empty extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final muted = Theme.of(context).colorScheme.onSurfaceVariant;
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.terrain_rounded, size: 56, color: muted),
-            const SizedBox(height: 12),
-            Text(
-              'Aún no tienes expediciones',
-              style: signage(context, size: 22),
+    return TonalCard(
+      color: Andes.surfaceLow,
+      padding: const EdgeInsets.all(20),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(Icons.terrain_rounded, size: 32, color: muted),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Aún no tienes expediciones',
+                  style: signage(context, size: 18),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  'Crea una, elige la zona en el mapa y descarga sus mapas con Wi-Fi para usarlos sin señal en la montaña.',
+                  style: TextStyle(color: muted, fontSize: 13, height: 1.35),
+                ),
+              ],
             ),
-            const SizedBox(height: 8),
-            Text(
-              'Crea una, elige la zona en el mapa y descarga sus mapas con Wi-Fi para usarlos sin señal en la montaña.',
-              textAlign: TextAlign.center,
-              style: TextStyle(color: muted),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -284,7 +391,6 @@ class _ExpeditionFormState extends State<ExpeditionForm> {
             decoration: const InputDecoration(
               labelText: 'Nombre',
               hintText: 'Nevado de Toluca, 2 días',
-              border: OutlineInputBorder(),
             ),
             onSubmitted: (_) => _submit(),
           ),
@@ -329,42 +435,49 @@ class _RecordingBanner extends StatelessWidget {
     final r = services.recorder;
     final e = services.expeditions.byId(r.track!.expeditionId);
     final paused = r.state == RecorderState.paused;
-    return Material(
-      color: recordColor.withValues(alpha: .12),
-      child: InkWell(
-        onTap: e == null
-            ? null
-            : () => Navigator.push(
-                context,
-                MaterialPageRoute<void>(
-                  builder: (_) => MapScreen(expeditionId: e.id),
+    return TonalCard(
+      accent: recordColor,
+      color: recordColor.withValues(alpha: .1),
+      padding: const EdgeInsets.fromLTRB(16, 14, 10, 14),
+      onTap: e == null
+          ? null
+          : () => Navigator.push(
+              context,
+              MaterialPageRoute<void>(
+                builder: (_) => MapScreen(expeditionId: e.id),
+              ),
+            ),
+      child: Row(
+        children: [
+          Icon(
+            paused
+                ? Icons.pause_circle_outline_rounded
+                : Icons.fiber_manual_record_rounded,
+            color: recordColor,
+            size: 20,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  paused ? 'RECORRIDO EN PAUSA' : 'GRABANDO',
+                  style: labelStyle(context, color: recordColor),
                 ),
-              ),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-          child: Row(
-            children: [
-              Icon(
-                paused
-                    ? Icons.pause_circle_outline_rounded
-                    : Icons.fiber_manual_record_rounded,
-                color: recordColor,
-                size: 18,
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  '${paused ? 'Recorrido en pausa' : 'Grabando'} en ${e?.name ?? 'una expedición'} · ${fmtKm(r.stats.meters)} km',
+                const SizedBox(height: 2),
+                Text(
+                  '${e?.name ?? 'Una expedición'} · ${fmtKm(r.stats.meters)} km',
                   style: const TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
-              ),
-              const Icon(Icons.chevron_right_rounded),
-            ],
+              ],
+            ),
           ),
-        ),
+          const Icon(Icons.chevron_right_rounded),
+        ],
       ),
     );
   }

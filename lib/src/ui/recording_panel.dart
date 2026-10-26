@@ -7,7 +7,8 @@ import 'format.dart';
 import 'offline_widgets.dart';
 import 'theme.dart';
 
-const recordColor = Color(0xFFD7263D);
+/// Grabar es una acción "caliente": terracota, el tono de las alertas.
+const recordColor = Andes.terracottaContainer;
 
 /// Datos en vivo mientras se graba: distancia, tiempo, altitud, desnivel, avance y hora límite.
 class RecordingPanel extends StatelessWidget {
@@ -39,31 +40,28 @@ class RecordingPanel extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.only(top: 6, bottom: 10),
+          padding: const EdgeInsets.only(top: 4, bottom: 14),
           child: Row(
             children: [
               _Dot(active: recording),
               const SizedBox(width: 8),
               Text(
                 recording ? 'GRABANDO' : 'EN PAUSA',
-                style: labelStyle(context)
-                    .copyWith(color: recording ? recordColor : null),
-              ),
-              const Spacer(),
-              Text(
-                gpsWeak
-                    ? (fix == null
-                          ? 'Buscando GPS…'
-                          : 'GPS débil (±${fix.accuracy.round()} m)')
-                    : fix == null
-                    ? ''
-                    : 'GPS ±${fix.accuracy.round()} m',
-                style: dataStyle(
+                style: labelStyle(
                   context,
-                  size: 11.5,
-                  color: gpsWeak ? warnColor : scheme.onSurfaceVariant,
+                  color: recording ? recordColor : null,
                 ),
               ),
+              const Spacer(),
+              if (fix != null || gpsWeak)
+                _GpsChip(
+                  text: gpsWeak
+                      ? (fix == null
+                            ? 'Buscando GPS'
+                            : 'GPS débil ±${fix.accuracy.round()} m')
+                      : 'GPS ±${fix!.accuracy.round()} m',
+                  color: gpsWeak ? warnColor : okColor,
+                ),
             ],
           ),
         ),
@@ -93,33 +91,76 @@ class RecordingPanel extends StatelessWidget {
             text:
                 'Estás a ${fmtInt(r.progress!.offRoute)} m de la ruta planeada.',
           ),
+        // Las dos cifras protagonistas, grandes para leerlas de un vistazo
         Row(
+          crossAxisAlignment: CrossAxisAlignment.end,
           children: [
-            _Big(fmtKm(s.meters, decimals: 2), 'km'),
-            _LiveClock(recorder: r),
-            _Big(s.altitude == null ? '–' : fmtInt(s.altitude!), 'altitud m'),
+            Expanded(
+              child: Figure(
+                fmtKm(s.meters, decimals: 2),
+                'kilómetros',
+                size: 52,
+                labelColor: scheme.primary,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(child: _LiveClock(recorder: r)),
           ],
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: 18),
         Row(
           children: [
-            _Big('+${fmtInt(s.gain)}', 'subida m', small: true),
-            _Big('−${fmtInt(s.loss)}', 'bajada m', small: true),
-            _Big(fmtDuration(s.moving), 'en movimiento', small: true),
-            _Big(
-              vs == null ? '–' : '${vs >= 0 ? '+' : ''}${fmtInt(vs)}',
-              'm/h vertical',
-              small: true,
+            Expanded(
+              child: _Tile(
+                accent: Andes.gold,
+                child: Figure(
+                  s.altitude == null ? '–' : fmtInt(s.altitude!),
+                  'altitud',
+                  unit: 'm',
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: _Tile(
+                accent: scheme.primary,
+                child: Figure(
+                  '+${fmtInt(s.gain)}',
+                  'subida · −${fmtInt(s.loss)} bajada',
+                  unit: 'm',
+                ),
+              ),
             ),
           ],
         ),
-        if (r.progress != null) ...[
-          const SizedBox(height: 10),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            Expanded(
+              child: _Tile(
+                child: Figure(fmtDuration(s.moving), 'en movimiento', size: 18),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: _Tile(
+                child: Figure(
+                  vs == null ? '–' : '${vs >= 0 ? '+' : ''}${fmtInt(vs)}',
+                  'vertical',
+                  unit: 'm/h',
+                  size: 18,
+                ),
+              ),
+            ),
+          ],
+        ),
+        if (r.progress != null || r.turnaroundState == TurnaroundState.ok)
+          const SizedBox(height: 12),
+        if (r.progress != null)
           Text(
             'Faltan ${fmtKm(r.progress!.remainingMeters)} km y ${fmtInt(r.progress!.remainingGain)} m de subida hasta el final de la ruta.',
             style: TextStyle(fontSize: 12.5, color: scheme.onSurfaceVariant),
           ),
-        ],
         if (r.turnaroundState == TurnaroundState.ok)
           Padding(
             padding: const EdgeInsets.only(top: 4),
@@ -128,32 +169,36 @@ class RecordingPanel extends StatelessWidget {
               style: TextStyle(fontSize: 12.5, color: scheme.onSurfaceVariant),
             ),
           ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 16),
         Row(
           children: [
             Expanded(
+              flex: 4,
               child: recording
-                  ? OutlinedButton.icon(
+                  ? _ActionButton(
+                      label: 'Pausar',
+                      icon: Icons.pause_rounded,
+                      color: Andes.surfaceHighest,
+                      foreground: Andes.onSurface,
                       onPressed: onPause,
-                      icon: const Icon(Icons.pause_rounded),
-                      label: const Text('Pausar'),
                     )
-                  : FilledButton.icon(
+                  : _ActionButton(
+                      label: 'Reanudar',
+                      icon: Icons.fiber_manual_record_rounded,
+                      color: recordColor,
+                      foreground: Andes.onTerracotta,
                       onPressed: onResume,
-                      style: FilledButton.styleFrom(
-                        backgroundColor: recordColor,
-                        foregroundColor: Colors.white,
-                      ),
-                      icon: const Icon(Icons.fiber_manual_record_rounded),
-                      label: const Text('Reanudar'),
                     ),
             ),
             const SizedBox(width: 8),
             Expanded(
-              child: FilledButton.tonalIcon(
+              flex: 5,
+              child: _ActionButton(
+                label: 'Terminar',
+                icon: Icons.stop_rounded,
+                gradient: Andes.cyanGlow,
+                foreground: Andes.onCyan,
                 onPressed: onStop,
-                icon: const Icon(Icons.stop_rounded),
-                label: const Text('Terminar'),
               ),
             ),
           ],
@@ -198,7 +243,7 @@ class _DotState extends State<_Dot> with SingleTickerProviderStateMixin {
       height: 10,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        color: widget.active ? recordColor : Colors.grey,
+        color: widget.active ? recordColor : Andes.outline,
       ),
     );
     if (!widget.active || MediaQuery.disableAnimationsOf(context)) return dot;
@@ -237,31 +282,113 @@ class _LiveClockState extends State<_LiveClock> {
   }
 
   @override
-  Widget build(BuildContext context) =>
-      _Big(fmtClock(widget.recorder.activeTime), 'tiempo');
+  Widget build(BuildContext context) => Figure(
+    fmtClock(widget.recorder.activeTime),
+    'tiempo total',
+    size: 34,
+    color: Andes.onSurfaceVariant,
+  );
 }
 
-class _Big extends StatelessWidget {
-  const _Big(this.value, this.label, {this.small = false});
-  final String value;
-  final String label;
-  final bool small;
+/// Módulo de telemetría: tono más alto que el panel, con barra de acento opcional.
+class _Tile extends StatelessWidget {
+  const _Tile({required this.child, this.accent});
+  final Widget child;
+  final Color? accent;
 
   @override
-  Widget build(BuildContext context) => Expanded(
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+  Widget build(BuildContext context) => TonalCard(
+    color: Andes.surfaceHigh,
+    accent: accent,
+    padding: const EdgeInsets.fromLTRB(14, 12, 12, 12),
+    child: SizedBox(width: double.infinity, child: child),
+  );
+}
+
+class _GpsChip extends StatelessWidget {
+  const _GpsChip({required this.text, required this.color});
+  final String text;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+    decoration: BoxDecoration(
+      color: color.withValues(alpha: .12),
+      borderRadius: BorderRadius.circular(20),
+    ),
+    child: Row(
+      mainAxisSize: MainAxisSize.min,
       children: [
-        Text(value, style: dataStyle(context, size: small ? 16 : 24)),
+        Icon(Icons.satellite_alt_rounded, size: 13, color: color),
+        const SizedBox(width: 6),
         Text(
-          label.toUpperCase(),
-          style: TextStyle(
-            fontSize: 10,
-            letterSpacing: .6,
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
-          ),
+          text.toUpperCase(),
+          style: labelStyle(
+            context,
+            color: color,
+          ).copyWith(fontSize: 10, letterSpacing: .8),
         ),
       ],
+    ),
+  );
+}
+
+/// Botón grande de la grabación: se usa con guantes, así que es alto y ancho.
+class _ActionButton extends StatelessWidget {
+  const _ActionButton({
+    required this.label,
+    required this.icon,
+    required this.foreground,
+    required this.onPressed,
+    this.color,
+    this.gradient,
+  });
+
+  final String label;
+  final IconData icon;
+  final Color foreground;
+  final Color? color;
+  final Gradient? gradient;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) => Material(
+    color: color ?? Colors.transparent,
+    borderRadius: BorderRadius.circular(16),
+    clipBehavior: Clip.antiAlias,
+    child: Ink(
+      decoration: BoxDecoration(gradient: gradient),
+      child: InkWell(
+        onTap: onPressed,
+        child: SizedBox(
+          height: 60,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                width: 34,
+                height: 34,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: foreground.withValues(alpha: .14),
+                ),
+                child: Icon(icon, color: foreground, size: 20),
+              ),
+              const SizedBox(width: 10),
+              Text(
+                label.toUpperCase(),
+                style: TextStyle(
+                  color: foreground,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 1.6,
+                  fontSize: 14,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     ),
   );
 }
@@ -273,28 +400,28 @@ class _Banner extends StatelessWidget {
   final String text;
 
   @override
-  Widget build(BuildContext context) => Container(
-    margin: const EdgeInsets.only(bottom: 10),
-    padding: const EdgeInsets.all(10),
-    decoration: BoxDecoration(
-      color: color.withValues(alpha: .14),
-      borderRadius: BorderRadius.circular(8),
-    ),
-    child: Row(
-      children: [
-        Icon(icon, color: color, size: 20),
-        const SizedBox(width: 8),
-        Expanded(
-          child: Text(
-            text,
-            style: TextStyle(
-              fontWeight: FontWeight.w600,
-              color: color,
-              fontSize: 13,
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.only(bottom: 10),
+    child: TonalCard(
+      color: color.withValues(alpha: .1),
+      accent: color,
+      padding: const EdgeInsets.all(12),
+      child: Row(
+        children: [
+          Icon(icon, color: color, size: 20),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              text,
+              style: TextStyle(
+                fontWeight: FontWeight.w600,
+                color: color,
+                fontSize: 13,
+              ),
             ),
           ),
-        ),
-      ],
+        ],
+      ),
     ),
   );
 }
@@ -311,7 +438,9 @@ Future<RecordingMode?> askRecordingMode(BuildContext context) =>
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text('Grabar recorrido', style: signage(context, size: 22)),
+              Text('NUEVO RECORRIDO', style: labelStyle(context)),
+              const SizedBox(height: 4),
+              Text('Grabar recorrido', style: signage(context, size: 26)),
               const SizedBox(height: 6),
               Text(
                 'Funciona sin señal: el GPS usa satélites. Puedes bloquear la pantalla; la grabación sigue.',
@@ -319,23 +448,53 @@ Future<RecordingMode?> askRecordingMode(BuildContext context) =>
                   color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 16),
               for (final m in RecordingMode.values)
-                Card(
-                  margin: const EdgeInsets.only(bottom: 8),
-                  child: ListTile(
-                    leading: Icon(
-                      m == RecordingMode.normal
-                          ? Icons.gps_fixed_rounded
-                          : Icons.battery_saver_rounded,
-                    ),
-                    title: Text(m.label),
-                    subtitle: Text(m.description),
-                    trailing: const Icon(
-                      Icons.fiber_manual_record_rounded,
-                      color: recordColor,
-                    ),
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: TonalCard(
+                    color: Andes.surfaceHigh,
+                    accent: m == RecordingMode.normal ? Andes.cyan : Andes.gold,
+                    padding: const EdgeInsets.fromLTRB(16, 14, 14, 14),
                     onTap: () => Navigator.pop(context, m),
+                    child: Row(
+                      children: [
+                        Icon(
+                          m == RecordingMode.normal
+                              ? Icons.gps_fixed_rounded
+                              : Icons.battery_saver_rounded,
+                          color: m == RecordingMode.normal
+                              ? Andes.cyan
+                              : Andes.gold,
+                        ),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                m.label,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 15,
+                                ),
+                              ),
+                              Text(
+                                m.description,
+                                style: const TextStyle(
+                                  fontSize: 12.5,
+                                  color: Andes.onSurfaceVariant,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const Icon(
+                          Icons.fiber_manual_record_rounded,
+                          color: recordColor,
+                        ),
+                      ],
+                    ),
                   ),
                 ),
             ],
