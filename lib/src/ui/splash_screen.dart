@@ -123,10 +123,11 @@ class _Backdrop extends StatelessWidget {
       DecoratedBox(
         decoration: BoxDecoration(
           color: Color(0xFF07090A),
+          // Una sola imagen que cubre todo: en mosaico se notaban las costuras
           image: DecorationImage(
             image: AssetImage('assets/images/splash_texture.png'),
-            repeat: ImageRepeat.repeat,
-            scale: 1.3,
+            fit: BoxFit.cover,
+            opacity: .6,
           ),
         ),
       ),
@@ -248,9 +249,9 @@ class _Brand extends StatelessWidget {
         textAlign: TextAlign.center,
         style: TextStyle(
           fontFamily: 'Inter',
-          fontSize: 46,
+          fontSize: 48,
           fontWeight: FontWeight.w900,
-          letterSpacing: 7,
+          letterSpacing: 5,
           height: 1,
           color: Andes.onSurface,
         ),
