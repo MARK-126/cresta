@@ -82,7 +82,30 @@ class TrackRecorder extends ChangeNotifier {
   Timer? _flush;
   int _segment = 0;
 
+  /// Desde cuándo corre el tramo actual que aún no se suma a `track.active`.
+  DateTime? _since;
+
   bool get isActive => state != RecorderState.idle;
+
+  /// Tiempo total grabando sin contar pausas (el reloj principal del panel).
+  Duration get activeTime {
+    final t = track;
+    if (t == null) return Duration.zero;
+    final since = _since;
+    final running = state == RecorderState.recording && since != null
+        ? _clock().difference(since)
+        : Duration.zero;
+    return t.active + running;
+  }
+
+  /// Suma al recorrido el tiempo corrido desde la última vez, para no perderlo si la app se cierra.
+  void _foldActive() {
+    final t = track, since = _since;
+    if (t == null || since == null) return;
+    final now = _clock();
+    t.active += now.difference(since);
+    _since = now;
+  }
 
   TurnaroundState get turnaroundState {
     final t = turnaround;
@@ -108,6 +131,8 @@ class TrackRecorder extends ChangeNotifier {
       ..clear()
       ..addAll(await store.readPoints(t.id));
     stats = TrackStats.of(points);
+    // Recorridos de versiones anteriores no guardaban el tiempo activo
+    if (t.active == Duration.zero) t.active = stats.elapsed;
     _segment = points.isEmpty ? 0 : points.last.segment + 1;
     state = RecorderState.paused;
     await store.save();
@@ -147,6 +172,8 @@ class TrackRecorder extends ChangeNotifier {
     if (state != RecorderState.recording) return;
     _sub?.cancel();
     _sub = null;
+    _foldActive();
+    _since = null;
     state = RecorderState.paused;
     track!.status = TrackStatus.paused;
     _persist();
@@ -175,6 +202,8 @@ class TrackRecorder extends ChangeNotifier {
     final t = track!;
     await _sub?.cancel();
     _sub = null;
+    _foldActive();
+    _since = null;
     t
       ..status = TrackStatus.finished
       ..endedAt = points.isEmpty ? _clock() : points.last.time
@@ -197,6 +226,7 @@ class TrackRecorder extends ChangeNotifier {
   void _reset() {
     _flush?.cancel();
     _flush = null;
+    _since = null;
     state = RecorderState.idle;
     track = null;
     route = null;
@@ -209,6 +239,7 @@ class TrackRecorder extends ChangeNotifier {
 
   void _listen() {
     state = RecorderState.recording;
+    _since = _clock();
     _sub = positions(mode)
         .listen(_onFix, onError: (Object e) => debugPrint('GPS: $e'));
     // Cada 10 s guarda lo pendiente y refresca la pantalla
@@ -273,6 +304,7 @@ class TrackRecorder extends ChangeNotifier {
   Future<void> _persist() async {
     final t = track;
     if (t == null) return;
+    if (state == RecorderState.recording) _foldActive();
     final batch = List.of(_pending);
     _pending.clear();
     await store.appendPoints(t.id, batch);

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../tracking/track_recorder.dart';
@@ -65,6 +67,14 @@ class RecordingPanel extends StatelessWidget {
             ],
           ),
         ),
+        // Bajo techo el GPS no logra la precisión mínima y no se guardan puntos:
+        // sin este aviso parece que la grabación no arrancó
+        if (gpsWeak && r.points.isEmpty)
+          const _Banner(
+            color: warnColor,
+            icon: Icons.satellite_alt_outlined,
+            text: 'Esperando una señal GPS precisa. Sal al aire libre para empezar a registrar puntos.',
+          ),
         if (r.turnaroundState
             case TurnaroundState.soon || TurnaroundState.passed)
           _Banner(
@@ -86,7 +96,7 @@ class RecordingPanel extends StatelessWidget {
         Row(
           children: [
             _Big(fmtKm(s.meters, decimals: 2), 'km'),
-            _Big(fmtDuration(s.moving), 'en movimiento'),
+            _LiveClock(recorder: r),
             _Big(s.altitude == null ? '–' : fmtInt(s.altitude!), 'altitud m'),
           ],
         ),
@@ -95,6 +105,7 @@ class RecordingPanel extends StatelessWidget {
           children: [
             _Big('+${fmtInt(s.gain)}', 'subida m', small: true),
             _Big('−${fmtInt(s.loss)}', 'bajada m', small: true),
+            _Big(fmtDuration(s.moving), 'en movimiento', small: true),
             _Big(
               vs == null ? '–' : '${vs >= 0 ? '+' : ''}${fmtInt(vs)}',
               'm/h vertical',
@@ -196,6 +207,38 @@ class _DotState extends State<_Dot> with SingleTickerProviderStateMixin {
       child: dot,
     );
   }
+}
+
+/// Tiempo total grabando. Se refresca cada segundo por su cuenta: el grabador
+/// solo avisa cuando llega un punto o cada 10 s.
+class _LiveClock extends StatefulWidget {
+  const _LiveClock({required this.recorder});
+  final TrackRecorder recorder;
+
+  @override
+  State<_LiveClock> createState() => _LiveClockState();
+}
+
+class _LiveClockState extends State<_LiveClock> {
+  late final Timer _tick;
+
+  @override
+  void initState() {
+    super.initState();
+    _tick = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (widget.recorder.state == RecorderState.recording) setState(() {});
+    });
+  }
+
+  @override
+  void dispose() {
+    _tick.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) =>
+      _Big(fmtClock(widget.recorder.activeTime), 'tiempo');
 }
 
 class _Big extends StatelessWidget {

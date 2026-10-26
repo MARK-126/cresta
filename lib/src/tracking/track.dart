@@ -59,6 +59,7 @@ class Track {
     required this.startedAt,
     this.endedAt,
     this.status = TrackStatus.recording,
+    this.active = Duration.zero,
     TrackSummary? summary,
   }) : summary = summary ?? const TrackSummary();
 
@@ -69,6 +70,7 @@ class Track {
     startedAt: DateTime.parse(j['startedAt'] as String),
     endedAt: DateTime.tryParse('${j['endedAt']}'),
     status: TrackStatus.values.byName(j['status'] as String),
+    active: Duration(seconds: j['activeS'] as int? ?? 0),
     summary: TrackSummary.fromJson(
       j['summary'] as Map<String, dynamic>? ?? const {},
     ),
@@ -80,6 +82,10 @@ class Track {
   final DateTime startedAt;
   DateTime? endedAt;
   TrackStatus status;
+
+  /// Tiempo grabando, sin las pausas. Corre aunque el GPS aún no entregue puntos,
+  /// para que el reloj avance desde que el usuario toca "Grabar".
+  Duration active;
   TrackSummary summary;
 
   Map<String, dynamic> toJson() => {
@@ -89,6 +95,7 @@ class Track {
     'startedAt': startedAt.toIso8601String(),
     'endedAt': endedAt?.toIso8601String(),
     'status': status.name,
+    'activeS': active.inSeconds,
     'summary': summary.toJson(),
   };
 }

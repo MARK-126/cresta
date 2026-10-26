@@ -209,6 +209,17 @@ class _MapScreenState extends State<MapScreen> {
     }
     final mode = await askRecordingMode(context);
     if (mode == null || !mounted) return;
+    // Si lo niega se graba igual, pero avisamos del riesgo
+    if (!await _location.ensureNotifications()) {
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Sin permiso de notificaciones no verás el aviso de grabación y Android podría detenerla con la pantalla bloqueada. Puedes activarlo en Ajustes.',
+          ),
+        ),
+      );
+    }
+    if (!mounted) return;
     final now = DateTime.now();
     final n = _services.tracks.forExpedition(_expedition.id).length + 1;
     _following = true;
@@ -230,7 +241,7 @@ class _MapScreenState extends State<MapScreen> {
       builder: (context) => AlertDialog(
         title: const Text('Terminar recorrido'),
         content: Text(
-          '${fmtKm(_recorder.stats.meters, decimals: 2)} km · +${fmtInt(_recorder.stats.gain)} m · ${fmtDuration(_recorder.stats.moving)} en movimiento',
+          '${fmtKm(_recorder.stats.meters, decimals: 2)} km · +${fmtInt(_recorder.stats.gain)} m · ${fmtClock(_recorder.activeTime)} en total, ${fmtDuration(_recorder.stats.moving)} en movimiento',
         ),
         actions: [
           TextButton(

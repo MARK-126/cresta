@@ -249,11 +249,33 @@ void main() {
       expect(rec.stats.meters, closeTo(100, 2));
     });
 
+    test('el reloj corre sin puntos del GPS y no cuenta las pausas', () async {
+      await rec.start(expeditionId: 'e', name: 'x');
+      // Bajo techo: solo lecturas imprecisas, que no se guardan
+      await feed([GpsFix(time: _t0, lng: -98.65, lat: 19.1, accuracy: 80)]);
+      now = _t0.add(const Duration(minutes: 5));
+      expect(rec.points, isEmpty);
+      expect(rec.activeTime, const Duration(minutes: 5));
+
+      rec.pause();
+      now = _t0.add(const Duration(hours: 1));
+      expect(rec.activeTime, const Duration(minutes: 5));
+
+      rec.resume();
+      now = _t0.add(const Duration(hours: 1, minutes: 3));
+      expect(rec.activeTime, const Duration(minutes: 8));
+
+      final t = await rec.stop();
+      expect(t.active, const Duration(minutes: 8));
+      expect(rec.activeTime, Duration.zero);
+    });
+
     test(
       'si la app se cierra grabando, el recorrido se recupera en pausa',
       () async {
         await rec.start(expeditionId: 'e', name: 'x');
         await feed(_walk(6));
+        now = _t0.add(const Duration(minutes: 7));
         // Simula el guardado periódico y luego un cierre sin "Terminar"
         rec.pause();
         await Future<void>.delayed(const Duration(milliseconds: 50));
@@ -268,6 +290,7 @@ void main() {
         expect(rec2.state, RecorderState.paused);
         expect(rec2.points.length, 6);
         expect(rec2.stats.meters, closeTo(125, 2));
+        expect(rec2.activeTime, const Duration(minutes: 7));
       },
     );
 

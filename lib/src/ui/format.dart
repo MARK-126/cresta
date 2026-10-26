@@ -15,6 +15,12 @@ String fmtKm(double meters, {int decimals = 1}) =>
 String fmtDuration(Duration d) =>
     '${d.inHours} h ${(d.inMinutes % 60).toString().padLeft(2, '0')}';
 
+/// Reloj con segundos para la grabación en vivo: 1:05:09.
+String fmtClock(Duration d) {
+  String two(int n) => n.toString().padLeft(2, '0');
+  return '${d.inHours}:${two(d.inMinutes % 60)}:${two(d.inSeconds % 60)}';
+}
+
 String fmtAgo(int minutes) => minutes < 60
     ? 'hace $minutes min'
     : 'hace ${minutes ~/ 60} h ${(minutes % 60).toString().padLeft(2, '0')}';

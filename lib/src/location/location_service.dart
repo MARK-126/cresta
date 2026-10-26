@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:geolocator/geolocator.dart';
 
 import '../tracking/track_recorder.dart';
@@ -22,6 +23,21 @@ class LocationService {
       LocationPermission.unableToDetermine => LocationStatus.denied,
       _ => LocationStatus.granted,
     };
+  }
+
+  static const _permissions = MethodChannel('cresta/permissions');
+
+  /// Android 13+ exige pedir el permiso de notificaciones; sin él no se ve el aviso fijo
+  /// de grabación y el sistema puede detenerla con la pantalla bloqueada.
+  /// En iOS no hace falta: el indicador azul de ubicación no es una notificación.
+  Future<bool> ensureNotifications() async {
+    if (defaultTargetPlatform != TargetPlatform.android) return true;
+    try {
+      return await _permissions.invokeMethod<bool>('requestNotifications') ??
+          true;
+    } on MissingPluginException {
+      return true;
+    }
   }
 
   /// Posiciones cada 10 m, solo con la app abierta (para "Mi ubicación").
