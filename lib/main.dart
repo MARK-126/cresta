@@ -19,7 +19,11 @@ class CrestaApp extends StatefulWidget {
 }
 
 class _CrestaAppState extends State<CrestaApp> {
-  late final Future<AppServices> _boot = AppServices.start();
+  // El splash dura al menos 1.5 s aunque los mapas estén listos antes
+  late final Future<AppServices> _boot = Future.wait([
+    AppServices.start(),
+    Future<void>.delayed(const Duration(milliseconds: 1500)),
+  ]).then((r) => r.first as AppServices);
 
   @override
   Widget build(BuildContext context) {
@@ -42,6 +46,9 @@ class _CrestaAppState extends State<CrestaApp> {
         // Del splash al inicio con un fundido, no de golpe
         home: AnimatedSwitcher(
           duration: const Duration(milliseconds: 450),
+          // Por defecto apila sin restricciones y el splash no ocupaba todo el ancho
+          layoutBuilder: (current, previous) =>
+              Stack(fit: StackFit.expand, children: [...previous, ?current]),
           child: _home(snap),
         ),
       ),

@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Montaña cian del splash de Android 12+. El lienzo es grande porque el sistema
-     recorta el ícono en un círculo; la figura queda al centro con margen. -->
+     recorta el ícono en un círculo; la figura mide 64 dp, igual que la del splash de Flutter (SplashScreen.icon). -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="288dp"
     android:height="288dp"
-    android:viewportWidth="72"
-    android:viewportHeight="72">
-    <group android:translateX="24" android:translateY="24">
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <group android:translateX="42" android:translateY="42">
         <path
             android:fillColor="#46EAE5"
             android:pathData="M14,6l-3.75,5 2.85,3.8 -1.6,1.2C9.81,13.75 7,10 7,10l-6,8h22L14,6z" />
