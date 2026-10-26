@@ -14,6 +14,7 @@ import 'offline/offline_maps.dart';
 import 'offline/region_downloader.dart';
 import 'offline/sample_data.dart';
 import 'offline/tile_store.dart';
+import 'routes/route_store.dart';
 import 'storage/json_store.dart';
 import 'tiles/tile_server.dart';
 import 'tracking/terrain_elevation.dart';
@@ -43,6 +44,8 @@ class AppServices {
     this.tracks,
     this.recorder,
     this.location,
+    this.routes,
+    this.terrain,
   );
 
   final TileServer server;
@@ -51,6 +54,12 @@ class AppServices {
   final TrackStore tracks;
   final TrackRecorder recorder;
   final LocationService location;
+
+  /// Rutas planeadas o importadas (una por expedición).
+  final RouteStore routes;
+
+  /// Altitud a partir del relieve descargado (perfil de rutas y desnivel del recorrido).
+  final TerrainElevation terrain;
 
   /// Mosaicos vistos con conexión (no cuentan como descargados; se pueden borrar).
   final TileStore cache;
@@ -96,12 +105,15 @@ class AppServices {
     final tracks = TrackStore(Directory('${support.path}/tracks'));
     await tracks.load();
     final location = LocationService();
+    final terrain = TerrainElevation([offline, cache]);
     final recorder = TrackRecorder(
       store: tracks,
       positions: location.recording,
-      terrain: TerrainElevation([offline, cache]).at,
+      terrain: terrain.at,
     );
     await recorder.recover();
+    final routes = RouteStore(JsonStore(File('${support.path}/routes.json')));
+    await routes.load();
 
     final server = TileServer(
       offline: offline,
@@ -119,6 +131,8 @@ class AppServices {
       tracks,
       recorder,
       location,
+      routes,
+      terrain,
     );
   }
 }

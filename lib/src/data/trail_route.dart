@@ -33,6 +33,22 @@ class TrailRoute {
     );
   }
 
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'name': name,
+    'summary': summary,
+    'coordinates': [
+      for (final c in coordinates) [_round(c.lng, 6), _round(c.lat, 6)],
+    ],
+    'distances': [for (final d in distances) _round(d, 1)],
+    'elevations': [for (final e in elevations) _round(e, 1)],
+    'gain': _round(gain, 1),
+    'source': source,
+  };
+
+  static double _round(double v, int decimals) =>
+      double.parse(v.toStringAsFixed(decimals));
+
   final String id;
   final String name;
   final String summary;

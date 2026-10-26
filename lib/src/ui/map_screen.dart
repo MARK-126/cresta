@@ -14,20 +14,32 @@ import '../location/location_service.dart';
 import '../map/map_bridge.dart';
 import '../map/map_layers.dart';
 import '../offline/tile_math.dart';
+import '../routes/planned_route.dart';
+import '../routes/route_planner.dart';
 import '../tracking/track.dart';
 import '../tracking/track_recorder.dart';
 import 'area_picker_screen.dart';
 import 'format.dart';
 import 'offline_widgets.dart';
 import 'panels.dart';
+import 'planner_panel.dart';
 import 'recording_panel.dart';
+import 'route_actions.dart';
 import 'theme.dart';
 import 'track_screen.dart';
 
 /// El mapa de una expedición, en 2D o 3D, con lo descargado y (si hay red) lo demás.
 class MapScreen extends StatefulWidget {
-  const MapScreen({super.key, required this.expeditionId, this.showTrackId});
+  const MapScreen({
+    super.key,
+    required this.expeditionId,
+    this.showTrackId,
+    this.plan = false,
+  });
   final String expeditionId;
+
+  /// Abrir directo en modo planificar ruta.
+  final bool plan;
 
   /// Recorrido ya grabado que se muestra al abrir (desde su detalle).
   final String? showTrackId;
@@ -51,6 +63,11 @@ class _MapScreenState extends State<MapScreen> {
   late Expedition _expedition;
 
   TrailRoute? _route;
+  Map<String, dynamic>? _routeJson;
+
+  /// Mientras se planea la ruta (null fuera del modo planificar).
+  RoutePlanner? _planner;
+  PoiKind? _placingPoi;
   CivilData? _civil;
   GroupSimulator? _group;
 
@@ -80,10 +97,15 @@ class _MapScreenState extends State<MapScreen> {
 
   Future<void> _boot() async {
     const assets = AssetData();
-    Map<String, dynamic>? routeJson, civilJson;
-    if (_expedition.routeAsset != null) {
+    Map<String, dynamic>? civilJson;
+    // La ruta guardada (planeada o importada) tiene prioridad sobre la de ejemplo
+    final saved = _services.routes.forExpedition(_expedition.id);
+    if (saved != null) {
+      _route = saved.profile;
+      _routeJson = saved.profile.toJson();
+    } else if (_expedition.routeAsset != null) {
       final (route, json) = await assets.route(_expedition.routeAsset!);
-      routeJson = json;
+      _routeJson = json;
       _route = route;
       _group = GroupSimulator(route);
       _subs.add(
@@ -112,7 +134,8 @@ class _MapScreenState extends State<MapScreen> {
     await _bridge.setBase(_base);
     await _bridge.setLayers(_layers);
     _pushRegions();
-    if (routeJson != null) await _bridge.setRoute(routeJson);
+    if (_routeJson != null) await _bridge.setRoute(_routeJson);
+    if (saved != null) await _bridge.setPois(saved.pois);
     if (civilJson != null) await _bridge.setCivil(civilJson);
     await _bridge.set3d(true);
     final bounds = _services.expeditions.statusOf(_expedition).bounds;
@@ -140,6 +163,127 @@ class _MapScreenState extends State<MapScreen> {
       final points = await _services.tracks.readPoints(widget.showTrackId!);
       await _bridge.setTrack(points);
       if (points.length > 1) await _bridge.fitBounds(_boundsOf(points));
+    }
+    if (widget.plan && mounted) _startPlanning();
+  }
+
+  // ------------------------------------------------------------ Planificar ruta
+
+  void _startPlanning() {
+    if (_recordingHere) return;
+    _bridge.stopFly();
+    final saved = _services.routes.forExpedition(_expedition.id);
+    final route = _route;
+    final planner = RoutePlanner(
+      snap: _bridge.snapLeg,
+      elevation: _services.terrain.at,
+      // Sin ruta guardada pero con la de ejemplo: se parte de ella para poder ajustarla
+      initial:
+          saved ??
+          (route == null
+              ? null
+              : PlannedRoute(
+                  name: route.name,
+                  waypoints: [route.coordinates.first, route.coordinates.last],
+                  legs: [route.coordinates],
+                  snapped: const [true],
+                  pois: const [],
+                  profile: route,
+                )),
+    )..addListener(_onPlanner);
+    setState(() {
+      _planner = planner;
+      _flying = false;
+      _is3d = false; // vista cenital: los toques caen donde se ve
+    });
+    _bridge.set3d(false);
+    _bridge.setPlanMode(true);
+    _bridge.setRoute(null);
+    _pushPlan();
+    _moveSheet(_sheetInitial);
+  }
+
+  void _onPlanner() {
+    if (!mounted) return;
+    setState(() {});
+    _pushPlan();
+  }
+
+  void _pushPlan() {
+    final p = _planner;
+    if (p == null) return;
+    _bridge.setPlan(p.legs, snapped: p.snapped, waypoints: p.waypoints);
+    _bridge.setPois(p.pois);
+  }
+
+  void _onMapTap(LngLat at) {
+    final p = _planner;
+    if (p == null) return;
+    final kind = _placingPoi;
+    if (kind != null) {
+      p.addPoi(Poi(kind: kind, at: at));
+      setState(() => _placingPoi = null);
+    } else {
+      p.addPoint(at);
+    }
+  }
+
+  Future<void> _savePlan() async {
+    final p = _planner;
+    if (p == null || !p.canSave) return;
+    final saved = _services.routes.forExpedition(_expedition.id);
+    final name = await askRouteName(
+      context,
+      saved?.name ?? 'Ruta de ${_expedition.name}',
+    );
+    if (name == null || !mounted) return;
+    final route = p.toRoute(name);
+    await _services.routes.save(_expedition.id, route);
+    _route = route.profile;
+    _routeJson = route.profile.toJson();
+    _endPlanning();
+    if (!mounted) return;
+    _setLayer('route', true);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          'Ruta guardada: ${fmtKm(route.profile.totalMeters)} km · +${fmtInt(route.profile.gain)} m',
+        ),
+      ),
+    );
+  }
+
+  Future<bool> _cancelPlan() async {
+    final p = _planner;
+    if (p == null) return true;
+    final saved = _services.routes.forExpedition(_expedition.id);
+    final changed = saved == null ? !p.isEmpty : true;
+    if (changed) {
+      final ok = await confirmDialog(
+        context,
+        title: '¿Salir sin guardar?',
+        body: 'Se pierden los cambios de la ruta.',
+        action: 'Salir',
+      );
+      if (!ok) return false;
+    }
+    _endPlanning();
+    return true;
+  }
+
+  void _endPlanning() {
+    _planner
+      ?..removeListener(_onPlanner)
+      ..dispose();
+    _bridge.setPlanMode(false);
+    _bridge.setPlan(null);
+    _bridge.setRoute(_routeJson);
+    _bridge.setPois(_services.routes.forExpedition(_expedition.id)?.pois ?? []);
+    if (mounted) {
+      setState(() {
+        _planner = null;
+        _placingPoi = null;
+      });
     }
   }
 
@@ -298,6 +442,7 @@ class _MapScreenState extends State<MapScreen> {
       s.cancel();
     }
     _group?.dispose();
+    _planner?.dispose();
     _bridge.dispose();
     super.dispose();
   }
@@ -318,6 +463,13 @@ class _MapScreenState extends State<MapScreen> {
         setState(() => _following = false);
       case 'markerTap':
         _showMarkerInfo(e.data['kind'] as String, e.data['id'] as String);
+      case 'mapTap':
+        _onMapTap(
+          LngLat(
+            (e.data['lng'] as num).toDouble(),
+            (e.data['lat'] as num).toDouble(),
+          ),
+        );
     }
   }
 
@@ -492,251 +644,287 @@ class _MapScreenState extends State<MapScreen> {
         builder: (context) {
           final scheme = Theme.of(context).colorScheme;
           final status = _services.expeditions.statusOf(_expedition);
-          return Scaffold(
-            body: Stack(
-              children: [
-                Positioned.fill(
-                  child: WebViewWidget(controller: _bridge.controller),
-                ),
-                SafeArea(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(8, 8, 12, 0),
-                    child: Row(
-                      children: [
-                        _MapButton(
-                          icon: Icons.arrow_back_rounded,
-                          tooltip: 'Regresar',
-                          onPressed: () => Navigator.pop(context),
-                        ),
-                        const SizedBox(width: 8),
-                        if (_civil != null)
-                          Expanded(
-                            child: Glass(
-                              child: SegmentedButton<AppMode>(
-                                segments: const [
-                                  ButtonSegment(
-                                    value: AppMode.mountain,
-                                    label: Text('Montaña'),
-                                    icon: Icon(Icons.terrain_rounded),
-                                  ),
-                                  ButtonSegment(
-                                    value: AppMode.civil,
-                                    label: Text('Prot. civil'),
-                                    icon: Icon(Icons.shield_outlined),
-                                  ),
-                                ],
-                                selected: {_mode},
-                                showSelectedIcon: false,
-                                onSelectionChanged: (s) => _setMode(s.first),
-                              ),
-                            ),
-                          )
-                        else
-                          Flexible(
-                            child: Glass(
-                              child: Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 14,
-                                  vertical: 8,
-                                ),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Text(
-                                      _recordingHere
-                                          ? 'GRABANDO'
-                                          : 'EXPEDICIÓN',
-                                      style: labelStyle(
-                                        context,
-                                        color: _recordingHere
-                                            ? recordColor
-                                            : Andes.gold,
-                                      ).copyWith(fontSize: 9.5),
+          return PopScope(
+            canPop: _planner == null,
+            onPopInvokedWithResult: (didPop, _) async {
+              if (didPop) return;
+              final navigator = Navigator.of(context);
+              if (await _cancelPlan() && mounted) navigator.pop();
+            },
+            child: Scaffold(
+              body: Stack(
+                children: [
+                  Positioned.fill(
+                    child: WebViewWidget(controller: _bridge.controller),
+                  ),
+                  SafeArea(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(8, 8, 12, 0),
+                      child: Row(
+                        children: [
+                          _MapButton(
+                            icon: Icons.arrow_back_rounded,
+                            tooltip: 'Regresar',
+                            onPressed: () => Navigator.maybePop(context),
+                          ),
+                          const SizedBox(width: 8),
+                          if (_civil != null)
+                            Expanded(
+                              child: Glass(
+                                child: SegmentedButton<AppMode>(
+                                  segments: const [
+                                    ButtonSegment(
+                                      value: AppMode.mountain,
+                                      label: Text('Montaña'),
+                                      icon: Icon(Icons.terrain_rounded),
                                     ),
-                                    Text(
-                                      _expedition.name,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.w800,
-                                        fontSize: 15,
-                                      ),
+                                    ButtonSegment(
+                                      value: AppMode.civil,
+                                      label: Text('Prot. civil'),
+                                      icon: Icon(Icons.shield_outlined),
                                     ),
                                   ],
+                                  selected: {_mode},
+                                  showSelectedIcon: false,
+                                  onSelectionChanged: (s) => _setMode(s.first),
+                                ),
+                              ),
+                            )
+                          else
+                            Flexible(
+                              child: Glass(
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 14,
+                                    vertical: 8,
+                                  ),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text(
+                                        _planner != null
+                                            ? 'PLANEANDO RUTA'
+                                            : _recordingHere
+                                            ? 'GRABANDO'
+                                            : 'EXPEDICIÓN',
+                                        style: labelStyle(
+                                          context,
+                                          color: _recordingHere
+                                              ? recordColor
+                                              : Andes.gold,
+                                        ).copyWith(fontSize: 9.5),
+                                      ),
+                                      Text(
+                                        _expedition.name,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.w800,
+                                          fontSize: 15,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                 ),
                               ),
                             ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    right: 12,
+                    top: MediaQuery.paddingOf(context).top + 70,
+                    child: Column(
+                      children: [
+                        _MapButton(
+                          icon: (_recordingHere ? _following : _locating)
+                              ? Icons.my_location_rounded
+                              : Icons.location_searching_rounded,
+                          tooltip: _recordingHere && !_following
+                              ? 'Seguir mi posición'
+                              : 'Mi ubicación',
+                          onPressed: _locateMe,
+                        ),
+                        const SizedBox(height: 8),
+                        _MapButton(
+                          icon: _recordingHere
+                              ? Icons.fiber_manual_record_rounded
+                              : Icons.radio_button_checked_rounded,
+                          color: recordColor,
+                          tooltip: _recordingHere
+                              ? 'Grabando'
+                              : 'Grabar recorrido',
+                          onPressed: _recordingHere ? () {} : _startRecording,
+                        ),
+                        if (!_recordingHere && _planner == null && !civil) ...[
+                          const SizedBox(height: 8),
+                          _MapButton(
+                            icon: Icons.edit_road_rounded,
+                            color: Andes.gold,
+                            tooltip: _route == null
+                                ? 'Planear ruta'
+                                : 'Editar ruta',
+                            onPressed: _startPlanning,
                           ),
+                        ],
+                        const SizedBox(height: 8),
+                        _MapButton(
+                          label: _is3d ? '2D' : '3D',
+                          tooltip: _is3d ? 'Cambiar a 2D' : 'Cambiar a 3D',
+                          onPressed: () => _set3d(!_is3d),
+                        ),
                       ],
                     ),
                   ),
-                ),
-                Positioned(
-                  right: 12,
-                  top: MediaQuery.paddingOf(context).top + 70,
-                  child: Column(
-                    children: [
-                      _MapButton(
-                        icon: (_recordingHere ? _following : _locating)
-                            ? Icons.my_location_rounded
-                            : Icons.location_searching_rounded,
-                        tooltip: _recordingHere && !_following
-                            ? 'Seguir mi posición'
-                            : 'Mi ubicación',
-                        onPressed: _locateMe,
+                  DraggableScrollableSheet(
+                    controller: _sheet,
+                    minChildSize: _sheetMin,
+                    initialChildSize: _sheetInitial,
+                    maxChildSize: _sheetMax,
+                    snap: true,
+                    snapSizes: const [_sheetMin, _sheetInitial, _sheetMax],
+                    builder: (context, scroll) => Material(
+                      // Opaco: sobre el WebView cualquier transparencia deja ver las etiquetas del mapa
+                      color: Andes.surfaceLow,
+                      borderRadius: const BorderRadius.vertical(
+                        top: Radius.circular(24),
                       ),
-                      const SizedBox(height: 8),
-                      _MapButton(
-                        icon: _recordingHere
-                            ? Icons.fiber_manual_record_rounded
-                            : Icons.radio_button_checked_rounded,
-                        color: recordColor,
-                        tooltip: _recordingHere
-                            ? 'Grabando'
-                            : 'Grabar recorrido',
-                        onPressed: _recordingHere ? () {} : _startRecording,
-                      ),
-                      const SizedBox(height: 8),
-                      _MapButton(
-                        label: _is3d ? '2D' : '3D',
-                        tooltip: _is3d ? 'Cambiar a 2D' : 'Cambiar a 3D',
-                        onPressed: () => _set3d(!_is3d),
-                      ),
-                    ],
-                  ),
-                ),
-                DraggableScrollableSheet(
-                  controller: _sheet,
-                  minChildSize: _sheetMin,
-                  initialChildSize: _sheetInitial,
-                  maxChildSize: _sheetMax,
-                  snap: true,
-                  snapSizes: const [_sheetMin, _sheetInitial, _sheetMax],
-                  builder: (context, scroll) => Material(
-                    // Opaco: sobre el WebView cualquier transparencia deja ver las etiquetas del mapa
-                    color: Andes.surfaceLow,
-                    borderRadius: const BorderRadius.vertical(
-                      top: Radius.circular(24),
-                    ),
-                    clipBehavior: Clip.antiAlias,
-                    child: ListView(
-                      controller: scroll,
-                      padding: EdgeInsets.fromLTRB(
-                        20,
-                        0,
-                        20,
-                        24 + MediaQuery.paddingOf(context).bottom,
-                      ),
-                      children: [
-                        Center(
-                          child: Container(
-                            margin: const EdgeInsets.symmetric(vertical: 12),
-                            width: 40,
-                            height: 4,
-                            decoration: BoxDecoration(
-                              color: scheme.outlineVariant,
-                              borderRadius: BorderRadius.circular(2),
-                            ),
-                          ),
+                      clipBehavior: Clip.antiAlias,
+                      child: ListView(
+                        controller: scroll,
+                        padding: EdgeInsets.fromLTRB(
+                          20,
+                          0,
+                          20,
+                          24 + MediaQuery.paddingOf(context).bottom,
                         ),
-                        if (_recordingHere)
-                          RecordingPanel(
-                            recorder: _recorder,
-                            onPause: _recorder.pause,
-                            onResume: _recorder.resume,
-                            onStop: _stopRecording,
-                          ),
-                        if (civil && _civil != null) ...[
-                          VolcanoAlertCard(civil: _civil!),
-                          ShelterList(
-                            civil: _civil!,
-                            onTap: (s) => _bridge.flyTo(
-                              s.at.lng,
-                              s.at.lat,
-                              zoom: 13.2,
-                              pitch: 50,
+                        children: [
+                          Center(
+                            child: Container(
+                              margin: const EdgeInsets.symmetric(vertical: 12),
+                              width: 40,
+                              height: 4,
+                              decoration: BoxDecoration(
+                                color: scheme.outlineVariant,
+                                borderRadius: BorderRadius.circular(2),
+                              ),
                             ),
                           ),
-                          ReportList(
-                            civil: _civil!,
-                            onTap: (r) =>
-                                _bridge.flyTo(r.at.lng, r.at.lat, zoom: 13.5),
-                            onSimulateAlert: _simulateAlert,
-                          ),
-                        ] else if (_route != null) ...[
-                          RouteCard(
-                            route: _route!,
-                            cursorMeters: _cursor,
-                            flying: _flying,
-                            onScrub: (m) {
-                              setState(() => _cursor = m);
-                              _bridge.showCursorAtMeters(m);
-                            },
-                            onScrubEnd: () {},
-                            onFly: _toggleFly,
-                            onFit: () {
-                              _bridge.stopFly();
-                              _bridge.fitRoute();
-                            },
-                          ),
-                          if (_group != null)
-                            GroupList(
-                              route: _route!,
-                              members: _group!.members,
-                              onTap: (m) {
-                                final p = _route!.along(m.meters).position;
-                                _bridge.flyTo(
-                                  p.lng,
-                                  p.lat,
-                                  zoom: 14.6,
-                                  pitch: 62,
-                                );
+                          if (_planner != null)
+                            PlannerPanel(
+                              planner: _planner!,
+                              placingPoi: _placingPoi,
+                              onPlacePoi: (k) =>
+                                  setState(() => _placingPoi = k),
+                              onSave: _savePlan,
+                              onCancel: _cancelPlan,
+                            )
+                          else ...[
+                            if (_recordingHere)
+                              RecordingPanel(
+                                recorder: _recorder,
+                                onPause: _recorder.pause,
+                                onResume: _recorder.resume,
+                                onStop: _stopRecording,
+                              ),
+                            if (civil && _civil != null) ...[
+                              VolcanoAlertCard(civil: _civil!),
+                              ShelterList(
+                                civil: _civil!,
+                                onTap: (s) => _bridge.flyTo(
+                                  s.at.lng,
+                                  s.at.lat,
+                                  zoom: 13.2,
+                                  pitch: 50,
+                                ),
+                              ),
+                              ReportList(
+                                civil: _civil!,
+                                onTap: (r) => _bridge.flyTo(
+                                  r.at.lng,
+                                  r.at.lat,
+                                  zoom: 13.5,
+                                ),
+                                onSimulateAlert: _simulateAlert,
+                              ),
+                            ] else if (_route != null) ...[
+                              RouteCard(
+                                route: _route!,
+                                cursorMeters: _cursor,
+                                flying: _flying,
+                                onScrub: (m) {
+                                  setState(() => _cursor = m);
+                                  _bridge.showCursorAtMeters(m);
+                                },
+                                onScrubEnd: () {},
+                                onFly: _toggleFly,
+                                onFit: () {
+                                  _bridge.stopFly();
+                                  _bridge.fitRoute();
+                                },
+                              ),
+                              if (_group != null)
+                                GroupList(
+                                  route: _route!,
+                                  members: _group!.members,
+                                  onTap: (m) {
+                                    final p = _route!.along(m.meters).position;
+                                    _bridge.flyTo(
+                                      p.lng,
+                                      p.lat,
+                                      zoom: 14.6,
+                                      pitch: 62,
+                                    );
+                                  },
+                                ),
+                            ] else
+                              _OfflineSummary(
+                                status: status,
+                                onAddZone: _addZone,
+                                onFit: () {
+                                  final b = status.bounds;
+                                  if (b != null) _bridge.fitBounds(b);
+                                },
+                              ),
+                            ViewControls(
+                              base: _base,
+                              is3d: _is3d,
+                              exaggeration: _exaggeration,
+                              onBase: (b) {
+                                setState(() => _base = b);
+                                _bridge.setBase(b);
+                              },
+                              on3d: _set3d,
+                              onExaggeration: (x) {
+                                setState(() => _exaggeration = x);
+                                _bridge.setExaggeration(x);
                               },
                             ),
-                        ] else
-                          _OfflineSummary(
-                            status: status,
-                            onAddZone: _addZone,
-                            onFit: () {
-                              final b = status.bounds;
-                              if (b != null) _bridge.fitBounds(b);
-                            },
-                          ),
-                        ViewControls(
-                          base: _base,
-                          is3d: _is3d,
-                          exaggeration: _exaggeration,
-                          onBase: (b) {
-                            setState(() => _base = b);
-                            _bridge.setBase(b);
-                          },
-                          on3d: _set3d,
-                          onExaggeration: (x) {
-                            setState(() => _exaggeration = x);
-                            _bridge.setExaggeration(x);
-                          },
-                        ),
-                        LayerList(
-                          layers: _availableLayers,
-                          states: _layers,
-                          onChanged: _setLayer,
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          'Mapa: © OpenMapTiles, © colaboradores de OpenStreetMap. Satélite: Sentinel-2 cloudless 2024 de EOX '
-                          '(datos Copernicus). Relieve: Mapzen Terrain Tiles.'
-                          '${_civil != null ? ' Los datos de protección civil y el grupo son ilustrativos, no información oficial.' : ''}',
-                          style: TextStyle(
-                            fontSize: 11,
-                            color: scheme.onSurfaceVariant,
-                            height: 1.4,
-                          ),
-                        ),
-                      ],
+                            LayerList(
+                              layers: _availableLayers,
+                              states: _layers,
+                              onChanged: _setLayer,
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              'Mapa: © OpenMapTiles, © colaboradores de OpenStreetMap. Satélite: Sentinel-2 cloudless 2024 de EOX '
+                              '(datos Copernicus). Relieve: Mapzen Terrain Tiles.'
+                              '${_civil != null ? ' Los datos de protección civil y el grupo son ilustrativos, no información oficial.' : ''}',
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: scheme.onSurfaceVariant,
+                                height: 1.4,
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           );
         },

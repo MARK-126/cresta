@@ -64,6 +64,8 @@
     major: '#f3c56d', track: '#8a6236', path: '#c4342c', label: '#2a2a28', halo: 'rgba(255,255,255,0.9)',
   };
   const empty = { type: 'FeatureCollection', features: [] };
+  // Mismos tipos que PoiKind en Dart
+  const POI_COLORS = ['water', '#5aa9e6', 'camp', '#f0bf63', 'shelter', '#d69a5c', 'summit', '#46eae5', 'noReturn', '#ffa089', 'danger', '#ff5f52'];
   const font = (w) => [w === 'bold' ? 'Noto Sans Bold' : w === 'italic' ? 'Noto Sans Italic' : 'Noto Sans Regular'];
   const roadClass = (...c) => ['match', ['get', 'class'], c, true, false];
 
@@ -85,6 +87,9 @@
         topo: { type: 'vector', tiles: [`${ORIGIN}/tiles/topo/{z}/{x}/{y}`], maxzoom: 14, attribution: '© OpenMapTiles © colaboradores de OpenStreetMap' },
         contours: { type: 'vector', tiles: [contourTiles], maxzoom: 15 },
         route: { type: 'geojson', data: empty },
+        plan: { type: 'geojson', data: empty },
+        'plan-pts': { type: 'geojson', data: empty },
+        pois: { type: 'geojson', data: empty },
         track: { type: 'geojson', data: empty },
         regions: { type: 'geojson', data: empty },
         zones: { type: 'geojson', data: empty },
@@ -127,6 +132,21 @@
         { id: 'regions-line', type: 'line', source: 'regions', paint: { 'line-color': ['case', ['get', 'complete'], '#00a8a3', '#c99630'], 'line-width': 2, 'line-dasharray': [4, 2] } },
         { id: 'route-casing', type: 'line', source: 'route', layout: { 'line-join': 'round', 'line-cap': 'round' }, paint: { 'line-color': '#0e1416', 'line-width': 7, 'line-opacity': 0.75 } },
         { id: 'route', type: 'line', source: 'route', layout: { 'line-join': 'round', 'line-cap': 'round' }, paint: { 'line-color': '#f0bf63', 'line-width': 4 } },
+        // Planificador: tramos ajustados a sendero en oro continuo; los rectos, punteados
+        { id: 'plan-casing', type: 'line', source: 'plan', layout: { 'line-join': 'round', 'line-cap': 'round' }, paint: { 'line-color': '#0e1416', 'line-width': 7, 'line-opacity': 0.75 } },
+        { id: 'plan-snapped', type: 'line', source: 'plan', filter: ['==', ['get', 'snapped'], true], layout: { 'line-join': 'round', 'line-cap': 'round' }, paint: { 'line-color': '#f0bf63', 'line-width': 4 } },
+        { id: 'plan-straight', type: 'line', source: 'plan', filter: ['==', ['get', 'snapped'], false], layout: { 'line-join': 'round' }, paint: { 'line-color': '#f0bf63', 'line-width': 3.5, 'line-dasharray': [1.6, 1.2] } },
+        { id: 'plan-pts', type: 'circle', source: 'plan-pts', paint: {
+          'circle-radius': ['match', ['get', 'role'], 'start', 7, 'end', 7, 5],
+          'circle-color': ['match', ['get', 'role'], 'start', '#46eae5', 'end', '#ffa089', '#f0bf63'],
+          'circle-stroke-color': '#0e1416', 'circle-stroke-width': 2.5 } },
+        // Puntos de interés de la ruta (agua, campamento, punto de no retorno…)
+        { id: 'pois-dot', type: 'circle', source: 'pois', paint: {
+          'circle-radius': 7, 'circle-color': ['match', ['get', 'kind'], ...POI_COLORS, '#bacac8'],
+          'circle-stroke-color': '#0e1416', 'circle-stroke-width': 2.5 } },
+        { id: 'pois-label', type: 'symbol', source: 'pois', layout: {
+          'text-field': ['get', 'name'], 'text-font': font('bold'), 'text-size': 11.5, 'text-offset': [0, 1.2], 'text-anchor': 'top', 'text-optional': true },
+          paint: { 'text-color': '#0e1416', 'text-halo-color': 'rgba(255,255,255,0.92)', 'text-halo-width': 1.4 } },
         // Recorrido grabado (azul, encima de la ruta planeada)
         { id: 'track-casing', type: 'line', source: 'track', layout: { 'line-join': 'round', 'line-cap': 'round' }, paint: { 'line-color': '#0e1416', 'line-width': 8, 'line-opacity': 0.8 } },
         { id: 'track', type: 'line', source: 'track', layout: { 'line-join': 'round', 'line-cap': 'round' }, paint: { 'line-color': '#46eae5', 'line-width': 4.5 } },
@@ -157,7 +177,7 @@
 
   // Capas lógicas (las que ve el usuario) → capas de MapLibre o grupos de marcadores
   const LAYER_MAP = {
-    route: { layers: ['route', 'route-casing'] },
+    route: { layers: ['route', 'route-casing', 'pois-dot', 'pois-label'] },
     track: { layers: ['track', 'track-casing'] },
     trails: { layers: ['trails', 'tracks'] },
     contours: { layers: ['contours', 'contour-labels'] },
@@ -267,6 +287,94 @@
   let me = null;
   const memberMarkers = new Map();
 
+  // --- Planificador: ajuste a senderos con lo que hay en el mapa visible. Funciona sin conexión:
+  // usa los mosaicos vectoriales ya cargados, que salen de las zonas descargadas.
+  const SNAP_CLASSES = ['path', 'track', 'service', 'minor', 'tertiary', 'secondary', 'primary', 'trunk'];
+  const metersBetween = (a, b) => {
+    const x = toRad(b[0] - a[0]) * Math.cos(toRad((a[1] + b[1]) / 2));
+    const y = toRad(b[1] - a[1]);
+    return Math.hypot(x, y) * 6371000;
+  };
+  /// Camino más corto por senderos entre a y b, o null si no hay o están a más de 250 m de uno.
+  function snapLeg(a, b) {
+    if (map.getZoom() < 12.5) return null; // con poco zoom los mosaicos no traen los senderos
+    const feats = map.querySourceFeatures('topo', { sourceLayer: 'transportation', filter: ['match', ['get', 'class'], SNAP_CLASSES, true, false] });
+    // Los mosaicos cortan las líneas en sus bordes: redondear a ~1 m une los extremos que coinciden
+    const key = (c) => `${Math.round(c[0] * 1e5)},${Math.round(c[1] * 1e5)}`;
+    const nodes = new Map();
+    const node = (c) => {
+      const k = key(c);
+      let n = nodes.get(k);
+      if (!n) { n = { c, edges: [] }; nodes.set(k, n); }
+      return n;
+    };
+    for (const f of feats) {
+      const g = f.geometry;
+      const lines = g.type === 'LineString' ? [g.coordinates] : g.type === 'MultiLineString' ? g.coordinates : [];
+      for (const line of lines) {
+        for (let i = 1; i < line.length; i++) {
+          const p = node(line[i - 1]), q = node(line[i]);
+          if (p === q) continue;
+          const w = metersBetween(p.c, q.c);
+          p.edges.push([q, w]); q.edges.push([p, w]);
+        }
+      }
+    }
+    const nearest = (pt) => {
+      let best = null, bd = 250;
+      for (const n of nodes.values()) {
+        const d = metersBetween(pt, n.c);
+        if (d < bd) { bd = d; best = n; }
+      }
+      return best;
+    };
+    const from = nearest(a), to = nearest(b);
+    if (!from || !to) return null;
+    // Dijkstra con un montículo binario sencillo
+    const dist = new Map([[from, 0]]), prev = new Map(), heap = [[0, from]];
+    const push = (item) => {
+      heap.push(item);
+      for (let i = heap.length - 1; i > 0;) {
+        const p = (i - 1) >> 1;
+        if (heap[p][0] <= heap[i][0]) break;
+        [heap[p], heap[i]] = [heap[i], heap[p]]; i = p;
+      }
+    };
+    const pop = () => {
+      const top = heap[0], last = heap.pop();
+      if (heap.length) {
+        heap[0] = last;
+        for (let i = 0; ;) {
+          const l = 2 * i + 1, r = l + 1;
+          let m = i;
+          if (l < heap.length && heap[l][0] < heap[m][0]) m = l;
+          if (r < heap.length && heap[r][0] < heap[m][0]) m = r;
+          if (m === i) break;
+          [heap[m], heap[i]] = [heap[i], heap[m]]; i = m;
+        }
+      }
+      return top;
+    };
+    while (heap.length) {
+      const [d, n] = pop();
+      if (n === to) break;
+      if (d > (dist.get(n) ?? Infinity)) continue;
+      for (const [m, w] of n.edges) {
+        const nd = d + w;
+        if (nd < (dist.get(m) ?? Infinity)) { dist.set(m, nd); prev.set(m, n); push([nd, m]); }
+      }
+    }
+    if (from !== to && !prev.has(to)) return null;
+    const path = [];
+    for (let n = to; n; n = prev.get(n)) path.push(n.c);
+    path.reverse();
+    return [a, ...path, b];
+  }
+
+  let planMode = false;
+  map.on('click', (e) => { if (planMode) emit('mapTap', { lng: e.lngLat.lng, lat: e.lngLat.lat }); });
+  const pointFeature = (c, props) => ({ type: 'Feature', properties: props, geometry: { type: 'Point', coordinates: c } });
+
   // --- API pública para Flutter
   const api = {
     setPadding(p) { padding = p; },
@@ -339,6 +447,34 @@
         markers.reports.push(mk(el, r.at, 'center'));
       }
       ['shelters', 'reports'].forEach((id) => setLayer(id, !!visible[id]));
+    },
+    /// En modo planificar cada toque en el mapa se envía a Flutter como 'mapTap'.
+    setPlanMode(on) {
+      planMode = on;
+      map.getCanvas().style.cursor = on ? 'crosshair' : '';
+      if (on) map.doubleClickZoom.disable(); else map.doubleClickZoom.enable();
+    },
+    snapLeg(a, b) { return snapLeg(a, b); },
+    /// Lo que se está planeando: { legs: [[[lng, lat]…]…], snapped: [bool…], waypoints: [[lng, lat]…] }
+    setPlan(plan) {
+      whenReady(() => {
+        map.getSource('plan').setData(!plan ? empty : {
+          type: 'FeatureCollection',
+          features: plan.legs.map((leg, i) => ({ type: 'Feature', properties: { snapped: !!plan.snapped[i] }, geometry: { type: 'LineString', coordinates: leg } })),
+        });
+        const w = plan ? plan.waypoints : [];
+        map.getSource('plan-pts').setData({
+          type: 'FeatureCollection',
+          features: w.map((c, i) => pointFeature(c, { role: i === 0 ? 'start' : i === w.length - 1 ? 'end' : 'via' })),
+        });
+      });
+    },
+    /// Puntos de interés: [{ kind, name, at: [lng, lat] }]
+    setPois(list) {
+      whenReady(() => map.getSource('pois').setData({
+        type: 'FeatureCollection',
+        features: (list || []).map((p) => pointFeature(p.at, { kind: p.kind, name: p.name })),
+      }));
     },
     fitRoute,
     flyRoute,

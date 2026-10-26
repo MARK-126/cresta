@@ -5,8 +5,10 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/painting.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
+import '../data/trail_route.dart';
 import '../offline/offline_region.dart';
 import '../offline/tile_math.dart';
+import '../routes/planned_route.dart';
 import '../tracking/track.dart';
 import 'map_layers.dart';
 
@@ -105,6 +107,58 @@ class MapBridge {
 
   Future<void> setRoute(Map<String, dynamic>? route) =>
       _call('setRoute', [route]);
+
+  /// Modo planificar: cada toque en el mapa llega como evento `mapTap` (lng, lat).
+  Future<void> setPlanMode(bool on) => _call('setPlanMode', [on]);
+
+  /// Camino por senderos entre dos puntos con lo que está cargado en el mapa visible,
+  /// o null si no hay sendero cerca de alguno de los dos.
+  Future<List<LngLat>?> snapLeg(LngLat from, LngLat to) async {
+    try {
+      final v = await _query('snapLeg', [
+        [from.lng, from.lat],
+        [to.lng, to.lat],
+      ]);
+      if (v is! List || v.length < 2) return null;
+      return [for (final p in v) LngLat.fromJson(p as List)];
+    } catch (e) {
+      debugPrint('MapBridge.snapLeg: $e');
+      return null;
+    }
+  }
+
+  /// Dibuja lo que se está planeando (o lo borra con null).
+  Future<void> setPlan(
+    List<List<LngLat>>? legs, {
+    List<bool> snapped = const [],
+    List<LngLat> waypoints = const [],
+  }) => _call('setPlan', [
+    legs == null
+        ? null
+        : {
+            'legs': [
+              for (final l in legs)
+                [
+                  for (final p in l) [p.lng, p.lat],
+                ],
+            ],
+            'snapped': snapped,
+            'waypoints': [
+              for (final w in waypoints) [w.lng, w.lat],
+            ],
+          },
+  ]);
+
+  Future<void> setPois(List<Poi> pois) => _call('setPois', [
+    [
+      for (final p in pois)
+        {
+          'kind': p.kind.name,
+          'name': p.name,
+          'at': [p.at.lng, p.at.lat],
+        },
+    ],
+  ]);
   Future<void> setCivil(Map<String, dynamic> civil) =>
       _call('setCivil', [civil]);
   Future<void> setRegions(List<OfflineRegion> regions) => _call('setRegions', [

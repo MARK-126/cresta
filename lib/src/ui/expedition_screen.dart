@@ -9,6 +9,8 @@ import 'format.dart';
 import 'map_screen.dart';
 import 'offline_widgets.dart';
 import 'panels.dart';
+import 'route_actions.dart';
+import 'route_screen.dart';
 import 'theme.dart';
 import 'track_screen.dart';
 
@@ -22,13 +24,15 @@ class ExpeditionScreen extends StatelessWidget {
     final services = AppScope.of(context);
     final store = services.expeditions;
     return ListenableBuilder(
-      listenable: store,
+      listenable: Listenable.merge([store, services.routes]),
       builder: (context, _) {
         final e = store.byId(expeditionId);
         if (e == null) {
           return const Scaffold(body: SizedBox.shrink()); // se acaba de borrar
         }
         final status = store.statusOf(e);
+        final route = services.routes.forExpedition(e.id);
+        final hasRoute = route != null || e.routeAsset != null;
         final scheme = Theme.of(context).colorScheme;
         return Scaffold(
           appBar: AppBar(
@@ -107,14 +111,56 @@ class ExpeditionScreen extends StatelessWidget {
                         },
                       ),
                       _Check(
-                        done: e.routeAsset != null,
+                        done: hasRoute,
                         title: 'Ruta',
-                        detail: e.routeAsset != null ? 'Ruta cargada.' : 'El planificador de rutas llega en una próxima versión.',
-                        pending: e.routeAsset == null,
+                        detail: route != null
+                            ? '${route.name}: ${route.profile.summary}.'
+                            : hasRoute
+                            ? 'Ruta de ejemplo cargada.'
+                            : 'Planéala en el mapa o importa un GPX o KML.',
                       ),
                       _TurnaroundCheck(expedition: e),
                     ],
                   ),
+                ),
+                const SectionTitle('Ruta'),
+                if (route != null)
+                  _RouteCard(expeditionId: e.id)
+                else
+                  Text(
+                    e.routeAsset != null
+                        ? 'Esta expedición usa la ruta de ejemplo. Puedes ajustarla en el mapa o reemplazarla con un GPX o KML.'
+                        : 'Toca el mapa para trazarla (sigue los senderos descargados) o importa la de Wikiloc, Garmin, Google Earth…',
+                    style: TextStyle(
+                      color: scheme.onSurfaceVariant,
+                      fontSize: 13,
+                    ),
+                  ),
+                const SizedBox(height: 10),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: () => Navigator.push(
+                          context,
+                          MaterialPageRoute<void>(
+                            builder: (_) =>
+                                MapScreen(expeditionId: e.id, plan: true),
+                          ),
+                        ),
+                        icon: const Icon(Icons.edit_road_rounded),
+                        label: Text(hasRoute ? 'Editar' : 'Planear'),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: () => importRouteFile(context, e.id),
+                        icon: const Icon(Icons.file_open_outlined),
+                        label: const Text('GPX o KML'),
+                      ),
+                    ),
+                  ],
                 ),
                 SectionTitle(
                   'Mapas sin conexión',
@@ -224,14 +270,8 @@ class ExpeditionScreen extends StatelessWidget {
 }
 
 class _Check extends StatelessWidget {
-  const _Check({
-    required this.done,
-    required this.title,
-    required this.detail,
-    this.pending = false,
-  });
+  const _Check({required this.done, required this.title, required this.detail});
   final bool done;
-  final bool pending;
   final String title;
   final String detail;
 
@@ -246,10 +286,8 @@ class _Check extends StatelessWidget {
           Icon(
             done
                 ? Icons.check_circle_rounded
-                : (pending
-                      ? Icons.schedule_rounded
-                      : Icons.radio_button_unchecked_rounded),
-            color: done ? okColor : (pending ? muted : warnColor),
+                : Icons.radio_button_unchecked_rounded,
+            color: done ? okColor : warnColor,
             size: 22,
           ),
           const SizedBox(width: 12),
@@ -262,7 +300,7 @@ class _Check extends StatelessWidget {
                   style: TextStyle(
                     fontWeight: FontWeight.w700,
                     fontSize: 15,
-                    color: pending ? muted : (done ? null : warnColor),
+                    color: done ? null : warnColor,
                   ),
                 ),
                 const SizedBox(height: 2),
@@ -404,6 +442,69 @@ class _TurnaroundCheck extends StatelessWidget {
               ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// Resumen de la ruta guardada; abre su detalle.
+class _RouteCard extends StatelessWidget {
+  const _RouteCard({required this.expeditionId});
+  final String expeditionId;
+
+  @override
+  Widget build(BuildContext context) {
+    final route = AppScope.of(context).routes.forExpedition(expeditionId)!;
+    final r = route.profile;
+    return TonalCard(
+      accent: Andes.gold,
+      padding: const EdgeInsets.fromLTRB(16, 14, 12, 14),
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute<void>(
+          builder: (_) => RouteScreen(expeditionId: expeditionId),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(route.name, style: signage(context, size: 19)),
+              ),
+              const Icon(Icons.chevron_right_rounded),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(child: Figure(fmtKm(r.totalMeters), 'km', size: 18)),
+              Expanded(
+                child: Figure(
+                  '+${fmtInt(r.gain)}',
+                  'desnivel',
+                  unit: 'm',
+                  size: 18,
+                ),
+              ),
+              Expanded(
+                child: Figure(
+                  fmtDuration(r.estimatedTime),
+                  'estimado',
+                  size: 18,
+                ),
+              ),
+            ],
+          ),
+          if (route.pois.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            Text(
+              '${route.pois.length} ${route.pois.length == 1 ? 'punto de interés' : 'puntos de interés'}',
+              style: labelStyle(context).copyWith(fontSize: 10),
+            ),
+          ],
+        ],
       ),
     );
   }
