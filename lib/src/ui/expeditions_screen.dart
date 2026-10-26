@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 
 import '../app_services.dart';
 import '../expeditions/expedition.dart';
-import 'downloads_screen.dart';
 import 'expedition_screen.dart';
 import 'format.dart';
 import 'offline_widgets.dart';
@@ -30,19 +29,6 @@ class ExpeditionsScreen extends StatelessWidget {
           appBar: AppBar(
             titleSpacing: 24,
             title: const CrestaWordmark(size: 24),
-            actions: [
-              IconButton(
-                tooltip: 'Mapas descargados',
-                icon: const Icon(Icons.download_for_offline_outlined),
-                onPressed: () => Navigator.push(
-                  context,
-                  MaterialPageRoute<void>(
-                    builder: (_) => const DownloadsScreen(),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-            ],
           ),
           body: WithBanners(
             banners: [NetworkBanner(maps: services.maps)],

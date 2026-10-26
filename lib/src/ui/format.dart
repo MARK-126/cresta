@@ -53,6 +53,28 @@ const _months = [
 String fmtDate(DateTime d) =>
     '${_days[d.weekday - 1]} ${d.day} ${_months[d.month - 1]} ${d.year}';
 
+const _monthNames = [
+  'enero',
+  'febrero',
+  'marzo',
+  'abril',
+  'mayo',
+  'junio',
+  'julio',
+  'agosto',
+  'septiembre',
+  'octubre',
+  'noviembre',
+  'diciembre',
+];
+
+/// "noviembre 2026"
+String fmtMonth(DateTime d) => '${_monthNames[d.month - 1]} ${d.year}';
+
+/// "07:42"
+String fmtTime(DateTime d) =>
+    '${d.hour.toString().padLeft(2, '0')}:${d.minute.toString().padLeft(2, '0')}';
+
 /// "en 21 días", "mañana", "hoy", "hace 3 días"
 String fmtRelativeDay(DateTime d, {DateTime? now}) {
   final today = _dateOnly(now ?? DateTime.now());

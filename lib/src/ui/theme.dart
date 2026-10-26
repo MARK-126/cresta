@@ -248,6 +248,32 @@ ThemeData crestaTheme({bool civil = false}) {
         ),
       ),
     ),
+    navigationBarTheme: NavigationBarThemeData(
+      backgroundColor: Andes.surfaceLow,
+      surfaceTintColor: Colors.transparent,
+      elevation: 0,
+      height: 72,
+      indicatorColor: scheme.primary.withValues(alpha: .16),
+      indicatorShape: rounded12,
+      iconTheme: WidgetStateProperty.resolveWith(
+        (s) => IconThemeData(
+          color: s.contains(WidgetState.selected)
+              ? scheme.primary
+              : Andes.onSurfaceVariant,
+        ),
+      ),
+      labelTextStyle: WidgetStateProperty.resolveWith(
+        (s) => TextStyle(
+          fontFamily: _font,
+          fontSize: 10.5,
+          fontWeight: FontWeight.w700,
+          letterSpacing: .8,
+          color: s.contains(WidgetState.selected)
+              ? scheme.primary
+              : Andes.onSurfaceVariant,
+        ),
+      ),
+    ),
     switchTheme: SwitchThemeData(
       thumbColor: WidgetStateProperty.resolveWith(
         (s) =>

@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
 import 'src/app_services.dart';
-import 'src/ui/expeditions_screen.dart';
+import 'src/ui/home_shell.dart';
+import 'src/ui/splash_screen.dart';
 import 'src/ui/theme.dart';
 
 void main() {
@@ -38,7 +39,11 @@ class _CrestaAppState extends State<CrestaApp> {
         builder: (context, child) => snap.hasData
             ? AppScope(services: snap.data!, child: child!)
             : child!,
-        home: _home(snap),
+        // Del splash al inicio con un fundido, no de golpe
+        home: AnimatedSwitcher(
+          duration: const Duration(milliseconds: 450),
+          child: _home(snap),
+        ),
       ),
     );
   }
@@ -57,35 +62,7 @@ class _CrestaAppState extends State<CrestaApp> {
         ),
       );
     }
-    if (!snap.hasData) {
-      return Scaffold(
-        body: Builder(
-          builder: (context) => Padding(
-            padding: const EdgeInsets.all(32),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Spacer(),
-                const CrestaWordmark(size: 44),
-                const SizedBox(height: 10),
-                Text(
-                  'MAPAS DE MONTAÑA SIN CONEXIÓN',
-                  style: labelStyle(context),
-                ),
-                const Spacer(),
-                const LinearProgressIndicator(minHeight: 3),
-                const SizedBox(height: 12),
-                Text(
-                  'Preparando mapas sin conexión…',
-                  style: labelStyle(context).copyWith(letterSpacing: .4),
-                ),
-                const SizedBox(height: 24),
-              ],
-            ),
-          ),
-        ),
-      );
-    }
-    return const ExpeditionsScreen();
+    if (!snap.hasData) return const SplashScreen();
+    return const HomeShell();
   }
 }
