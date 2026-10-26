@@ -52,6 +52,8 @@ class _SplashScreenState extends State<SplashScreen>
 
     return Scaffold(
       backgroundColor: Andes.surface,
+      // Si quedó un teclado abierto, el splash no se encoge (la montaña debe seguir centrada)
+      resizeToAvoidBottomInset: false,
       body: LayoutBuilder(
         builder: (context, box) {
           final center = box.maxHeight / 2;
