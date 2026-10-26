@@ -85,7 +85,7 @@ class _SplashScreenState extends State<SplashScreen>
                   child: Column(
                     children: [
                       Text(
-                        'PREPARANDO MAPAS SIN CONEXIÓN',
+                        'BY FRUTAL',
                         style: labelStyle(context).copyWith(
                           fontSize: 9.5,
                           letterSpacing: 3,

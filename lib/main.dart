@@ -19,10 +19,10 @@ class CrestaApp extends StatefulWidget {
 }
 
 class _CrestaAppState extends State<CrestaApp> {
-  // El splash dura al menos 1.5 s aunque los mapas estén listos antes
+  // El splash dura al menos 2 s aunque los mapas estén listos antes
   late final Future<AppServices> _boot = Future.wait([
     AppServices.start(),
-    Future<void>.delayed(const Duration(milliseconds: 1500)),
+    Future<void>.delayed(const Duration(seconds: 2)),
   ]).then((r) => r.first as AppServices);
 
   @override
