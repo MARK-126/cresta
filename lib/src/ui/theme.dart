@@ -48,8 +48,9 @@ ThemeData crestaTheme({bool civil = false}) {
     onPrimaryContainer: civil ? const Color(0xFFFFD790) : Andes.onCyan,
     secondary: Andes.gold,
     onSecondary: Andes.onGold,
-    secondaryContainer: Andes.goldContainer,
-    onSecondaryContainer: const Color(0xFFFFD790),
+    // Los botones "tonales" quedan en pizarra: el oro se reserva para lo importante
+    secondaryContainer: Andes.surfaceHighest,
+    onSecondaryContainer: Andes.onSurface,
     tertiary: Andes.terracotta,
     onTertiary: Andes.onTerracotta,
     tertiaryContainer: Andes.terracottaContainer,

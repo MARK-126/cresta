@@ -613,7 +613,8 @@ class _MapScreenState extends State<MapScreen> {
                   snap: true,
                   snapSizes: const [_sheetMin, _sheetInitial, _sheetMax],
                   builder: (context, scroll) => Material(
-                    color: Andes.surfaceLow.withValues(alpha: .98),
+                    // Opaco: sobre el WebView cualquier transparencia deja ver las etiquetas del mapa
+                    color: Andes.surfaceLow,
                     borderRadius: const BorderRadius.vertical(
                       top: Radius.circular(24),
                     ),
