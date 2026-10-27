@@ -124,7 +124,7 @@ assets/packs/izta_popo.zip     mapas del ejemplo (~10 MB)
 assets/fonts/inter/            tipografía de la app
 assets/images/                 textura del splash
 tool/                          scripts de Python: ruta, paquete de mapas e ícono
-test/                          88 pruebas
+test/                          87 pruebas
 ```
 
 ## Entorno de desarrollo (computadora con Windows)
