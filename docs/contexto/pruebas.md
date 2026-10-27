@@ -1,0 +1,90 @@
+# Registro de pruebas
+
+Una entrada por prueba, **también las que fallaron**. Lo más reciente arriba.
+Formato: fecha · rama/commit · qué · cómo · resultado · corrección.
+Teléfono de pruebas: Samsung Galaxy S23 Ultra (SM-S918B), Android 16, salvo que se diga otra cosa.
+
+## Sin probar todavía (revisar antes de dar por hecho)
+
+- Grabación **al aire libre** con la pantalla bloqueada: reloj, notificación fija, que siga grabando,
+  y que la Bitácora y el Resumen se llenen con un recorrido real.
+- SOS con la ubicación **encendida**: coordenadas, UTM, altitud; enviar el SMS a un contacto.
+- Importar un GPX/KML real desde el teléfono (la lectura está cubierta por pruebas automáticas).
+- Adjuntar una foto o un PDF como referencia y abrirlo.
+- Exportar GPX (ruta) a otra app.
+- Descargas de mapas en Android con conexión móvil (opción "solo Wi-Fi").
+
+## 2026-10-27
+
+**Fase 4c, referencias · `feat/preparacion` `12fdddc`**
+- Agregar y quitar un enlace en la expedición de ejemplo: **OK**. Archivos (foto, PDF) no probados.
+
+**Fase 4b, equipo · `5890e4e`**
+- Plantilla "Alta montaña, un día" (24 objetos, 11.8 kg), marcar empacados (2/24, 0.8 kg), editar
+  un objeto, vaciar la lista: **OK** (en la expedición de ejemplo, dejada vacía).
+- Toques de prueba en el nombre abren el editor (correcto); las casillas están a la izquierda (x≈77).
+
+**Fase 4a, clima · `9e34e1f`**
+- Vallecitos (sin ruta → centro de la zona, 4,318 m por relieve): −12°/−6°, nevada fuerte, ráfagas
+  69 km/h, congelación a 3,410 m: **OK**, datos reales de Open-Meteo.
+- Izta (ruta de ejemplo): salida 3,680 m "Chubascos" vs punto más alto 5,207 m: el modelo decía
+  chubascos (lluvia) en ambos → se agregó `snowAdjusted`: ahora dice "Chubascos de nieve" arriba. **OK**.
+- Fallo: el ícono de las 00:00 era un sol → se usa luna de noche (según amanecer/atardecer). **OK**.
+- Fallo: la expedición de ejemplo no podía consultar clima (su ruta viene en la app) → se carga la
+  ruta incluida. **OK**.
+- Dato: la API no ajusta la nieve a la altitud pedida (0 cm a 5,100 m con −6 °C y 8.8 mm).
+
+**SOS · `feat/perfil-sos` `f54c534`**
+- Pantalla SOS con la **ubicación del teléfono apagada**: muestra el aviso; se agregó "Reintentar". **OK**.
+- Perfil y formulario de contacto se ven bien; no se guardaron datos del usuario.
+- No se tocó "Llamar al 911".
+
+**Fase 3, planificador · `feat/planificador-rutas` `d1e6c1b` → `abe6e0f`**
+- `snapLeg` por consola de depuración (CDP) en 15 puntos de Vallecitos: **siempre null** en 2–9 ms →
+  OpenStreetMap no tiene senderos ahí. En el Izta: caminos de 142 y 75 puntos en ~30 ms. **OK**.
+- Flujo con toques: 2 puntos en el Izta → 6.2 km con rodeo por el valle. **Fallo**: cruces de senderos
+  desconectados en los mosaicos → se unen extremos a < 20 m → 5.0 km. **OK**.
+- Fallo: al guardar, pantalla roja `_dependents.isEmpty` → causa: `TextEditingController` liberado
+  mientras el diálogo se cerraba → `askText` con estado propio. **OK** (también en renombrar recorrido).
+- Fallo: el selector de tipo de punto se desbordaba 21 px → `isScrollControlled` + scroll. **OK**.
+- Fallo: el panel no bajaba al elegir un punto de interés → `_moveSheet` tras el cuadro. **OK**.
+- Detalle de ruta, renombrar y borrar: **OK**. Pendiente máx. de 74 % parece alta (posible ruido del
+  relieve de 30 m).
+
+## 2026-10-26
+
+**Splash · `feat/rediseno-ui` `dc7008e` → `88c5695`**
+- Fallo: el splash de Flutter ocupaba 2/3 del ancho → `AnimatedSwitcher` con `StackFit.expand`. **OK**.
+- Fallo: el usuario veía el logo de Flutter → splash de Android 12+ configurado (también `values-night-v31`). **OK**.
+- Fallo: costuras en la textura en mosaico → una sola imagen `BoxFit.cover`. **OK**.
+- Fallo: con teclado abierto se encimaba "BY FRUTAL" → `resizeToAvoidBottomInset: false`. **OK**.
+- Arranque en frío: la montaña de Android y la de Flutter coinciden en tamaño y lugar. **OK**. Duración ≥ 2 s.
+
+**Pestañas, bitácora, resumen · `8f62768`**
+- Las 4 pestañas en el teléfono: **OK**. Bitácora y Resumen vacíos (sin recorridos terminados).
+- Fallo: al cerrar y abrir la app no había barra inferior → se abría el APK viejo (la recarga en
+  caliente no cambia lo instalado) → reinstalar. **OK**.
+
+**Ícono · `8ed84eb`**: el usuario lo aprobó.
+
+## 2026-10-25
+
+**Rediseño UI · `c321647`, `acfb45f`**
+- Fallo: el panel del mapa dejaba ver etiquetas del mapa → panel opaco. **OK**.
+- Fallo: botón "Agregar zona" en dorado sucio → botones tonales en pizarra. **OK**.
+
+**Grabación · `feat/grabar-recorrido` `0f9de30`**
+- Usuario grabó dentro de casa: el reloj no avanzó. Causa: el reloj era "tiempo en movimiento" y las
+  lecturas peores que ±50 m se descartan → reloj de tiempo total + aviso de GPS. Corregido; **falta
+  probar al aire libre**.
+- Fallo: no se pedía el permiso de notificaciones (Android 13+) → canal `cresta/permissions`. Corregido.
+- Permiso de ubicación: se pide al tocar "Mi ubicación" o "Grabar" (correcto, por diseño).
+- Descarga de una zona (Vallecitos, 6.8 MB) con Wi-Fi: **OK** (la hizo el usuario).
+
+**Entorno**: Flutter 3.47.8 instalado en WSL; `flutter analyze` limpio y 46 pruebas en verde en la
+rama `feat/grabar-recorrido` antes de cualquier cambio. Primera ejecución en Android: arranca sin errores.
+
+## Antes de octubre 2026 (otra computadora)
+
+- iOS en el simulador de iPhone 16 Pro, con caminatas simuladas (`xcrun simctl location ...`).
+- Descargas reales: Nevado de Toluca (71 mosaicos) y Aconcagua.

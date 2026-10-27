@@ -3,7 +3,14 @@
 App Flutter (iOS y Android) de mapas 3D para montañismo, **offline-first**: el usuario prepara la expedición
 con Wi-Fi y en la montaña todo funciona sin señal. Uso personal y gratuito.
 
-**Antes de trabajar, lee `docs/CONTEXTO.md`**: historia, decisiones, estado de cada fase y pendientes.
+**`docs/contexto/` es la memoria del proyecto.** Antes de trabajar, lee `docs/contexto/README.md` y sigue
+su orden de lectura (estado, pendientes, pruebas, entorno, decisiones). Antes de probar algo, revisa
+`pruebas.md`: puede que ya esté probado o que ya se sepa por qué falla.
+
+**Al terminar cada tarea, actualiza la carpeta** en la misma rama, antes del commit final:
+`estado.md` (lo construido), `pruebas.md` (cada prueba, también las fallidas, con resultado y corrección),
+`decisiones.md` (decisiones y errores resueltos), `pendientes.md` y `funcionalidades.md` (mover lo
+terminado a "Ya funcionan").
 
 ## Idioma y estilo
 
@@ -37,4 +44,4 @@ Antes de cada commit: `dart format lib test`, `flutter analyze` sin problemas y 
 - Ramas por fase (`feat/...`); commits con la línea `Co-Authored-By` que indique el entorno.
 - **UI "Andes Industrial", solo tema oscuro:** colores de `Andes` y componentes de `lib/src/ui/theme.dart`
   (`TonalCard`, `Figure`, `GlowButton`, `Glass`). Nada de bordes de 1 px, sombras ni colores sueltos.
-  Detalles en la sección "Diseño" de `docs/CONTEXTO.md`.
+  Detalles en `docs/contexto/decisiones.md`.
