@@ -8,6 +8,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 
 import 'expeditions/expedition_store.dart';
+import 'gear/gear.dart';
 import 'location/location_service.dart';
 import 'offline/map_sources.dart';
 import 'offline/offline_maps.dart';
@@ -50,6 +51,7 @@ class AppServices {
     this.terrain,
     this.profile,
     this.weather,
+    this.gear,
   );
 
   final TileServer server;
@@ -70,6 +72,9 @@ class AppServices {
 
   /// Pronósticos guardados por expedición (Open-Meteo).
   final WeatherService weather;
+
+  /// Listas de equipo por expedición.
+  final GearStore gear;
 
   /// Mosaicos vistos con conexión (no cuentan como descargados; se pueden borrar).
   final TileStore cache;
@@ -133,6 +138,8 @@ class AppServices {
       file: JsonStore(File('${support.path}/weather.json')),
     );
     await weather.load();
+    final gear = GearStore(JsonStore(File('${support.path}/gear.json')));
+    await gear.load();
 
     final server = TileServer(
       offline: offline,
@@ -154,6 +161,7 @@ class AppServices {
       terrain,
       profile,
       weather,
+      gear,
     );
   }
 }

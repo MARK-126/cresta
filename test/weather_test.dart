@@ -169,4 +169,18 @@ void main() {
       throwsA(predicate((e) => '$e'.contains('Sin conexión'))),
     );
   });
+
+  test('la lluvia del modelo se muestra como nieve donde nieva', () {
+    expect(snowAdjusted(80, true), 85);
+    expect(snowAdjusted(63, true), 73);
+    expect(snowAdjusted(80, false), 80);
+    expect(snowAdjusted(95, true), 95); // la tormenta sigue siendo tormenta
+    final f = parseForecast(
+      _summit,
+      _response(precip: const [0, 0.4, 0, 0, 0, 0]),
+    );
+    expect(f.hours[1].snowLikely, isTrue);
+    expect(f.hours[1].displayCode, 73);
+    expect(weatherLabel(f.hours[1].displayCode), 'Nieve');
+  });
 }

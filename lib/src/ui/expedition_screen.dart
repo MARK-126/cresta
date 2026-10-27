@@ -5,6 +5,7 @@ import '../expeditions/expedition.dart';
 import '../offline/offline_region.dart';
 import 'area_picker_screen.dart';
 import 'expeditions_screen.dart';
+import 'gear_screen.dart';
 import 'format.dart';
 import 'map_screen.dart';
 import 'offline_widgets.dart';
@@ -25,7 +26,12 @@ class ExpeditionScreen extends StatelessWidget {
     final services = AppScope.of(context);
     final store = services.expeditions;
     return ListenableBuilder(
-      listenable: Listenable.merge([store, services.routes, services.weather]),
+      listenable: Listenable.merge([
+        store,
+        services.routes,
+        services.weather,
+        services.gear,
+      ]),
       builder: (context, _) {
         final e = store.byId(expeditionId);
         if (e == null) {
@@ -35,6 +41,8 @@ class ExpeditionScreen extends StatelessWidget {
         final route = services.routes.forExpedition(e.id);
         final hasRoute = route != null || e.routeAsset != null;
         final weather = services.weather.forExpedition(e.id);
+        final gear = services.gear.forExpedition(e.id);
+        final packed = gear.where((i) => i.packed).length;
         // Un pronóstico de hace más de 2 días ya no sirve para decidir
         final weatherFresh =
             weather != null &&
@@ -135,6 +143,15 @@ class ExpeditionScreen extends StatelessWidget {
                             ? 'Pronóstico guardado ${fmtUpdated(weather.fetchedAt)}.'
                             : 'Consultado ${fmtUpdated(weather.fetchedAt)}: actualízalo antes de salir.',
                       ),
+                      _Check(
+                        done: gear.isNotEmpty && packed == gear.length,
+                        title: 'Equipo',
+                        detail: gear.isEmpty
+                            ? 'Arma la lista desde una plantilla.'
+                            : packed == gear.length
+                            ? 'Todo empacado (${gear.length} objetos).'
+                            : 'Faltan ${gear.length - packed} de ${gear.length} por empacar.',
+                      ),
                       _TurnaroundCheck(expedition: e),
                     ],
                   ),
@@ -178,6 +195,8 @@ class ExpeditionScreen extends StatelessWidget {
                     ),
                   ],
                 ),
+                const SectionTitle('Equipo'),
+                GearCard(expeditionId: e.id),
                 const SectionTitle('Clima'),
                 WeatherCard(expedition: e, route: route?.profile),
                 SectionTitle(
@@ -259,12 +278,15 @@ class ExpeditionScreen extends StatelessWidget {
     final ok = await confirmDialog(
       context,
       title: 'Borrar "${e.name}"',
-      body: 'Se borran la expedición, sus recorridos grabados y sus mapas descargados (salvo los que use otra expedición). No se puede deshacer.',
+      body: 'Se borran la expedición, su ruta, su clima, su equipo, sus recorridos grabados y sus mapas descargados (salvo los que use otra expedición). No se puede deshacer.',
       action: 'Borrar',
     );
     if (!ok) return;
     navigator.pop();
     await services.tracks.deleteForExpedition(e.id);
+    await services.routes.delete(e.id);
+    await services.weather.delete(e.id);
+    await services.gear.deleteExpedition(e.id);
     await store.delete(e, deleteMaps: true);
   }
 

@@ -47,6 +47,7 @@ class HourWeather {
     required this.gusts,
     required this.freezingLevel,
     required this.code,
+    this.snowLikely = false,
   });
 
   final DateTime time;
@@ -60,6 +61,11 @@ class HourWeather {
   /// Altitud donde la temperatura cruza 0 °C (null si el modelo no la da).
   final double? freezingLevel;
   final int code;
+
+  /// La precipitación de esta hora cae como nieve en este punto.
+  final bool snowLikely;
+
+  int get displayCode => snowAdjusted(code, snowLikely);
 }
 
 /// Resumen de un día en un punto.
@@ -98,6 +104,9 @@ class DayWeather {
   /// Si la precipitación del día caería como nieve en este punto. Lo calculamos nosotros:
   /// la nieve que entrega el modelo es la de su celda, no la de la altitud pedida.
   final bool snowLikely;
+
+  /// El código a mostrar: lluvia del modelo convertida en nieve si aquí nieva.
+  int get displayCode => snowAdjusted(code, snowLikely);
 }
 
 /// Pronóstico de un punto, ya leído de la respuesta de Open-Meteo.
@@ -170,6 +179,11 @@ PointForecast parseForecast(WeatherPoint requested, Map<String, dynamic> json) {
         gusts: at(gust, i),
         freezingLevel: i < frz.length ? frz[i]?.toDouble() : null,
         code: at(hCode, i).round(),
+        snowLikely:
+            at(temp, i) <= 0.5 ||
+            (i < frz.length &&
+                frz[i] != null &&
+                elevation >= frz[i]!.toDouble()),
       ),
   ];
 
@@ -192,12 +206,7 @@ PointForecast parseForecast(WeatherPoint requested, Map<String, dynamic> json) {
     );
     final levels = dayHours.map((x) => x.freezingLevel).whereType<double>();
     // Nieve: alguna hora con precipitación y el punto a 0 °C o menos (o arriba del nivel de congelación)
-    final snow = dayHours.any(
-      (x) =>
-          x.precipitation >= 0.1 &&
-          (x.temperature <= 0.5 ||
-              (x.freezingLevel != null && elevation >= x.freezingLevel!)),
-    );
+    final snow = dayHours.any((x) => x.precipitation >= 0.1 && x.snowLikely);
     days.add(
       DayWeather(
         date: date,
@@ -223,6 +232,18 @@ PointForecast parseForecast(WeatherPoint requested, Map<String, dynamic> json) {
   }
   return PointForecast(point: point, days: days, hours: hours);
 }
+
+/// Si a esta altitud la precipitación cae como nieve, el código de lluvia del modelo
+/// (calculado para su celda, más baja) se cambia por el de nieve equivalente.
+int snowAdjusted(int code, bool snowy) => !snowy
+    ? code
+    : switch (code) {
+        51 || 53 || 55 || 56 || 57 || 61 || 63 || 66 => 73,
+        65 || 67 => 75,
+        80 || 81 => 85,
+        82 => 86,
+        _ => code,
+      };
 
 /// Descripción en español de un código WMO del tiempo.
 String weatherLabel(int code) => switch (code) {

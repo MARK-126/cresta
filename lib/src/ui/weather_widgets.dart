@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../app_services.dart';
+import '../data/asset_repository.dart';
 import '../data/trail_route.dart';
 import '../expeditions/expedition.dart';
 import '../weather/forecast.dart';
@@ -41,6 +42,10 @@ Future<void> refreshWeather(
 ) async {
   final services = AppScope.of(context);
   final messenger = ScaffoldMessenger.of(context);
+  // La expedición de ejemplo trae su ruta en la app, no guardada
+  if (route == null && e.routeAsset != null) {
+    (route, _) = await const AssetData().route(e.routeAsset!);
+  }
   final points = await weatherPointsFor(
     route: route,
     bounds: services.expeditions.statusOf(e).bounds,
@@ -218,7 +223,7 @@ class _PointSummary extends StatelessWidget {
           Row(
             children: [
               Icon(
-                weatherIcon(day.code),
+                weatherIcon(day.displayCode),
                 color: isStorm(day.code)
                     ? Andes.terracottaContainer
                     : Andes.cyan,
@@ -231,7 +236,7 @@ class _PointSummary extends StatelessWidget {
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
-                  weatherLabel(day.code),
+                  weatherLabel(day.displayCode),
                   style: const TextStyle(fontWeight: FontWeight.w600),
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -443,7 +448,7 @@ class _HourTile extends StatelessWidget {
         ),
         const SizedBox(height: 6),
         Icon(
-          weatherIcon(hour.code, night: night),
+          weatherIcon(hour.displayCode, night: night),
           size: 20,
           color: isStorm(hour.code) ? Andes.terracottaContainer : Andes.cyan,
         ),
@@ -519,7 +524,7 @@ class _DayRow extends StatelessWidget {
             ),
           ),
           Icon(
-            weatherIcon(day.code),
+            weatherIcon(day.displayCode),
             size: 20,
             color: isStorm(day.code) ? Andes.terracottaContainer : Andes.cyan,
           ),
