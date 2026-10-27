@@ -270,3 +270,70 @@ class WithBanners extends StatelessWidget {
     ],
   );
 }
+
+/// Pide un texto (p. ej. un nombre). El controlador vive en el estado del diálogo y se
+/// libera cuando el diálogo termina de cerrarse, no antes: liberarlo al volver de
+/// `showDialog` rompe la animación de salida.
+Future<String?> askText(
+  BuildContext context, {
+  required String title,
+  required String initial,
+  String? hint,
+  String action = 'Guardar',
+}) async {
+  final text = await showDialog<String>(
+    context: context,
+    builder: (_) =>
+        _TextDialog(title: title, initial: initial, hint: hint, action: action),
+  );
+  final t = text?.trim();
+  return (t == null || t.isEmpty) ? null : t;
+}
+
+class _TextDialog extends StatefulWidget {
+  const _TextDialog({
+    required this.title,
+    required this.initial,
+    required this.hint,
+    required this.action,
+  });
+  final String title;
+  final String initial;
+  final String? hint;
+  final String action;
+
+  @override
+  State<_TextDialog> createState() => _TextDialogState();
+}
+
+class _TextDialogState extends State<_TextDialog> {
+  late final _ctrl = TextEditingController(text: widget.initial);
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => AlertDialog(
+    title: Text(widget.title),
+    content: TextField(
+      controller: _ctrl,
+      autofocus: true,
+      textCapitalization: TextCapitalization.sentences,
+      decoration: InputDecoration(hintText: widget.hint),
+      onSubmitted: (v) => Navigator.pop(context, v),
+    ),
+    actions: [
+      TextButton(
+        onPressed: () => Navigator.pop(context),
+        child: const Text('Cancelar'),
+      ),
+      FilledButton(
+        onPressed: () => Navigator.pop(context, _ctrl.text),
+        child: Text(widget.action),
+      ),
+    ],
+  );
+}

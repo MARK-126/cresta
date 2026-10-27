@@ -211,8 +211,10 @@ class PlannerPanel extends StatelessWidget {
       showModalBottomSheet<PoiKind>(
         context: context,
         showDragHandle: true,
+        // Siete opciones no caben en la altura por defecto en pantallas chicas
+        isScrollControlled: true,
         builder: (context) => SafeArea(
-          child: Padding(
+          child: SingleChildScrollView(
             padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -225,6 +227,7 @@ class PlannerPanel extends StatelessWidget {
                 for (final k in PoiKind.values)
                   ListTile(
                     contentPadding: EdgeInsets.zero,
+                    visualDensity: VisualDensity.compact,
                     leading: Icon(poiIcon(k), color: poiColor(k)),
                     title: Text(k.label),
                     onTap: () => Navigator.pop(context, k),

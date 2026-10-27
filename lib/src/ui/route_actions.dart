@@ -108,31 +108,9 @@ Future<void> exportRouteGpx(BuildContext context, PlannedRoute route) async {
 }
 
 /// Pide el nombre de la ruta al guardarla.
-Future<String?> askRouteName(BuildContext context, String initial) async {
-  final ctrl = TextEditingController(text: initial);
-  final name = await showDialog<String>(
-    context: context,
-    builder: (context) => AlertDialog(
-      title: const Text('Nombre de la ruta'),
-      content: TextField(
-        controller: ctrl,
-        autofocus: true,
-        textCapitalization: TextCapitalization.sentences,
-        decoration: const InputDecoration(hintText: 'Ej. Arista norte'),
-        onSubmitted: (v) => Navigator.pop(context, v.trim()),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text('Cancelar'),
-        ),
-        FilledButton(
-          onPressed: () => Navigator.pop(context, ctrl.text.trim()),
-          child: const Text('Guardar'),
-        ),
-      ],
-    ),
-  );
-  ctrl.dispose();
-  return (name == null || name.isEmpty) ? null : name;
-}
+Future<String?> askRouteName(BuildContext context, String initial) => askText(
+  context,
+  title: 'Nombre de la ruta',
+  initial: initial,
+  hint: 'Ej. Arista norte',
+);

@@ -181,30 +181,12 @@ class _TrackScreenState extends State<TrackScreen> {
   }
 
   Future<void> _rename(Track t) async {
-    final ctrl = TextEditingController(text: t.name);
-    final name = await showDialog<String>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Nombre del recorrido'),
-        content: TextField(
-          controller: ctrl,
-          autofocus: true,
-          textCapitalization: TextCapitalization.sentences,
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancelar'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, ctrl.text.trim()),
-            child: const Text('Guardar'),
-          ),
-        ],
-      ),
+    final name = await askText(
+      context,
+      title: 'Nombre del recorrido',
+      initial: t.name,
     );
-    ctrl.dispose();
-    if (name == null || name.isEmpty || !mounted) return;
+    if (name == null || !mounted) return;
     t.name = name;
     await AppScope.of(context).tracks.save();
     setState(() {});

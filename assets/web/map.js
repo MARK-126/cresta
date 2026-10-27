@@ -308,6 +308,7 @@
       if (!n) { n = { c, edges: [] }; nodes.set(k, n); }
       return n;
     };
+    const ends = [];
     for (const f of feats) {
       const g = f.geometry;
       const lines = g.type === 'LineString' ? [g.coordinates] : g.type === 'MultiLineString' ? g.coordinates : [];
@@ -318,7 +319,30 @@
           const w = metersBetween(p.c, q.c);
           p.edges.push([q, w]); q.edges.push([p, w]);
         }
+        if (line.length > 1) ends.push(node(line[0]), node(line[line.length - 1]));
       }
+    }
+    // Los mosaicos simplifican las líneas y a veces un sendero "llega" a otro sin compartir
+    // vértice: se une cada extremo suelto con el vértice más cercano a menos de 20 m.
+    const cell = (c) => `${Math.floor(c[0] * 2000)},${Math.floor(c[1] * 2000)}`; // ~50 m
+    const grid = new Map();
+    for (const n of nodes.values()) {
+      const k = cell(n.c);
+      if (!grid.has(k)) grid.set(k, []);
+      grid.get(k).push(n);
+    }
+    for (const e of ends) {
+      if (e.edges.length > 1) continue; // ya es un cruce
+      const [cx, cy] = cell(e.c).split(',').map(Number);
+      let best = null, bd = 20;
+      for (let dx = -1; dx <= 1; dx++) for (let dy = -1; dy <= 1; dy++) {
+        for (const n of grid.get(`${cx + dx},${cy + dy}`) || []) {
+          if (n === e || e.edges.some(([m]) => m === n)) continue;
+          const d = metersBetween(e.c, n.c);
+          if (d < bd) { bd = d; best = n; }
+        }
+      }
+      if (best) { e.edges.push([best, bd]); best.edges.push([e, bd]); }
     }
     const nearest = (pt) => {
       let best = null, bd = 250;

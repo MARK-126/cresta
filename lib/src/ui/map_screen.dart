@@ -816,8 +816,16 @@ class _MapScreenState extends State<MapScreen> {
                             PlannerPanel(
                               planner: _planner!,
                               placingPoi: _placingPoi,
-                              onPlacePoi: (k) =>
-                                  setState(() => _placingPoi = k),
+                              onPlacePoi: (k) {
+                                setState(() => _placingPoi = k);
+                                // Baja el panel para dejar libre el mapa donde hay que tocar
+                                if (k != null) {
+                                  // Después del cuadro: el selector aún se está cerrando
+                                  WidgetsBinding.instance.addPostFrameCallback(
+                                    (_) => _moveSheet(_sheetMin),
+                                  );
+                                }
+                              },
                               onSave: _savePlan,
                               onCancel: _cancelPlan,
                             )
