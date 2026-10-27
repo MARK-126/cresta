@@ -14,6 +14,7 @@ import 'offline/offline_maps.dart';
 import 'offline/region_downloader.dart';
 import 'offline/sample_data.dart';
 import 'offline/tile_store.dart';
+import 'profile/emergency_profile.dart';
 import 'routes/route_store.dart';
 import 'storage/json_store.dart';
 import 'tiles/tile_server.dart';
@@ -46,6 +47,7 @@ class AppServices {
     this.location,
     this.routes,
     this.terrain,
+    this.profile,
   );
 
   final TileServer server;
@@ -60,6 +62,9 @@ class AppServices {
 
   /// Altitud a partir del relieve descargado (perfil de rutas y desnivel del recorrido).
   final TerrainElevation terrain;
+
+  /// Datos de emergencia del usuario (solo en el teléfono).
+  final ProfileStore profile;
 
   /// Mosaicos vistos con conexión (no cuentan como descargados; se pueden borrar).
   final TileStore cache;
@@ -114,6 +119,10 @@ class AppServices {
     await recorder.recover();
     final routes = RouteStore(JsonStore(File('${support.path}/routes.json')));
     await routes.load();
+    final profile = ProfileStore(
+      JsonStore(File('${support.path}/profile.json')),
+    );
+    await profile.load();
 
     final server = TileServer(
       offline: offline,
@@ -133,6 +142,7 @@ class AppServices {
       location,
       routes,
       terrain,
+      profile,
     );
   }
 }

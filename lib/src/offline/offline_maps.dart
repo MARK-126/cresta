@@ -38,6 +38,9 @@ class OfflineMaps extends ChangeNotifier {
   StreamSubscription<NetworkKind>? _netSub;
   final _regions = <OfflineRegion>[];
   OfflineRegion? _active;
+
+  /// Hay una zona descargándose ahora (mantiene la pantalla encendida).
+  bool get isDownloading => _active != null;
   CancelToken? _token;
   DateTime _lastSave = DateTime.fromMillisecondsSinceEpoch(0);
 

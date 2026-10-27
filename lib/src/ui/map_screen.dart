@@ -25,6 +25,7 @@ import 'panels.dart';
 import 'planner_panel.dart';
 import 'recording_panel.dart';
 import 'route_actions.dart';
+import 'sos_screen.dart';
 import 'theme.dart';
 import 'track_screen.dart';
 
@@ -738,6 +739,19 @@ class _MapScreenState extends State<MapScreen> {
                     top: MediaQuery.paddingOf(context).top + 70,
                     child: Column(
                       children: [
+                        _MapButton(
+                          icon: Icons.sos_rounded,
+                          color: Andes.terracottaContainer,
+                          tooltip: 'SOS: tu ubicación y llamar a emergencias',
+                          onPressed: () => Navigator.push(
+                            context,
+                            MaterialPageRoute<void>(
+                              builder: (_) =>
+                                  SosScreen(expeditionName: _expedition.name),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
                         _MapButton(
                           icon: (_recordingHere ? _following : _locating)
                               ? Icons.my_location_rounded

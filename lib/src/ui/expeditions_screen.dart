@@ -7,7 +7,9 @@ import 'format.dart';
 import 'offline_widgets.dart';
 import '../tracking/track_recorder.dart';
 import 'map_screen.dart';
+import 'profile_screen.dart';
 import 'recording_panel.dart';
+import 'sos_screen.dart';
 import 'theme.dart';
 
 /// Inicio: la lista de expediciones.
@@ -29,6 +31,22 @@ class ExpeditionsScreen extends StatelessWidget {
           appBar: AppBar(
             titleSpacing: 24,
             title: const CrestaWordmark(size: 24),
+            actions: [
+              IconButton(
+                tooltip: 'Perfil de emergencia',
+                icon: const Icon(Icons.badge_outlined),
+                onPressed: () => openProfile(context),
+              ),
+              Padding(
+                padding: const EdgeInsets.only(right: 16, left: 4),
+                child: _SosButton(
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute<void>(builder: (_) => const SosScreen()),
+                  ),
+                ),
+              ),
+            ],
           ),
           body: WithBanners(
             banners: [NetworkBanner(maps: services.maps)],
@@ -467,4 +485,30 @@ class _RecordingBanner extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Acceso rápido a la pantalla de auxilio.
+class _SosButton extends StatelessWidget {
+  const _SosButton({required this.onTap});
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) => Material(
+    color: Andes.terracottaContainer.withValues(alpha: .16),
+    borderRadius: BorderRadius.circular(12),
+    child: InkWell(
+      borderRadius: BorderRadius.circular(12),
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+        child: Text(
+          'SOS',
+          style: labelStyle(
+            context,
+            color: Andes.terracottaContainer,
+          ).copyWith(fontSize: 13, fontWeight: FontWeight.w900),
+        ),
+      ),
+    ),
+  );
 }
