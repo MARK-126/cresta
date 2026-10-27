@@ -1,7 +1,7 @@
 # Contexto del proyecto Cresta
 
 Resumen de lo decidido y construido, para continuar en otra computadora o sesión.
-Actualizado: 26 oct 2026.
+Actualizado: 27 oct 2026.
 
 ## Qué quiere el usuario
 
@@ -27,10 +27,31 @@ Meshtastic.
 | 1 | Expediciones, descarga de mapas por zona, gestor de mapas, mapa topográfico propio | Hecha | `feat/expediciones-mapas-offline` |
 | 2 | Grabar recorrido (segundo plano, estadísticas, hora límite, salida de ruta, GPX) | Hecha | `feat/grabar-recorrido` (incluye la 1) |
 | UI | Rediseño "Andes Industrial" (Stitch), pestañas, bitácora, resumen, splash, ícono | Hecha | `feat/rediseno-ui`, `feat/icono-y-contexto` |
-| 3 | Planificador de rutas: dibujar, ajustar a senderos OSM offline, importar GPX/KML | Pendiente | |
-| 4 | Clima por altitud guardado con la expedición (Open-Meteo), referencias (fotos, PDF, contactos), lista de equipo | Pendiente | |
+| 3 | Planificador de rutas: dibujar, ajustar a senderos OSM offline, importar GPX/KML | Hecha | `feat/planificador-rutas` |
+| SOS | Perfil de emergencia y pantalla SOS (coordenadas, UTM, llamar, SMS) | Hecha | `feat/perfil-sos` |
+| 4 | Clima por altitud (Open-Meteo), lista de equipo, referencias (fotos, PDF, enlaces, teléfonos) | Hecha | `feat/preparacion` |
 
-Todo lo anterior a la Fase 3 ya está en `main` (merge por avance directo, sin pull request).
+Los merges a `main` se hacen por avance directo (fast-forward), sin pull request, cuando el usuario lo aprueba.
+
+## Fases 3, SOS y 4 (resumen técnico)
+
+- **Rutas:** una por expedición (`routes.json`, `RouteStore`). El ajuste a senderos corre en `map.js`
+  (`snapLeg`): arma un grafo con `querySourceFeatures` de la capa `transportation` **visible** (zoom ≥ 12.5),
+  une extremos sueltos a < 20 m y usa Dijkstra por distancia (no por desnivel). Sin sendero → tramo recto.
+  Perfil con `buildProfile` (puntos cada 30 m, altitud del relieve). Importa GPX (trk/rte/wpt) y KML
+  (LineString, gx:Track, Placemark); exporta GPX. Detalle: `RouteScreen` con bitácora de paradas.
+- **SOS:** `profile.json` (sin cuenta). Coordenadas decimal, grados-minutos-segundos y UTM (`toUtm`, Krüger);
+  llamada con `tel:`, SMS con `sms:` (cuerpo codificado a mano), compartir/copiar. Mantiene la pantalla encendida.
+- **Clima:** Open-Meteo, 16 días por hora, con `elevation` de la salida y del punto más alto (o centro de la
+  zona). Se guarda en `weather.json`. "Nieve probable" y el código de nieve se calculan con la altitud del
+  punto y el nivel de congelación (la nieve del modelo es la de su celda). Vigente 48 h en el checklist.
+- **Equipo:** `gear.json`, plantillas (senderismo, alta montaña, con campamento), peso y empacado.
+- **Referencias:** `references.json`; los archivos se copian a `references/<expedición>/` (sirven sin señal).
+  PDF y otros se abren con `open_filex`; fotos en un visor propio con zoom.
+- Borrar una expedición borra su ruta, clima, equipo, referencias, recorridos y mapas propios.
+- Probado en el Samsung: planificador (en el Izta; en Vallecitos OSM no tiene senderos), detalle de ruta,
+  SOS (con la ubicación apagada), clima real, equipo y referencias (enlace). Pendiente probar: SMS y
+  coordenadas del SOS con la ubicación encendida, importar un GPX real y abrir un PDF.
 
 ## Diseño (UI)
 
@@ -103,7 +124,7 @@ assets/packs/izta_popo.zip     mapas del ejemplo (~10 MB)
 assets/fonts/inter/            tipografía de la app
 assets/images/                 textura del splash
 tool/                          scripts de Python: ruta, paquete de mapas e ícono
-test/                          51 pruebas
+test/                          88 pruebas
 ```
 
 ## Entorno de desarrollo (computadora con Windows)
@@ -137,8 +158,9 @@ test/                          51 pruebas
 
 ## Próximo paso sugerido
 
-Orden acordado con el usuario: prueba de grabación al aire libre → Fase 3 (planificador + pantalla "Route
-Details") → perfil con datos de emergencia y pantalla SOS sin señal → Fase 4.
+Hechas las fases 3, SOS y 4. Sigue pendiente la **prueba de grabación al aire libre**. Ideas siguientes:
+brújula y rumbo de regreso, salida y puesta del sol sin conexión, fotos geolocalizadas en el recorrido,
+ajuste a senderos que considere el desnivel, notificación al pasar la hora límite.
 
 Fase 3, planificador de rutas: tocar puntos en el mapa; trazar a mano o ajustado a los senderos de la capa
 `transportation` de OpenMapTiles (ya descargada con la zona); perfil y tiempo estimado en vivo (reusar

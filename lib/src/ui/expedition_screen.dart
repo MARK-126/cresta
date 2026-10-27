@@ -10,6 +10,7 @@ import 'format.dart';
 import 'map_screen.dart';
 import 'offline_widgets.dart';
 import 'panels.dart';
+import 'references_section.dart';
 import 'route_actions.dart';
 import 'route_screen.dart';
 import 'weather_widgets.dart';
@@ -234,6 +235,8 @@ class ExpeditionScreen extends StatelessWidget {
                 ),
                 const SectionTitle('Recorridos grabados'),
                 TrackList(expeditionId: e.id),
+                const SectionTitle('Referencias'),
+                ReferencesSection(expeditionId: e.id),
                 const SectionTitle('Notas'),
                 _Notes(expedition: e),
               ],
@@ -278,7 +281,7 @@ class ExpeditionScreen extends StatelessWidget {
     final ok = await confirmDialog(
       context,
       title: 'Borrar "${e.name}"',
-      body: 'Se borran la expedición, su ruta, su clima, su equipo, sus recorridos grabados y sus mapas descargados (salvo los que use otra expedición). No se puede deshacer.',
+      body: 'Se borran la expedición, su ruta, su clima, su equipo, sus referencias, sus recorridos grabados y sus mapas descargados (salvo los que use otra expedición). No se puede deshacer.',
       action: 'Borrar',
     );
     if (!ok) return;
@@ -287,6 +290,7 @@ class ExpeditionScreen extends StatelessWidget {
     await services.routes.delete(e.id);
     await services.weather.delete(e.id);
     await services.gear.deleteExpedition(e.id);
+    await services.references.deleteExpedition(e.id);
     await store.delete(e, deleteMaps: true);
   }
 

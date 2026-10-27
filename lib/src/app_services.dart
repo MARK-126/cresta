@@ -16,6 +16,7 @@ import 'offline/region_downloader.dart';
 import 'offline/sample_data.dart';
 import 'offline/tile_store.dart';
 import 'profile/emergency_profile.dart';
+import 'references/references.dart';
 import 'routes/route_store.dart';
 import 'storage/json_store.dart';
 import 'tiles/tile_server.dart';
@@ -52,6 +53,7 @@ class AppServices {
     this.profile,
     this.weather,
     this.gear,
+    this.references,
   );
 
   final TileServer server;
@@ -75,6 +77,9 @@ class AppServices {
 
   /// Listas de equipo por expedición.
   final GearStore gear;
+
+  /// Fotos, PDF, enlaces y teléfonos guardados con cada expedición.
+  final ReferenceStore references;
 
   /// Mosaicos vistos con conexión (no cuentan como descargados; se pueden borrar).
   final TileStore cache;
@@ -140,6 +145,11 @@ class AppServices {
     await weather.load();
     final gear = GearStore(JsonStore(File('${support.path}/gear.json')));
     await gear.load();
+    final references = ReferenceStore(
+      JsonStore(File('${support.path}/references.json')),
+      Directory('${support.path}/references'),
+    );
+    await references.load();
 
     final server = TileServer(
       offline: offline,
@@ -162,6 +172,7 @@ class AppServices {
       profile,
       weather,
       gear,
+      references,
     );
   }
 }
