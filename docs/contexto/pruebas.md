@@ -16,6 +16,14 @@ Teléfono de pruebas: Samsung Galaxy S23 Ultra (SM-S918B), Android 16, salvo que
 
 ## 2026-10-27
 
+**graphify · `chore/graphify` `4f05a32`**
+- Primer grafo (`extract --code-only`): 99 archivos de código, 1,882 nodos, 2,575 relaciones, 92 grupos;
+  nodos centrales `JsonStore`, `TrailRoute`, `Expedition`, `TileStore`. **OK**.
+- `tool/dev/graphify.sh god-nodes` desde Windows (Git Bash → WSL): **OK**.
+- Commit real con los hooks: reconstrucción en segundo plano de 11 archivos cambiados (1,910 nodos,
+  87 grupos) y el etiquetado se lanzó y se saltó por falta de clave ("GEMINI_API_KEY vacía"). **OK**.
+- Falta: etiquetar con Gemini (cuando el usuario ponga la clave).
+
 **Fase 4c, referencias · `feat/preparacion` `12fdddc`**
 - Agregar y quitar un enlace en la expedición de ejemplo: **OK**. Archivos (foto, PDF) no probados.
 
