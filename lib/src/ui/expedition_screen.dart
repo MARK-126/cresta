@@ -11,6 +11,7 @@ import 'offline_widgets.dart';
 import 'panels.dart';
 import 'route_actions.dart';
 import 'route_screen.dart';
+import 'weather_widgets.dart';
 import 'theme.dart';
 import 'track_screen.dart';
 
@@ -24,7 +25,7 @@ class ExpeditionScreen extends StatelessWidget {
     final services = AppScope.of(context);
     final store = services.expeditions;
     return ListenableBuilder(
-      listenable: Listenable.merge([store, services.routes]),
+      listenable: Listenable.merge([store, services.routes, services.weather]),
       builder: (context, _) {
         final e = store.byId(expeditionId);
         if (e == null) {
@@ -33,6 +34,12 @@ class ExpeditionScreen extends StatelessWidget {
         final status = store.statusOf(e);
         final route = services.routes.forExpedition(e.id);
         final hasRoute = route != null || e.routeAsset != null;
+        final weather = services.weather.forExpedition(e.id);
+        // Un pronóstico de hace más de 2 días ya no sirve para decidir
+        final weatherFresh =
+            weather != null &&
+            DateTime.now().difference(weather.fetchedAt) <
+                const Duration(hours: 48);
         final scheme = Theme.of(context).colorScheme;
         return Scaffold(
           appBar: AppBar(
@@ -119,6 +126,15 @@ class ExpeditionScreen extends StatelessWidget {
                             ? 'Ruta de ejemplo cargada.'
                             : 'Planéala en el mapa o importa un GPX o KML.',
                       ),
+                      _Check(
+                        done: weatherFresh,
+                        title: 'Clima',
+                        detail: weather == null
+                            ? 'Consúltalo con conexión: queda guardado para la montaña.'
+                            : weatherFresh
+                            ? 'Pronóstico guardado ${fmtUpdated(weather.fetchedAt)}.'
+                            : 'Consultado ${fmtUpdated(weather.fetchedAt)}: actualízalo antes de salir.',
+                      ),
                       _TurnaroundCheck(expedition: e),
                     ],
                   ),
@@ -162,6 +178,8 @@ class ExpeditionScreen extends StatelessWidget {
                     ),
                   ],
                 ),
+                const SectionTitle('Clima'),
+                WeatherCard(expedition: e, route: route?.profile),
                 SectionTitle(
                   'Mapas sin conexión',
                   trailing: status.bytes > 0

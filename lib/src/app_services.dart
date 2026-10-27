@@ -21,6 +21,7 @@ import 'tiles/tile_server.dart';
 import 'tracking/terrain_elevation.dart';
 import 'tracking/track_recorder.dart';
 import 'tracking/track_store.dart';
+import 'weather/weather_service.dart';
 
 NetworkKind networkKindOf(List<ConnectivityResult> r) {
   if (r.contains(ConnectivityResult.wifi) ||
@@ -48,6 +49,7 @@ class AppServices {
     this.routes,
     this.terrain,
     this.profile,
+    this.weather,
   );
 
   final TileServer server;
@@ -65,6 +67,9 @@ class AppServices {
 
   /// Datos de emergencia del usuario (solo en el teléfono).
   final ProfileStore profile;
+
+  /// Pronósticos guardados por expedición (Open-Meteo).
+  final WeatherService weather;
 
   /// Mosaicos vistos con conexión (no cuentan como descargados; se pueden borrar).
   final TileStore cache;
@@ -123,6 +128,11 @@ class AppServices {
       JsonStore(File('${support.path}/profile.json')),
     );
     await profile.load();
+    final weather = WeatherService(
+      client: client,
+      file: JsonStore(File('${support.path}/weather.json')),
+    );
+    await weather.load();
 
     final server = TileServer(
       offline: offline,
@@ -143,6 +153,7 @@ class AppServices {
       routes,
       terrain,
       profile,
+      weather,
     );
   }
 }
