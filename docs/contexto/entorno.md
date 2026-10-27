@@ -43,6 +43,20 @@ Cuidado:
 - Cambios nativos (Kotlin, `AndroidManifest`, plugins nuevos) requieren compilación completa.
 - `adb shell am force-stop com.cresta.cresta` termina la sesión de `flutter run`.
 
+## graphify (grafo de conocimiento del código)
+
+- Instalado en un entorno virtual de WSL: `~/.venvs/graphify` (paquete `graphifyy` 0.9.97, Apache-2.0).
+  Instalación completa e idempotente: `tool/dev/graphify-setup.sh` (dentro de WSL, en la raíz del repo).
+- Se usa con `tool/dev/graphify.sh <comando>` desde Windows o WSL. Skill del proyecto:
+  `.claude/skills/graphify/SKILL.md` (se carga cuando la sesión de Claude abre la carpeta del repo).
+- Hooks de git (`.git/hooks`, no versionados): post-commit, post-checkout, post-merge y post-rewrite
+  reconstruyen el grafo del código cambiado, en segundo plano y sin LLM. Al final del post-commit,
+  `tool/dev/graphify-label.sh` nombra con **Gemini** los grupos nuevos (`label --missing-only`).
+- La clave va en `~/.config/cresta/graphify.env` (`GEMINI_API_KEY=...`, permisos 600, fuera del repo).
+  La escribe el usuario; nunca se versiona ni se muestra.
+- Salida en `graphify-out/` (en `.gitignore`). Registros: `~/.cache/graphify-rebuild.log` y
+  `~/.cache/graphify-label.log`.
+
 ## Herramientas de prueba (`tool/dev/`)
 
 - `shot.sh NOMBRE [acciones...]`: ejecuta toques (`"tap X Y"`, `"swipe ..."`, `"keyevent 4"`, `"sleep N"`)

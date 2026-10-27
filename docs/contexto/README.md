@@ -43,6 +43,11 @@ Diseño visual: sistema **"Andes Industrial"** de su proyecto de Google Stitch (
 Descartado por ahora: el backend para compartir la ubicación del grupo (en la montaña no hay señal). Si se
 retoma: offline-first (cola local y sincronizar al haber señal) y, sin señal, radios LoRa con Meshtastic.
 
+## Grafo del código (graphify)
+
+Antes de explorar código desconocido, preguntar al grafo: `tool/dev/graphify.sh query "..."`,
+`explain`, `path`, `affected` (ver `.claude/skills/graphify/SKILL.md`). Se actualiza solo con cada commit.
+
 ## Forma de trabajo acordada
 
 - Una rama por fase (`feat/...`, `docs/...`). Antes de cada commit: `dart format lib test`,

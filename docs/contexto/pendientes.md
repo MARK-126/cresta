@@ -20,5 +20,5 @@ Lo que falta **probar** está al inicio de `pruebas.md`. La lista de funciones p
 
 ## Herramientas
 
-- **graphify** (skill de grafo de conocimiento del código): en evaluación. Ver la conversación del
-  27 oct 2026: el README no lista Dart entre sus lenguajes.
+- **graphify:** el usuario debe pegar su `GEMINI_API_KEY` en `~/.config/cresta/graphify.env` y correr
+  `tool/dev/graphify.sh label .` una vez para nombrar los 92 grupos iniciales.

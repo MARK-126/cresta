@@ -1,0 +1,14 @@
+# Lo que graphify no debe indexar (además de lo que ya ignora .gitignore).
+# Código de terceros y binarios: harían ruido en el grafo.
+assets/web/vendor/
+assets/web/fonts/
+assets/packs/
+assets/fonts/
+assets/images/
+assets/data/
+ios/Pods/
+ios/Flutter/
+android/.gradle/
+android/gradle/
+.dart_tool/
+build/

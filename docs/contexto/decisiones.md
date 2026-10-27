@@ -24,6 +24,12 @@
   más simple que leer los mosaicos desde Dart); Dijkstra por distancia.
 - **Clima:** Open-Meteo, gratis y sin clave; se guarda la respuesta cruda y se interpreta al leer.
 - **SOS:** SMS con `sms:` y cuerpo codificado a mano (con `queryParameters` los espacios salen como `+`).
+- **graphify:** salida en `.gitignore` (decisión del usuario: que las ramas no se pisen; el grafo se
+  regenera del código y los nombres de grupos quedan locales entre ramas). Solo código (`--code-only`):
+  documentos e imágenes no se envían a ningún LLM. Grupos nombrados con Gemini (elección del usuario).
+  Sin merge driver de graphify (sirve solo si `graph.json` se versiona). Skill propia y breve en el repo
+  en lugar de la oficial (793 líneas, asume que `graphify` existe donde corre Claude, que aquí es Windows).
+  El README de graphify está desactualizado: **sí** soporta Dart (extractor por expresiones regulares).
 - **Grupo en tiempo real descartado** (no hay señal en la montaña).
 
 ## Diseño (UI)

@@ -7,6 +7,9 @@ con Wi-Fi y en la montaña todo funciona sin señal. Uso personal y gratuito.
 su orden de lectura (estado, pendientes, pruebas, entorno, decisiones). Antes de probar algo, revisa
 `pruebas.md`: puede que ya esté probado o que ya se sepa por qué falla.
 
+**Para entender código antes de leerlo, usa el grafo de graphify** (`.claude/skills/graphify/SKILL.md`,
+`tool/dev/graphify.sh`). Se reconstruye solo en cada commit.
+
 **Al terminar cada tarea, actualiza la carpeta** en la misma rama, antes del commit final:
 `estado.md` (lo construido), `pruebas.md` (cada prueba, también las fallidas, con resultado y corrección),
 `decisiones.md` (decisiones y errores resueltos), `pendientes.md` y `funcionalidades.md` (mover lo

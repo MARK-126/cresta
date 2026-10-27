@@ -46,3 +46,8 @@ app.*.map.json
 
 # Widget Preview related
 .widget_preview/
+
+# graphify: el grafo se regenera del código (hooks de git), no se versiona.
+# Así cada rama tiene el suyo y no se pisan; los nombres de los grupos
+# (graphify-out/.graphify_labels.json) se conservan localmente entre ramas.
+/graphify-out/
