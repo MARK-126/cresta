@@ -7,7 +7,7 @@ Lo que falta **probar** está al inicio de `pruebas.md`. La lista de funciones p
 
 1. **Prueba de grabación al aire libre** (la hace el usuario): pantalla bloqueada, notificación fija,
    reloj, bitácora y resumen con datos reales.
-2. Probar el **SOS con la ubicación encendida** y el SMS a un contacto.
+2. Probar el **SMS del SOS a un contacto** (hace falta un contacto en el perfil; la ubicación ya se probó).
 
 ## Técnicos
 

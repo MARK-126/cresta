@@ -8,13 +8,21 @@ Teléfono de pruebas: Samsung Galaxy S23 Ultra (SM-S918B), Android 16, salvo que
 
 - Grabación **al aire libre** con la pantalla bloqueada: reloj, notificación fija, que siga grabando,
   y que la Bitácora y el Resumen se llenen con un recorrido real.
-- SOS con la ubicación **encendida**: coordenadas, UTM, altitud; enviar el SMS a un contacto.
+- SOS: enviar el SMS a un contacto (el texto ya se vio; faltan contactos en el perfil).
 - Importar un GPX/KML real desde el teléfono (la lectura está cubierta por pruebas automáticas).
 - Adjuntar una foto o un PDF como referencia y abrirlo.
 - Exportar GPX (ruta) a otra app.
 - Descargas de mapas en Android con conexión móvil (opción "solo Wi-Fi").
 
 ## 2026-10-28
+
+**SOS con la ubicación encendida · `main`**
+- Pantalla SOS con GPS fijo (±16 m): coordenadas decimales, grados-minutos-segundos y UTM coherentes
+  entre sí (revisado a mano), altitud 738 m, precisión y "hace N s" que se actualiza. **OK**.
+- Sin contactos en el perfil: sale el aviso "No tienes contactos de emergencia" y no hay botón de SMS. **OK**.
+- "Compartir": la vista previa dice "SOS. Necesito ayuda. Ubicación: lat, lon, altitud (±precisión) a las
+  HH:MM. https://maps.google.com…". Se cerró sin enviar. **OK**.
+- No se pulsó "Llamar al 911" ni se envió nada. Falta el SMS a un contacto real.
 
 **Correcciones · `fix/ejemplo-pendiente-nieve`**
 - Diagnóstico en el S23: `regions.json` sin la zona `sample-izta-popo`, el ejemplo con `regionIds: []` y
