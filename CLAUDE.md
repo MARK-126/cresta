@@ -52,6 +52,8 @@ Antes de cada commit: `dart format lib test`, `flutter analyze` sin problemas y 
 - Escrituras de JSON con `JsonStore` (se serializan para no pisarse).
 - Datos de protección civil, grupo y semáforo son **de demostración**; nunca presentarlos como oficiales.
 - Ramas por fase (`feat/...`); commits con la línea `Co-Authored-By` que indique el entorno.
+- **Después de cada merge a `main`, borrar la rama** (local y en `origin`): `git branch -d RAMA` y
+  `git push origin --delete RAMA`. Solo si ya está en `main` (`-d` se niega si no).
 - **UI "Andes Industrial", solo tema oscuro:** colores de `Andes` y componentes de `lib/src/ui/theme.dart`
   (`TonalCard`, `Figure`, `GlowButton`, `Glass`). Nada de bordes de 1 px, sombras ni colores sueltos.
   Detalles en `docs/contexto/decisiones.md`.

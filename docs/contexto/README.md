@@ -54,5 +54,6 @@ Antes de explorar código desconocido, preguntar al grafo: `tool/dev/graphify.sh
   `flutter analyze` sin problemas y `flutter test` en verde.
 - Probar en el teléfono antes de dar algo por terminado, con capturas.
 - Merge a `main` por avance directo (fast-forward), **solo cuando el usuario lo aprueba**.
+- Tras el merge, **borrar la rama** en local y en `origin` (`git branch -d` y `git push origin --delete`).
 - No usar los datos reales del usuario (su expedición "Vallecitos", su perfil) para probar: usar la
   expedición de ejemplo y dejar todo como estaba.
