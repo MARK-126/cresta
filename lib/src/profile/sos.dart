@@ -94,6 +94,17 @@ Utm toUtm(double lat, double lng) {
   return Utm(zone, band, easting, northing);
 }
 
+/// "O+" → "O positivo". Con palabras porque Mensajes de Samsung pierde el "+" del cuerpo del
+/// SMS (sale "O "), y así también se dicta sin confusión por teléfono o radio.
+String spokenBloodType(String type) {
+  final t = type.trim();
+  if (t.endsWith('+')) return '${t.substring(0, t.length - 1)} positivo';
+  if (t.endsWith('-') || t.endsWith('−')) {
+    return '${t.substring(0, t.length - 1)} negativo';
+  }
+  return t;
+}
+
 /// Texto del SMS de auxilio. Corto: un SMS de más de 160 caracteres se parte y, con poca
 /// señal, cada parte es otra oportunidad de que no llegue.
 String sosMessage({
@@ -123,7 +134,7 @@ String sosMessage({
     b.write(' Exp.: $expedition.');
   }
   if (profile != null && profile.bloodType.isNotEmpty) {
-    b.write(' Sangre ${profile.bloodType}.');
+    b.write(' Sangre ${spokenBloodType(profile.bloodType)}.');
   }
   if (profile != null && profile.allergies.isNotEmpty) {
     b.write(' Alergias: ${profile.allergies}.');

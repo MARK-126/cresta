@@ -65,12 +65,20 @@ void main() {
     expect(m, contains('19.17843, -98.64003'));
     expect(m, contains('4987 m (±6 m) a las 09:05'));
     expect(m, contains('maps.google.com/?q=19.17843,-98.64003'));
-    expect(m, contains('Sangre O+'));
+    expect(m, contains('Sangre O positivo'));
+    expect(m, isNot(contains('+')));
     expect(m, contains('Alergias: penicilina'));
 
     final bare = sosMessage(lat: 1, lng: 2);
     expect(bare, startsWith('SOS. Necesito ayuda.'));
     expect(bare.length, lessThan(120));
+  });
+
+  test('el tipo de sangre se dice con palabras', () {
+    expect(spokenBloodType('O+'), 'O positivo');
+    expect(spokenBloodType('AB-'), 'AB negativo');
+    expect(spokenBloodType('A−'), 'A negativo');
+    expect(spokenBloodType(''), '');
   });
 
   test('el perfil se guarda y se vuelve a leer', () async {
