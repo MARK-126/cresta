@@ -25,6 +25,7 @@ Detalles técnicos en `estado.md`; qué se probó en `pruebas.md`.
 - Clima por altitud de 16 días guardado para verlo sin señal, con nieve, ráfagas y tormentas.
 - Lista de equipo con plantillas, peso y empacado.
 - Referencias: fotos, PDF, enlaces y teléfonos guardados con la expedición.
+- Expedición de ejemplo con sus mapas incluidos, que no se pueden borrar por error.
 - Modo protección civil (datos de demostración, no oficiales).
 - Diseño "Andes Industrial", solo oscuro; splash e ícono propios.
 
@@ -37,7 +38,6 @@ Detalles técnicos en `estado.md`; qué se probó en `pruebas.md`.
 - Hora de salida y puesta del sol para la fecha de la expedición, sin conexión.
 - Fotos geolocalizadas durante el recorrido, visibles en el mapa.
 - Ajuste a senderos que tome en cuenta el desnivel, no solo la distancia.
-- Corregir que la expedición de ejemplo diga "Sin mapas descargados" aunque sus mapas vienen en la app.
 
 ## Deseables a futuro
 

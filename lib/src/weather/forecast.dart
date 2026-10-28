@@ -205,8 +205,13 @@ PointForecast parseForecast(WeatherPoint requested, Map<String, dynamic> json) {
           x.time.day == date.day,
     );
     final levels = dayHours.map((x) => x.freezingLevel).whereType<double>();
-    // Nieve: alguna hora con precipitación y el punto a 0 °C o menos (o arriba del nivel de congelación)
-    final snow = dayHours.any((x) => x.precipitation >= 0.1 && x.snowLikely);
+    // Nieve: lo que precipita en las horas frías del día (punto a 0 °C o menos,
+    // o arriba del nivel de congelación) suma al menos [snowMinMm]. Con 0.1 mm
+    // en una hora bastaba una traza para avisar.
+    final snowMm = dayHours
+        .where((x) => x.snowLikely)
+        .fold(0.0, (s, x) => s + x.precipitation);
+    final snow = snowMm >= snowMinMm;
     days.add(
       DayWeather(
         date: date,
@@ -232,6 +237,9 @@ PointForecast parseForecast(WeatherPoint requested, Map<String, dynamic> json) {
   }
   return PointForecast(point: point, days: days, hours: hours);
 }
+
+/// Agua mínima (mm) que debe caer como nieve en un día para avisar: ≈ 1 cm de nieve.
+const snowMinMm = 1.0;
 
 /// Si a esta altitud la precipitación cae como nieve, el código de lluvia del modelo
 /// (calculado para su celda, más baja) se cambia por el de nieve equivalente.

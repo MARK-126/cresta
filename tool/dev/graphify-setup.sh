@@ -8,7 +8,10 @@ REPO=$(git rev-parse --show-toplevel)
 VENV=${GRAPHIFY_VENV:-$HOME/.venvs/graphify}
 cd "$REPO"
 
-[ -x "$VENV/bin/graphify" ] || { python3 -m venv "$VENV"; "$VENV/bin/pip" install -q graphifyy; }
+[ -x "$VENV/bin/graphify" ] || python3 -m venv "$VENV"
+# El backend de Gemini habla con la API compatible con OpenAI: necesita el paquete openai
+"$VENV/bin/python" -c "import graphify, openai" 2>/dev/null ||
+  "$VENV/bin/pip" install -q "graphifyy[openai]"
 "$VENV/bin/graphify" hook install
 
 # El merge driver sirve para versionar graph.json; aquí el grafo está en .gitignore

@@ -92,6 +92,8 @@ class RegionTile extends StatelessWidget {
         .map((s) => s.label.split(' ').first)
         .join(' · ');
     final statusText = switch (r.status) {
+      RegionStatus.complete when r.bundled =>
+        'Incluida en la app · ${fmtBytes(r.bytes)}',
       RegionStatus.complete => 'Descargada · ${fmtBytes(r.bytes)}',
       RegionStatus.downloading =>
         'Descargando ${(r.progress * 100).floor()} % · ${fmtBytes(r.bytes)}',
@@ -175,11 +177,14 @@ class RegionTile extends StatelessWidget {
                 icon: const Icon(Icons.play_arrow_rounded),
                 onPressed: () => maps.resume(r.id),
               ),
-            IconButton(
-              tooltip: 'Borrar mapas',
-              icon: const Icon(Icons.delete_outline_rounded),
-              onPressed: onDelete,
-            ),
+            // Los mapas incluidos viven en la app: borrarlos casi no libera
+            // espacio y dejaría al ejemplo sin mapas.
+            if (!r.bundled)
+              IconButton(
+                tooltip: 'Borrar mapas',
+                icon: const Icon(Icons.delete_outline_rounded),
+                onPressed: onDelete,
+              ),
           ],
         ),
       ),

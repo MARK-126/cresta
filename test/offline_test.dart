@@ -1,15 +1,19 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:archive/archive.dart';
+
 import 'package:cresta/src/expeditions/expedition.dart';
 import 'package:cresta/src/expeditions/expedition_store.dart';
 import 'package:cresta/src/offline/map_sources.dart';
 import 'package:cresta/src/offline/offline_maps.dart';
 import 'package:cresta/src/offline/offline_region.dart';
 import 'package:cresta/src/offline/region_downloader.dart';
+import 'package:cresta/src/offline/sample_data.dart';
 import 'package:cresta/src/offline/tile_math.dart';
 import 'package:cresta/src/offline/tile_store.dart';
 import 'package:cresta/src/storage/json_store.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
@@ -26,6 +30,17 @@ OfflineRegion _region({
   detail: DetailLevel.basic,
   sources: sources,
 );
+
+/// Paquete de ejemplo falso: un solo mosaico de relieve dentro de su zona.
+class _PackBundle extends CachingAssetBundle {
+  @override
+  Future<ByteData> load(String key) async {
+    final zip = ZipEncoder().encode(
+      Archive()..addFile(ArchiveFile('dem/10/231/456', 3, [1, 2, 3])),
+    );
+    return ByteData.sublistView(Uint8List.fromList(zip));
+  }
+}
 
 void main() {
   test(
@@ -363,6 +378,35 @@ void main() {
       expect(e2.date, DateTime(2027, 1, 10));
       expect(again.statusOf(e2).readiness, Readiness.ready);
       maps2.dispose();
+    });
+
+    test('el ejemplo recupera sus mapas si se los quitaron', () async {
+      final tile = store.file(MapSource.dem, 10, 231, 456);
+      Future<void> install() => installSampleOnce(
+        supportDir: tmp,
+        maps: maps,
+        expeditions: expeditions,
+        bundle: _PackBundle(),
+      );
+
+      await install();
+      final sample = expeditions.byId(sampleExpeditionId)!;
+      expect(expeditions.statusOf(sample).readiness, Readiness.ready);
+      expect(tile.existsSync(), isTrue);
+
+      // Así quedaban las instalaciones viejas: zona quitada y mosaicos borrados
+      await expeditions.detachRegion(sample, samplePackRegion.id);
+      expect(expeditions.statusOf(sample).readiness, Readiness.noMaps);
+      expect(tile.existsSync(), isFalse);
+
+      await install();
+      expect(expeditions.statusOf(sample).readiness, Readiness.ready);
+      expect(tile.existsSync(), isTrue);
+
+      // Si el usuario borra el ejemplo, no vuelve
+      await expeditions.delete(sample, deleteMaps: true);
+      await install();
+      expect(expeditions.byId(sampleExpeditionId), isNull);
     });
   });
 }

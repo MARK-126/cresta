@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:math' as math;
 
 import 'package:cresta/src/data/trail_route.dart';
 import 'package:cresta/src/expeditions/expedition.dart';
@@ -355,6 +356,35 @@ void main() {
     },
   );
 
+  test(
+    'altitud del terreno interpolada entre píxeles, sin escalones',
+    () async {
+      final tmp = Directory.systemTemp.createTempSync('cresta');
+      final store = TileStore(Directory('${tmp.path}/tiles'));
+      await store.write(MapSource.dem, 12, 925, 1827, [1, 2, 3]);
+      // Rampa: cada píxel hacia el este sube 10 m (4,000 m en la columna 0)
+      final rgba = Uint8List(256 * 256 * 4);
+      for (var y = 0; y < 256; y++) {
+        for (var x = 0; x < 256; x++) {
+          final v = 4000 + 10 * x + 32768, i = (y * 256 + x) * 4;
+          rgba[i] = v ~/ 256;
+          rgba[i + 1] = v % 256;
+        }
+      }
+      final t = TerrainElevation([store], decode: (_) async => rgba);
+      // Píxel global (x, y) del zoom 12 → longitud y latitud
+      const n = 4096 * 256.0;
+      double lng(double px) => px / n * 360 - 180;
+      final py = 1827 * 256 + 128.5;
+      final lat = math.atan(_sinh(math.pi * (1 - 2 * py / n))) * 180 / math.pi;
+      final x0 = 925 * 256.0;
+      // Entre los centros de las columnas 100 y 101 la altitud crece pareja
+      expect(await t.at(lng(x0 + 100.75), lat), closeTo(5002.5, 0.01));
+      expect(await t.at(lng(x0 + 101.25), lat), closeTo(5007.5, 0.01));
+      tmp.deleteSync(recursive: true);
+    },
+  );
+
   test('el grabador usa la altitud del terreno cuando la hay', () async {
     final tmp = Directory.systemTemp.createTempSync('cresta');
     final store = TrackStore(Directory('${tmp.path}/tracks'));
@@ -384,3 +414,5 @@ void main() {
     tmp.deleteSync(recursive: true);
   });
 }
+
+double _sinh(double x) => (math.exp(x) - math.exp(-x)) / 2;

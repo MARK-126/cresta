@@ -11,14 +11,10 @@ Lo que falta **probar** está al inicio de `pruebas.md`. La lista de funciones p
 
 ## Técnicos
 
-- "Pendiente máxima" de una ruta dio 74 %: revisar si es ruido del relieve de 30 m y suavizar.
-- La expedición de ejemplo dice "Sin mapas descargados" aunque sus mapas vienen en la app.
 - En la lista de recorridos, nombres antiguos pueden repetir la fecha.
-- `snowLikely` marca nieve con muy poca precipitación (≥ 0.1 mm en una hora): quizá subir el umbral.
 - El ajuste a senderos solo usa lo visible y solo distancia (no desnivel).
 - Descargas de mapas: solo con la app abierta.
 
 ## Herramientas
 
-- **graphify:** el usuario debe pegar su `GEMINI_API_KEY` en `~/.config/cresta/graphify.env` y correr
-  `tool/dev/graphify.sh label .` una vez para nombrar los 92 grupos iniciales.
+- graphify: listo (grupos nombrados con Gemini el 28 oct 2026).

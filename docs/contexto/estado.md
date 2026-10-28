@@ -1,6 +1,6 @@
 # Estado: qué está hecho
 
-Actualizado: 27 oct 2026 · `main` en `f2496bf` (todo lo de abajo está en `main`).
+Actualizado: 28 oct 2026 · `main` en `c041dc3`; correcciones en `fix/ejemplo-pendiente-nieve` (sin merge).
 
 ## Fases
 
@@ -13,6 +13,7 @@ Actualizado: 27 oct 2026 · `main` en `f2496bf` (todo lo de abajo está en `main
 | 3 | Planificador de rutas, detalle de ruta, importar/exportar GPX y KML | `feat/planificador-rutas` | `abe6e0f` |
 | SOS | Perfil de emergencia y pantalla SOS | `feat/perfil-sos` | `f54c534` |
 | 4 | Clima por altitud, lista de equipo, referencias | `feat/preparacion` | `f2496bf` |
+| Fix | Mapas del ejemplo, relieve interpolado (pendientes), umbral de nieve, graphify con Gemini | `fix/ejemplo-pendiente-nieve` | (este commit) |
 
 ## Por área
 
@@ -54,6 +55,13 @@ Actualizado: 27 oct 2026 · `main` en `f2496bf` (todo lo de abajo está en `main
 - **Referencias** (`lib/src/references/`, `ui/references_section.dart`): fotos y PDF copiados a la app,
   enlaces y teléfonos.
 
+### Correcciones (28 oct 2026)
+- La zona incluida del ejemplo ya no se puede borrar ("Incluida en la app"); si una instalación vieja la
+  perdió, se reinstala al abrir la app (`installSampleOnce` en `sample_data.dart`).
+- Altitud del relieve con **interpolación bilineal** (`terrain_elevation.dart`): pendientes y desnivel
+  sin escalones de píxel.
+- "Nieve probable" solo si en las horas frías del día caen ≥ 1 mm (`snowMinMm` en `forecast.dart`).
+
 ### Interfaz
 - Pestañas: Expediciones · Bitácora · Resumen · Mapas (`ui/home_shell.dart`).
 - Splash de Android 12+ y splash cinematográfico de Flutter (mín. 2 s, "BY FRUTAL"); ícono propio.
@@ -77,5 +85,5 @@ lib/src/ui/                    pantallas; theme.dart = paleta y componentes del 
 assets/web/                    map.js, MapLibre, maplibre-contour, tipografías del mapa
 assets/fonts/inter/            tipografía de la app · assets/images/ textura del splash
 tool/                          scripts de datos (Python) e ícono; tool/dev/ herramientas de prueba
-test/                          87 pruebas
+test/                          90 pruebas
 ```

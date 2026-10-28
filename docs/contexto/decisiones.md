@@ -58,6 +58,17 @@
   unir extremos sueltos a < 20 m.
 - **El modelo dice lluvia en la cumbre** → la nieve/código de Open-Meteo es de su celda → decidir con la
   altitud del punto y el nivel de congelación.
+- **El ejemplo dice "Sin mapas descargados"** → la zona incluida se podía quitar (Mapas o la expedición) y
+  `prune()` borraba sus 422 mosaicos; nada la reinstalaba → sin botón de borrar para zonas `bundled` y
+  reparación al arrancar si el ejemplo existe sin su zona.
+- **Pendiente máxima de 74 %** → la altitud era la del píxel más cercano (~36 m a 19° N): en laderas sube
+  en escalones de 15–20 m y una ventana de 100 m suma uno de más → interpolación bilineal. La ruta de
+  ejemplo sí tiene ~60 % sostenido en 300 m (4,780–5,000 m): un valor alto puede ser real.
+- **"Nieve probable" con una traza** → bastaba 0.1 mm en una hora → suma del día en horas frías ≥ 1 mm
+  de agua (≈ 1 cm de nieve).
+- **graphify no nombraba grupos con Gemini** → su backend de Gemini usa el cliente `openai`, que no venía
+  instalado → `graphifyy[openai]` en `tool/dev/graphify-setup.sh`. Si quedaron nombres provisionales
+  (nombre de archivo), `--missing-only` no los cambia: correr una vez `graphify label . --backend gemini`.
 - **Reloj de grabación en 0 bajo techo** → contaba tiempo en movimiento y las lecturas > ±50 m se descartan.
 - **Logo de Flutter al abrir** → faltaba configurar el splash de Android 12+ (y `values-night-v31`: con el
   teléfono en modo oscuro, `night` pesa más que `v31`).

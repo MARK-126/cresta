@@ -78,7 +78,10 @@ void main() {
   });
 
   test('la nieve se decide con la altitud del punto, no con la del modelo', () {
-    final f = parseForecast(_summit, _response());
+    final f = parseForecast(
+      _summit,
+      _response(precip: const [0, 1.2, 0, 0, 0, 0]),
+    );
     expect(f.days.first.snowLikely, isTrue); // precipita a −7 °C
     expect(f.days.last.snowLikely, isFalse); // no precipita
 
@@ -88,6 +91,17 @@ void main() {
       _response(temps: const [3, 4, 3, 5, 6, 7]),
     );
     expect(low.days.first.snowLikely, isFalse);
+  });
+
+  test('una traza de precipitación no avisa nieve; varias horas sí', () {
+    // 0.4 mm en una hora fría: traza
+    expect(parseForecast(_summit, _response()).days.first.snowLikely, isFalse);
+    // 0.4 + 0.3 + 0.4 mm en horas frías: 1.1 mm, ≈ 1 cm de nieve
+    final f = parseForecast(
+      _summit,
+      _response(precip: const [0.4, 0.3, 0.4, 0, 0, 0]),
+    );
+    expect(f.days.first.snowLikely, isTrue);
   });
 
   test('sin altitud propia se usa la de Open-Meteo', () {

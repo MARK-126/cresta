@@ -29,17 +29,33 @@ class TerrainElevation {
     final r = lat.clamp(-85.0, 85.0) * math.pi / 180;
     final px = (lng + 180) / 360 * n;
     final py = (1 - math.log(math.tan(r) + 1 / math.cos(r)) / math.pi) / 2 * n;
-    final tx = px ~/ 256, ty = py ~/ 256;
-    final rgba = await _tile(tx, ty);
-    if (rgba == null || rgba.length < 256 * 256 * 4) {
+    final nearest = await _pixel(px.floor(), py.floor());
+    if (nearest == null) {
       debugPrint(
-        'TerrainElevation: sin relieve en $zoom/$tx/$ty (${rgba?.length} bytes)',
+        'TerrainElevation: sin relieve en $zoom/${px ~/ 256}/${py ~/ 256}',
       );
       return null;
     }
-    final x = (px - tx * 256).floor().clamp(0, 255);
-    final y = (py - ty * 256).floor().clamp(0, 255);
-    final i = (y * 256 + x) * 4;
+    // Interpolación bilineal entre los centros de los 4 píxeles vecinos: con el
+    // más cercano la altitud sube en escalones de ~30 m y exagera las pendientes.
+    final fx = px - .5, fy = py - .5;
+    final x0 = fx.floor(), y0 = fy.floor();
+    final e00 = await _pixel(x0, y0), e10 = await _pixel(x0 + 1, y0);
+    final e01 = await _pixel(x0, y0 + 1), e11 = await _pixel(x0 + 1, y0 + 1);
+    // En el borde de lo descargado puede faltar un vecino
+    if (e00 == null || e10 == null || e01 == null || e11 == null) {
+      return nearest;
+    }
+    final dx = fx - x0, dy = fy - y0;
+    final top = e00 + (e10 - e00) * dx, bottom = e01 + (e11 - e01) * dx;
+    return top + (bottom - top) * dy;
+  }
+
+  /// Altitud de un píxel en coordenadas globales del zoom, o null sin relieve.
+  Future<double?> _pixel(int gx, int gy) async {
+    final rgba = await _tile(gx ~/ 256, gy ~/ 256);
+    if (rgba == null || rgba.length < 256 * 256 * 4) return null;
+    final i = ((gy % 256) * 256 + gx % 256) * 4;
     // Codificación terrarium: (R × 256 + G + B / 256) − 32768
     return rgba[i] * 256 + rgba[i + 1] + rgba[i + 2] / 256 - 32768;
   }

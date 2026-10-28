@@ -14,6 +14,19 @@ Teléfono de pruebas: Samsung Galaxy S23 Ultra (SM-S918B), Android 16, salvo que
 - Exportar GPX (ruta) a otra app.
 - Descargas de mapas en Android con conexión móvil (opción "solo Wi-Fi").
 
+## 2026-10-28
+
+**Correcciones · `fix/ejemplo-pendiente-nieve`**
+- Diagnóstico en el S23: `regions.json` sin la zona `sample-izta-popo`, el ejemplo con `regionIds: []` y
+  solo los 622 mosaicos de Vallecitos en disco (los 422 del paquete se habían borrado con `prune()`).
+- Tras instalar: el ejemplo dice "Lista sin conexión · 9.4 MB"; en Mapas, 2 zonas (16 MB), la del Izta
+  "Incluida en la app" y sin botón de borrar. **OK** (verificado con `uiautomator dump`, sin capturas).
+- Pendiente: la ruta de ejemplo (altitudes del paquete) da 60 % en 100 m y 57 % en 300 m a 4,780–5,000 m:
+  terreno real. La corrección (interpolación bilineal) se probó con una prueba automática de rampa; falta
+  ver en el teléfono una ruta planeada en el Izta (antes 74 %).
+- Nieve con umbral de 1 mm y reparación del ejemplo: pruebas automáticas. **OK** (90 en verde).
+- graphify: etiquetado con Gemini fallaba (faltaba `openai`); instalado y 94 grupos nombrados. **OK**.
+
 ## 2026-10-27
 
 **graphify · `chore/graphify` `4f05a32`**
