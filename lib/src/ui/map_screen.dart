@@ -19,6 +19,7 @@ import '../routes/route_planner.dart';
 import '../tracking/track.dart';
 import '../tracking/track_recorder.dart';
 import 'area_picker_screen.dart';
+import 'expeditions_screen.dart' show startNewExpedition;
 import 'format.dart';
 import 'offline_widgets.dart';
 import 'panels.dart';
@@ -30,14 +31,16 @@ import 'theme.dart';
 import 'track_screen.dart';
 
 /// El mapa de una expedición, en 2D o 3D, con lo descargado y (si hay red) lo demás.
+/// Sin [expeditionId] es el mapa libre: se explora sin expedición; grabar y planear rutas
+/// piden crear una.
 class MapScreen extends StatefulWidget {
   const MapScreen({
     super.key,
-    required this.expeditionId,
+    this.expeditionId,
     this.showTrackId,
     this.plan = false,
   });
-  final String expeditionId;
+  final String? expeditionId;
 
   /// Abrir directo en modo planificar ruta.
   final bool plan;
@@ -62,6 +65,9 @@ class _MapScreenState extends State<MapScreen> {
   final _subs = <StreamSubscription<dynamic>>[];
   late AppServices _services;
   late Expedition _expedition;
+
+  /// Mapa abierto desde el inicio, sin expedición.
+  bool get _free => widget.expeditionId == null;
 
   TrailRoute? _route;
   Map<String, dynamic>? _routeJson;
@@ -88,7 +94,13 @@ class _MapScreenState extends State<MapScreen> {
     if (_started) return;
     _started = true;
     _services = AppScope.of(context);
-    _expedition = _services.expeditions.byId(widget.expeditionId)!;
+    _expedition = _free
+        ? Expedition(
+            id: '',
+            name: 'Mapa libre',
+            regionIds: [for (final r in _services.maps.regions) r.id],
+          )
+        : _services.expeditions.byId(widget.expeditionId!)!;
     _services.maps.addListener(_pushRegions);
     _recorder.addListener(_onRecorder);
     _bridge.load(_services.server.baseUri);
@@ -139,7 +151,10 @@ class _MapScreenState extends State<MapScreen> {
     if (saved != null) await _bridge.setPois(saved.pois);
     if (civilJson != null) await _bridge.setCivil(civilJson);
     await _bridge.set3d(true);
-    final bounds = _services.expeditions.statusOf(_expedition).bounds;
+    // Mapa libre: encuadra la última zona descargada (todas juntas podrían abarcar medio mundo)
+    final bounds = _free
+        ? _services.maps.regions.lastOrNull?.bbox
+        : _services.expeditions.statusOf(_expedition).bounds;
     if (_route != null) {
       await _bridge.fitRoute();
     } else if (bounds != null) {
@@ -171,6 +186,10 @@ class _MapScreenState extends State<MapScreen> {
   // ------------------------------------------------------------ Planificar ruta
 
   void _startPlanning() {
+    if (_free) {
+      _needExpedition('planear una ruta');
+      return;
+    }
     if (_recordingHere) return;
     _bridge.stopFly();
     final saved = _services.routes.forExpedition(_expedition.id);
@@ -305,6 +324,18 @@ class _MapScreenState extends State<MapScreen> {
     ).expandKm(0.3);
   }
 
+  /// En el mapa libre, lo que se guarda en una expedición (ruta, recorrido…) manda a crear una.
+  Future<void> _needExpedition(String what) async {
+    final ok = await confirmDialog(
+      context,
+      title: 'Necesitas una expedición',
+      body:
+          'Para $what crea una expedición: ahí se guardan tu ruta, tus recorridos, el clima y tus mapas.',
+      action: 'Nueva expedición',
+    );
+    if (ok && mounted) await startNewExpedition(context, replace: true);
+  }
+
   // ------------------------------------------------------------ Grabación
 
   /// Hay un recorrido en curso de esta expedición.
@@ -332,6 +363,7 @@ class _MapScreenState extends State<MapScreen> {
   }
 
   Future<void> _startRecording() async {
+    if (_free) return _needExpedition('grabar un recorrido');
     final messenger = ScaffoldMessenger.of(context);
     if (_recorder.isActive) {
       final other = _services.expeditions.byId(_recorder.track!.expeditionId);
@@ -709,6 +741,8 @@ class _MapScreenState extends State<MapScreen> {
                                             ? 'PLANEANDO RUTA'
                                             : _recordingHere
                                             ? 'GRABANDO'
+                                            : _free
+                                            ? 'EXPLORAR'
                                             : 'EXPEDICIÓN',
                                         style: labelStyle(
                                           context,
@@ -746,8 +780,9 @@ class _MapScreenState extends State<MapScreen> {
                           onPressed: () => Navigator.push(
                             context,
                             MaterialPageRoute<void>(
-                              builder: (_) =>
-                                  SosScreen(expeditionName: _expedition.name),
+                              builder: (_) => SosScreen(
+                                expeditionName: _free ? null : _expedition.name,
+                              ),
                             ),
                           ),
                         ),
@@ -901,7 +936,12 @@ class _MapScreenState extends State<MapScreen> {
                                     );
                                   },
                                 ),
-                            ] else
+                            ] else if (_free)
+                              _FreeMapCard(
+                                onNew: () =>
+                                    startNewExpedition(context, replace: true),
+                              )
+                            else
                               _OfflineSummary(
                                 status: status,
                                 onAddZone: _addZone,
@@ -960,6 +1000,33 @@ class _MapScreenState extends State<MapScreen> {
       builder: (_) => AreaPickerScreen(expeditionId: _expedition.id),
     ),
   );
+}
+
+/// Panel del mapa libre: qué se puede hacer sin expedición y cómo crear una.
+class _FreeMapCard extends StatelessWidget {
+  const _FreeMapCard({required this.onNew});
+  final VoidCallback onNew;
+
+  @override
+  Widget build(BuildContext context) {
+    final muted = Theme.of(context).colorScheme.onSurfaceVariant;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SectionTitle('Mapa libre'),
+        Text(
+          'Explora el mapa, cambia de vista y usa tu ubicación sin crear nada. Las líneas punteadas marcan lo que ya descargaste. Para planear una ruta, grabar un recorrido o preparar la salida necesitas una expedición.',
+          style: TextStyle(color: muted, fontSize: 13, height: 1.35),
+        ),
+        const SizedBox(height: 10),
+        FilledButton.tonalIcon(
+          onPressed: onNew,
+          icon: const Icon(Icons.add_location_alt_outlined, size: 18),
+          label: const Text('Nueva expedición'),
+        ),
+      ],
+    );
+  }
 }
 
 /// Resumen de mapas cuando la expedición todavía no tiene ruta.

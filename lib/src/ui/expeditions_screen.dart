@@ -75,7 +75,14 @@ class ExpeditionsScreen extends StatelessWidget {
                   _RecordingBanner(services: services),
                   const SizedBox(height: 12),
                 ],
-                _NewExpeditionCard(onTap: () => _create(context)),
+                _NewExpeditionCard(onTap: () => startNewExpedition(context)),
+                const SizedBox(height: 10),
+                _ExploreMapCard(
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute<void>(builder: (_) => const MapScreen()),
+                  ),
+                ),
                 const SizedBox(height: 28),
                 if (items.isEmpty)
                   const _Empty()
@@ -94,24 +101,31 @@ class ExpeditionsScreen extends StatelessWidget {
       },
     );
   }
+}
 
-  Future<void> _create(BuildContext context) async {
-    final result = await showModalBottomSheet<(String, DateTime?)>(
-      context: context,
-      isScrollControlled: true,
-      showDragHandle: true,
-      builder: (_) => const ExpeditionForm(),
-    );
-    if (result == null || !context.mounted) return;
-    final e = await AppScope.of(context).expeditions
-        .create(name: result.$1, date: result.$2);
-    if (!context.mounted) return;
-    Navigator.push(
-      context,
-      MaterialPageRoute<void>(
-        builder: (_) => ExpeditionScreen(expeditionId: e.id),
-      ),
-    );
+/// Pide nombre y fecha, crea la expedición y abre su pantalla. Con [replace] reemplaza la
+/// pantalla actual (p. ej. el mapa libre) en lugar de apilarse sobre ella.
+Future<void> startNewExpedition(
+  BuildContext context, {
+  bool replace = false,
+}) async {
+  final result = await showModalBottomSheet<(String, DateTime?)>(
+    context: context,
+    isScrollControlled: true,
+    showDragHandle: true,
+    builder: (_) => const ExpeditionForm(),
+  );
+  if (result == null || !context.mounted) return;
+  final e = await AppScope.of(context).expeditions
+      .create(name: result.$1, date: result.$2);
+  if (!context.mounted) return;
+  final route = MaterialPageRoute<void>(
+    builder: (_) => ExpeditionScreen(expeditionId: e.id),
+  );
+  if (replace) {
+    Navigator.pushReplacement(context, route);
+  } else {
+    Navigator.push(context, route);
   }
 }
 
@@ -208,6 +222,54 @@ class _Telemetry extends StatelessWidget {
 }
 
 /// La acción principal del inicio, como la tarjeta "Start new route" del diseño.
+/// Abre el mapa sin expedición, para navegarlo y verlo en 2D o 3D.
+class _ExploreMapCard extends StatelessWidget {
+  const _ExploreMapCard({required this.onTap});
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final muted = Theme.of(context).colorScheme.onSurfaceVariant;
+    return Material(
+      borderRadius: BorderRadius.circular(16),
+      clipBehavior: Clip.antiAlias,
+      color: Andes.surfaceContainer,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 16, 18, 16),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'EXPLORAR MAPA',
+                      style: labelStyle(context, color: Andes.cyan),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Navega el mapa en 2D o 3D sin crear una expedición.',
+                      style: TextStyle(
+                        color: muted,
+                        fontSize: 13,
+                        height: 1.35,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 16),
+              const Icon(Icons.map_rounded, color: Andes.cyan, size: 28),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _NewExpeditionCard extends StatelessWidget {
   const _NewExpeditionCard({required this.onTap});
   final VoidCallback onTap;
