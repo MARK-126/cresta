@@ -22,6 +22,7 @@ import 'storage/json_store.dart';
 import 'tiles/tile_server.dart';
 import 'tracking/terrain_elevation.dart';
 import 'tracking/track_recorder.dart';
+import 'tracking/turnaround_alerts.dart';
 import 'tracking/track_store.dart';
 import 'weather/weather_service.dart';
 
@@ -132,6 +133,10 @@ class AppServices {
       terrain: terrain.at,
     );
     await recorder.recover();
+    TurnaroundAlerts(
+      recorder: recorder,
+      sink: const SystemAlertSink(),
+    ).attach();
     final routes = RouteStore(JsonStore(File('${support.path}/routes.json')));
     await routes.load();
     final profile = ProfileStore(
