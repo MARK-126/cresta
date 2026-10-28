@@ -21,9 +21,12 @@ Teléfono de pruebas: Samsung Galaxy S23 Ultra (SM-S918B), Android 16, salvo que
   solo los 622 mosaicos de Vallecitos en disco (los 422 del paquete se habían borrado con `prune()`).
 - Tras instalar: el ejemplo dice "Lista sin conexión · 9.4 MB"; en Mapas, 2 zonas (16 MB), la del Izta
   "Incluida en la app" y sin botón de borrar. **OK** (verificado con `uiautomator dump`, sin capturas).
-- Pendiente: la ruta de ejemplo (altitudes del paquete) da 60 % en 100 m y 57 % en 300 m a 4,780–5,000 m:
-  terreno real. La corrección (interpolación bilineal) se probó con una prueba automática de rampa; falta
-  ver en el teléfono una ruta planeada en el Izta (antes 74 %).
+- La ruta de ejemplo (altitudes del paquete) da 60 % en 100 m y 57 % en 300 m a 4,780–5,000 m:
+  terreno real. La corrección (interpolación bilineal) se probó con una prueba automática de rampa.
+- En el teléfono (28 oct 2026): se guardó la ruta de ejemplo del Izta desde el planificador (12.1 km,
+  +1,633 m, 7 h 07) y su detalle da **60 % de pendiente máx.** (antes 74 %), subida 1,633 m, bajada 94 m.
+  **OK**. Luego se borró la ruta y la expedición volvió a "Ruta de ejemplo cargada" con sus mapas.
+  Nota: el detalle de ruta solo se abre con una ruta **guardada**; la de ejemplo no tiene esa tarjeta.
 - Nieve con umbral de 1 mm y reparación del ejemplo: pruebas automáticas. **OK** (90 en verde).
 - graphify: etiquetado con Gemini fallaba (faltaba `openai`); instalado y 94 grupos nombrados. **OK**.
 
