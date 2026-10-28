@@ -15,6 +15,13 @@ su orden de lectura (estado, pendientes, pruebas, entorno, decisiones). Antes de
 `decisiones.md` (decisiones y errores resueltos), `pendientes.md` y `funcionalidades.md` (mover lo
 terminado a "Ya funcionan").
 
+## Ahorro de tokens
+
+- Al empezar, leer solo `docs/contexto/README.md` y `pendientes.md`; lo demás, cuando la tarea lo pida.
+- Buscar con graphify (`query`, `explain`) antes de `grep`; leer solo las líneas necesarias, no archivos enteros.
+- Verificar en el teléfono con texto (`uiautomator dump`, datos con `run-as`) antes que con capturas;
+  `tool/dev/ui.sh` da los textos; `tool/dev/shot.sh` guarda capturas a la mitad (`SHOT_SCALE=1`: completas).
+
 ## Idioma y estilo
 
 - Todo en **español** (México): textos de la app, comentarios, mensajes de commit y respuestas al usuario.

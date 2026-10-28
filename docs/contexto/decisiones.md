@@ -32,6 +32,10 @@
   El README de graphify está desactualizado: **sí** soporta Dart (extractor por expresiones regulares).
 - **Grupo en tiempo real descartado** (no hay señal en la montaña).
 
+- **Ahorro de tokens** (pedido del usuario, 28 oct 2026): leer solo README y pendientes al empezar, graphify
+  antes de `grep`, verificar con texto (`ui.sh`) antes que con capturas, capturas a la mitad. Reglas en
+  `CLAUDE.md`.
+
 ## Diseño (UI)
 
 - Sistema **"Andes Industrial"** (Google Stitch del usuario, proyecto "Live Geolocation Tracking"; la

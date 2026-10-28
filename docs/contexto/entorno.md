@@ -60,7 +60,10 @@ Cuidado:
 ## Herramientas de prueba (`tool/dev/`)
 
 - `shot.sh NOMBRE [acciones...]`: ejecuta toques (`"tap X Y"`, `"swipe ..."`, `"keyevent 4"`, `"sleep N"`)
-  y guarda una captura del teléfono. Pantalla de 720 × 1544 px.
+  y guarda una captura del teléfono a la mitad (360 × 772; `SHOT_SCALE=1` para 720 × 1544). Los toques
+  van siempre en coordenadas del teléfono (720 × 1544).
+- `ui.sh [acciones...]`: textos visibles en pantalla (uiautomator), uno por línea. Preferirlo a las
+  capturas para revisar qué dice una pantalla: gasta mucho menos.
 - `cdp.py 'expresión JS'`: evalúa JavaScript en el WebView del mapa (p. ej.
   `window.cresta.jumpTo(-98.64, 19.15, 14)` o `window.cresta.snapLeg([...], [...])`). Requiere
   `adb forward tcp:9333 localabstract:webview_devtools_remote_$(adb shell pidof com.cresta.cresta)`.
