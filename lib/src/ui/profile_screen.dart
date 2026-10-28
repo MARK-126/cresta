@@ -1,7 +1,10 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 
 import '../app_services.dart';
 import '../profile/emergency_profile.dart';
+import 'offline_widgets.dart';
 import 'panels.dart';
 import 'theme.dart';
 
@@ -38,22 +41,39 @@ class _ProfileScreenState extends State<ProfileScreen> {
     super.dispose();
   }
 
+  /// Lo que hay en pantalla ahora, tal como se guardaría.
+  EmergencyProfile _draft() => EmergencyProfile(
+    name: _name.text.trim(),
+    bloodType: _blood,
+    allergies: _allergies.text.trim(),
+    conditions: _conditions.text.trim(),
+    insurance: _insurance.text.trim(),
+    emergencyNumber: _number.text.trim().isEmpty ? '911' : _number.text.trim(),
+    contacts: _contacts,
+  );
+
+  bool get _changed =>
+      jsonEncode(_draft().toJson()) != jsonEncode(_store.profile.toJson());
+
+  /// Salir con cambios sin guardar pide confirmación: antes se perdían sin avisar.
+  Future<void> _onPop(bool didPop, Object? result) async {
+    if (didPop) return;
+    final navigator = Navigator.of(context);
+    if (!_changed ||
+        await confirmDialog(
+          context,
+          title: '¿Salir sin guardar?',
+          body: 'Se pierden los cambios del perfil.',
+          action: 'Salir',
+        )) {
+      navigator.pop();
+    }
+  }
+
   Future<void> _save() async {
     final navigator = Navigator.of(context);
     final messenger = ScaffoldMessenger.of(context);
-    await _store.save(
-      EmergencyProfile(
-        name: _name.text.trim(),
-        bloodType: _blood,
-        allergies: _allergies.text.trim(),
-        conditions: _conditions.text.trim(),
-        insurance: _insurance.text.trim(),
-        emergencyNumber: _number.text.trim().isEmpty
-            ? '911'
-            : _number.text.trim(),
-        contacts: _contacts,
-      ),
-    );
+    await _store.save(_draft());
     messenger.showSnackBar(
       const SnackBar(content: Text('Perfil de emergencia guardado.')),
     );
@@ -82,140 +102,144 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   Widget build(BuildContext context) {
     final muted = Theme.of(context).colorScheme.onSurfaceVariant;
-    return Scaffold(
-      appBar: AppBar(),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(20, 0, 20, 32),
-        children: [
-          Text(
-            'PERFIL DE EMERGENCIA',
-            style: labelStyle(context, color: Andes.terracottaContainer),
-          ),
-          const SizedBox(height: 6),
-          Text('Tus datos', style: signage(context, size: 32)),
-          const SizedBox(height: 6),
-          Text(
-            'Aparecen en la pantalla SOS y en el mensaje de auxilio. Se guardan solo en este teléfono.',
-            style: TextStyle(color: muted, fontSize: 13, height: 1.35),
-          ),
-          const SectionTitle('Quién eres'),
-          TextField(
-            controller: _name,
-            textCapitalization: TextCapitalization.words,
-            decoration: const InputDecoration(labelText: 'Nombre'),
-          ),
-          const SectionTitle('Datos médicos'),
-          Text('Tipo de sangre', style: labelStyle(context)),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              for (final b in _bloodTypes)
-                ChoiceChip(
-                  label: Text(b),
-                  selected: _blood == b,
-                  onSelected: (on) => setState(() => _blood = on ? b : ''),
-                ),
-            ],
-          ),
-          const SizedBox(height: 14),
-          TextField(
-            controller: _allergies,
-            textCapitalization: TextCapitalization.sentences,
-            decoration: const InputDecoration(
-              labelText: 'Alergias',
-              hintText: 'Penicilina, picadura de abeja…',
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: _onPop,
+      child: Scaffold(
+        appBar: AppBar(),
+        body: ListView(
+          padding: const EdgeInsets.fromLTRB(20, 0, 20, 32),
+          children: [
+            Text(
+              'PERFIL DE EMERGENCIA',
+              style: labelStyle(context, color: Andes.terracottaContainer),
             ),
-          ),
-          const SizedBox(height: 10),
-          TextField(
-            controller: _conditions,
-            minLines: 2,
-            maxLines: 4,
-            textCapitalization: TextCapitalization.sentences,
-            decoration: const InputDecoration(
-              labelText: 'Condiciones y medicamentos',
-              hintText: 'Asma (salbutamol), diabetes…',
+            const SizedBox(height: 6),
+            Text('Tus datos', style: signage(context, size: 32)),
+            const SizedBox(height: 6),
+            Text(
+              'Aparecen en la pantalla SOS y en el mensaje de auxilio. Se guardan solo en este teléfono.',
+              style: TextStyle(color: muted, fontSize: 13, height: 1.35),
             ),
-          ),
-          const SizedBox(height: 10),
-          TextField(
-            controller: _insurance,
-            decoration: const InputDecoration(
-              labelText: 'Seguro médico (opcional)',
-              hintText: 'Aseguradora y número de póliza',
+            const SectionTitle('Quién eres'),
+            TextField(
+              controller: _name,
+              textCapitalization: TextCapitalization.words,
+              decoration: const InputDecoration(labelText: 'Nombre'),
             ),
-          ),
-          const SectionTitle('A quién avisar'),
-          for (var i = 0; i < _contacts.length; i++)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: TonalCard(
-                accent: Andes.terracottaContainer,
-                padding: const EdgeInsets.fromLTRB(16, 6, 4, 6),
-                onTap: () => _editContact(i),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            _contacts[i].name,
-                            style: const TextStyle(
-                              fontWeight: FontWeight.w700,
-                              fontSize: 15,
-                            ),
-                          ),
-                          Text(
-                            [
-                              _contacts[i].phone,
-                              _contacts[i].relation,
-                            ].where((s) => s.isNotEmpty).join(' · '),
-                            style: dataStyle(
-                              context,
-                              size: 12.5,
-                              color: muted,
-                              weight: FontWeight.w500,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    IconButton(
-                      tooltip: 'Quitar',
-                      icon: const Icon(Icons.close_rounded),
-                      onPressed: () => setState(
-                        () => _contacts = List.of(_contacts)..removeAt(i),
-                      ),
-                    ),
-                  ],
-                ),
+            const SectionTitle('Datos médicos'),
+            Text('Tipo de sangre', style: labelStyle(context)),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                for (final b in _bloodTypes)
+                  ChoiceChip(
+                    label: Text(b),
+                    selected: _blood == b,
+                    onSelected: (on) => setState(() => _blood = on ? b : ''),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 14),
+            TextField(
+              controller: _allergies,
+              textCapitalization: TextCapitalization.sentences,
+              decoration: const InputDecoration(
+                labelText: 'Alergias',
+                hintText: 'Penicilina, picadura de abeja…',
               ),
             ),
-          OutlinedButton.icon(
-            onPressed: _editContact,
-            icon: const Icon(Icons.person_add_alt_1_rounded),
-            label: const Text('Agregar contacto'),
-          ),
-          const SectionTitle('Número de emergencias'),
-          TextField(
-            controller: _number,
-            keyboardType: TextInputType.phone,
-            decoration: const InputDecoration(
-              labelText: 'Número',
-              helperText: '911 en México y Argentina; 112 en Europa y Chile. Cámbialo según el país de tu expedición.',
-              helperMaxLines: 2,
+            const SizedBox(height: 10),
+            TextField(
+              controller: _conditions,
+              minLines: 2,
+              maxLines: 4,
+              textCapitalization: TextCapitalization.sentences,
+              decoration: const InputDecoration(
+                labelText: 'Condiciones y medicamentos',
+                hintText: 'Asma (salbutamol), diabetes…',
+              ),
             ),
-          ),
-          const SizedBox(height: 28),
-          GlowButton(
-            label: 'Guardar',
-            icon: Icons.check_rounded,
-            onPressed: _save,
-          ),
-        ],
+            const SizedBox(height: 10),
+            TextField(
+              controller: _insurance,
+              decoration: const InputDecoration(
+                labelText: 'Seguro médico (opcional)',
+                hintText: 'Aseguradora y número de póliza',
+              ),
+            ),
+            const SectionTitle('A quién avisar'),
+            for (var i = 0; i < _contacts.length; i++)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: TonalCard(
+                  accent: Andes.terracottaContainer,
+                  padding: const EdgeInsets.fromLTRB(16, 6, 4, 6),
+                  onTap: () => _editContact(i),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              _contacts[i].name,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w700,
+                                fontSize: 15,
+                              ),
+                            ),
+                            Text(
+                              [
+                                _contacts[i].phone,
+                                _contacts[i].relation,
+                              ].where((s) => s.isNotEmpty).join(' · '),
+                              style: dataStyle(
+                                context,
+                                size: 12.5,
+                                color: muted,
+                                weight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      IconButton(
+                        tooltip: 'Quitar',
+                        icon: const Icon(Icons.close_rounded),
+                        onPressed: () => setState(
+                          () => _contacts = List.of(_contacts)..removeAt(i),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            OutlinedButton.icon(
+              onPressed: _editContact,
+              icon: const Icon(Icons.person_add_alt_1_rounded),
+              label: const Text('Agregar contacto'),
+            ),
+            const SectionTitle('Número de emergencias'),
+            TextField(
+              controller: _number,
+              keyboardType: TextInputType.phone,
+              decoration: const InputDecoration(
+                labelText: 'Número',
+                helperText: '911 en México y Argentina; 112 en Europa y Chile. Cámbialo según el país de tu expedición.',
+                helperMaxLines: 2,
+              ),
+            ),
+            const SizedBox(height: 28),
+            GlowButton(
+              label: 'Guardar',
+              icon: Icons.check_rounded,
+              onPressed: _save,
+            ),
+          ],
+        ),
       ),
     );
   }
