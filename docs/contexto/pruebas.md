@@ -8,7 +8,6 @@ Teléfono de pruebas: Samsung Galaxy S23 Ultra (SM-S918B), Android 16, salvo que
 
 - Grabación **al aire libre** con la pantalla bloqueada: reloj, notificación fija, que siga grabando,
   y que la Bitácora y el Resumen se llenen con un recorrido real.
-- SOS: enviar el SMS a un contacto (el texto ya se vio; faltan contactos en el perfil).
 - Importar un GPX/KML real desde el teléfono (la lectura está cubierta por pruebas automáticas).
 - Adjuntar una foto o un PDF como referencia y abrirlo.
 - Exportar GPX (ruta) a otra app.
@@ -22,7 +21,18 @@ Teléfono de pruebas: Samsung Galaxy S23 Ultra (SM-S918B), Android 16, salvo que
 - Sin contactos en el perfil: sale el aviso "No tienes contactos de emergencia" y no hay botón de SMS. **OK**.
 - "Compartir": la vista previa dice "SOS. Necesito ayuda. Ubicación: lat, lon, altitud (±precisión) a las
   HH:MM. https://maps.google.com…". Se cerró sin enviar. **OK**.
-- No se pulsó "Llamar al 911" ni se envió nada. Falta el SMS a un contacto real.
+- No se pulsó "Llamar al 911".
+
+**SOS, SMS a un contacto · `main` (28 oct 2026)**
+- Contacto de prueba agregado en el perfil y botón "SMS con tu ubicación a …" en el SOS: **OK**. Se envió
+  el SMS (el usuario confirmó que avisaría al destinatario); llegó como mensaje RCS en Mensajes de Google
+  con el texto completo. El contacto se quitó después.
+- Fallo: la primera vez el SMS se abrió en Mensajes de Samsung y el tipo de sangre salió como "Sangre B ."
+  (sin el "+"). En Mensajes de Google sale "Sangre B+." bien. Sin corregir (ver `pendientes.md`).
+- Fallo de uso: en el perfil, el contacto agregado **no se guarda** si se sale sin pulsar "Guardar"
+  (no avisa); el SOS seguía sin contactos. Con "Guardar": **OK**.
+- Nota: el selector "Abrir con" del SMS cambia de orden entre veces; con "Solo una vez" no deja
+  aplicación predeterminada. Mensajes de Samsung ofrece cambiar la app predeterminada: no aceptarlo.
 
 **Correcciones · `fix/ejemplo-pendiente-nieve`**
 - Diagnóstico en el S23: `regions.json` sin la zona `sample-izta-popo`, el ejemplo con `regionIds: []` y
