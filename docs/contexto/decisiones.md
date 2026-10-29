@@ -49,6 +49,9 @@
   expedición sigue aparte. Se borra con la ruta.
 - **Avisos de la ruta:** son parte de la seguridad, no de "mejor ruta"; valen aunque no haya fase E. Umbral de
   40 % sobre ventanas de 100 m; un tramo sin sendero se dibuja punteado con etiqueta y se avisa en el detalle.
+- **Hora límite:** se quita con una "x" en su fila (y "Deshacer"). El selector usa solo el reloj
+  (`TimePickerEntryMode.dialOnly`): su modo teclado fallaba con el tema de la app (pantalla roja
+  "BoxConstraints has non-normalized height").
 - **Sol sin conexión:** cálculo propio en Dart (sin paquete ni red), validado contra astral en 7 lugares y
   fechas (±2.5 min). Se muestra en la zona horaria del teléfono porque sin conexión no hay base de zonas
   horarias; es la misma con la que la app guarda la hora límite. Margen de bajada: 2 h (decisión mía, ajustable).

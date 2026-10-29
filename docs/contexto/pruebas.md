@@ -15,6 +15,12 @@ Teléfono de pruebas: Samsung Galaxy S23 Ultra (SM-S918B), Android 16, salvo que
 
 ## 2026-10-28
 
+**Quitar la hora límite · `feat/quitar-hora-limite`**
+- En el S23: el selector ya no trae el botón de teclado (solo reloj, Cancelar y ACEPTAR). Se fijó 11:00; la "x"
+  la quitó (`turnaroundMinutes` volvió a vacío en el archivo) y salió "Hora límite quitada · Deshacer"; Deshacer
+  la devolvió (660 min) y otra "x" la quitó de nuevo. **OK**. El ejemplo quedó sin hora límite.
+- Prueba automática (125 en verde): fijar, cambiar con otros datos, quitar y que se guarde y se lea del disco.
+
 **Luz del día · `feat/luz-del-dia`**
 - Pruebas automáticas: 10 nuevas contra valores de referencia de astral (Ciudad de México, salida del Izta,
   Londres, Ecuador, Mendoza, Nueva York, Tokio, todos a ≤ 2.5 min), día/noche polar, hora sugerida y duración.

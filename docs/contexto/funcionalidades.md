@@ -15,6 +15,7 @@ Detalles técnicos en `estado.md`; qué se probó en `pruebas.md`.
 - Trazar rutas en el mapa libre y guardarlas solas o dentro de una expedición (nueva o existente).
 - Clima y mapa sin conexión por ruta ("Preparar sin conexión"), con descarga de la zona de la ruta.
 - Comparar de 2 a 3 rutas: cifras lado a lado, perfiles superpuestos y mapa.
+- Quitar una hora límite fijada (botón con "Deshacer"); el selector de hora es solo de reloj.
 - Luz del día sin conexión: amanecer, atardecer y horas de luz de la expedición, con una hora límite sugerida
   que deja 2 h de luz para bajar.
 - Avisos de seguridad de la ruta: tramos sin sendero punteados y con etiqueta, y tramos de más de 40 % de
@@ -45,7 +46,6 @@ Detalles técnicos en `estado.md`; qué se probó en `pruebas.md`.
 - Descargar solo un corredor alrededor de la ruta (rutas largas pesan mucho menos que la caja completa).
 - Mapa base ligero del mundo, para que el mapa libre no quede en blanco sin señal (medir su peso antes).
 - Notificación de la hora límite también en iPhone (falta el código nativo).
-- Poder quitar una hora límite ya fijada (hoy solo se cambia).
 - Descargas de mapas que sigan con la app cerrada (hoy necesitan la pantalla encendida).
 - Altímetro barométrico como complemento del relieve y del GPS.
 - Brújula y rumbo de regreso al punto de salida.
