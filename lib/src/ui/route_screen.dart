@@ -7,6 +7,7 @@ import '../routes/planned_route.dart';
 import '../routes/route_ledger.dart';
 import '../routes/route_profile.dart';
 import '../weather/weather_service.dart' show routeWeatherKey;
+import 'compare_screen.dart';
 import 'elevation_profile.dart';
 import 'format.dart';
 import 'map_screen.dart';
@@ -55,11 +56,16 @@ class _RouteScreenState extends State<RouteScreen> {
                 onSelected: (v) => switch (v) {
                   'rename' => _rename(route),
                   'move' => _move(route),
+                  'compare' => _compare(route),
                   'delete' => _delete(),
                   _ => null,
                 },
                 itemBuilder: (_) => const [
                   PopupMenuItem(value: 'rename', child: Text('Cambiar nombre')),
+                  PopupMenuItem(
+                    value: 'compare',
+                    child: Text('Comparar con otra ruta'),
+                  ),
                   PopupMenuItem(
                     value: 'move',
                     child: Text('Guardar en una expedición'),
@@ -223,6 +229,11 @@ class _RouteScreenState extends State<RouteScreen> {
     if (name == null) return;
     await services.routes.save(route.withName(name));
   }
+
+  void _compare(PlannedRoute route) => Navigator.push(
+    context,
+    MaterialPageRoute<void>(builder: (_) => CompareScreen(initial: [route.id])),
+  );
 
   Future<void> _move(PlannedRoute route) async {
     final services = AppScope.of(context);

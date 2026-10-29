@@ -108,6 +108,10 @@ class MapBridge {
   Future<void> setRoute(Map<String, dynamic>? route) =>
       _call('setRoute', [route]);
 
+  /// Varias rutas a la vez para compararlas: cada una `{coordinates, color}`; encuadra todas.
+  Future<void> setCompare(List<Map<String, Object>> lines) =>
+      _call('setCompare', [lines]);
+
   /// Modo planificar: cada toque en el mapa llega como evento `mapTap` (lng, lat).
   Future<void> setPlanMode(bool on) => _call('setPlanMode', [on]);
 

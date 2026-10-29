@@ -21,6 +21,7 @@ import '../tracking/track_recorder.dart';
 import 'area_picker_screen.dart';
 import 'expeditions_screen.dart' show startNewExpedition;
 import 'route_destination.dart';
+import '../routes/route_compare.dart';
 import 'format.dart';
 import 'offline_widgets.dart';
 import 'panels.dart';
@@ -39,6 +40,7 @@ class MapScreen extends StatefulWidget {
     super.key,
     this.expeditionId,
     this.routeId,
+    this.compareRouteIds,
     this.showTrackId,
     this.plan = false,
   });
@@ -46,6 +48,9 @@ class MapScreen extends StatefulWidget {
 
   /// Ruta guardada que se muestra (y se edita) al abrir; sin ella, la de la expedición.
   final String? routeId;
+
+  /// Rutas que se superponen para compararlas (mapa libre, sin planear ni grabar).
+  final List<String>? compareRouteIds;
 
   /// Abrir directo en modo planificar ruta.
   final bool plan;
@@ -73,6 +78,24 @@ class _MapScreenState extends State<MapScreen> {
 
   /// Mapa abierto desde el inicio, sin expedición.
   bool get _free => widget.expeditionId == null;
+
+  bool get _comparing => widget.compareRouteIds != null;
+
+  /// Las rutas comparadas con su color, para el mapa y la leyenda.
+  List<PlannedRoute> get _compared => [
+    for (final id in widget.compareRouteIds ?? const <String>[])
+      if (_services.routes.byId(id) != null) _services.routes.byId(id)!,
+  ];
+
+  List<Map<String, Object>> _compareLines() => [
+    for (var i = 0; i < _compared.length; i++)
+      {
+        'coordinates': [
+          for (final p in _compared[i].profile.coordinates) [p.lng, p.lat],
+        ],
+        'color': compareHex[i],
+      },
+  ];
 
   /// Ruta guardada que se muestra y se edita: la pedida, o la de la expedición.
   String? _routeId;
@@ -170,7 +193,11 @@ class _MapScreenState extends State<MapScreen> {
     final bounds = _free
         ? _services.maps.regions.lastOrNull?.bbox
         : _services.expeditions.statusOf(_expedition).bounds;
-    if (_route != null) {
+    if (_comparing) {
+      _is3d = false;
+      await _bridge.set3d(false);
+      await _bridge.setCompare(_compareLines());
+    } else if (_route != null) {
       await _bridge.fitRoute();
     } else if (bounds != null) {
       await _bridge.fitBounds(bounds);
@@ -763,6 +790,8 @@ class _MapScreenState extends State<MapScreen> {
                                             ? 'PLANEANDO RUTA'
                                             : _recordingHere
                                             ? 'GRABANDO'
+                                            : _comparing
+                                            ? 'COMPARAR'
                                             : _free
                                             ? 'EXPLORAR'
                                             : 'EXPEDICIÓN',
@@ -774,7 +803,9 @@ class _MapScreenState extends State<MapScreen> {
                                         ).copyWith(fontSize: 9.5),
                                       ),
                                       Text(
-                                        _free
+                                        _comparing
+                                            ? 'Rutas'
+                                            : _free
                                             ? (_savedRoute?.name ??
                                                   'Mapa libre')
                                             : _expedition.name,
@@ -832,7 +863,10 @@ class _MapScreenState extends State<MapScreen> {
                               : 'Grabar recorrido',
                           onPressed: _recordingHere ? () {} : _startRecording,
                         ),
-                        if (!_recordingHere && _planner == null && !civil) ...[
+                        if (!_recordingHere &&
+                            _planner == null &&
+                            !civil &&
+                            !_comparing) ...[
                           const SizedBox(height: 8),
                           _MapButton(
                             icon: Icons.edit_road_rounded,
@@ -961,7 +995,9 @@ class _MapScreenState extends State<MapScreen> {
                                     );
                                   },
                                 ),
-                            ] else if (_free)
+                            ] else if (_comparing)
+                              _CompareLegend(routes: _compared)
+                            else if (_free)
                               _FreeMapCard(
                                 onNew: () =>
                                     startNewExpedition(context, replace: true),
@@ -1025,6 +1061,43 @@ class _MapScreenState extends State<MapScreen> {
       builder: (_) => AreaPickerScreen(expeditionId: _expedition.id),
     ),
   );
+}
+
+/// Leyenda del mapa en modo comparar: cada ruta con su color y sus cifras.
+class _CompareLegend extends StatelessWidget {
+  const _CompareLegend({required this.routes});
+  final List<PlannedRoute> routes;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SectionTitle('Rutas comparadas'),
+        for (var i = 0; i < routes.length; i++)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 10),
+            child: Row(
+              children: [
+                CircleAvatar(backgroundColor: compareColor(i), radius: 6),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    routes[i].name,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontWeight: FontWeight.w700),
+                  ),
+                ),
+                Text(
+                  '${fmtKm(routes[i].profile.totalMeters)} km · +${fmtInt(routes[i].profile.gain)} m',
+                  style: dataStyle(context, size: 12),
+                ),
+              ],
+            ),
+          ),
+      ],
+    );
+  }
 }
 
 /// Panel del mapa libre: qué se puede hacer sin expedición y cómo crear una.

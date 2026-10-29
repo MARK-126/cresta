@@ -14,6 +14,7 @@ import 'panels.dart';
 import 'references_section.dart';
 import 'route_actions.dart';
 import 'route_screen.dart';
+import 'compare_screen.dart';
 import 'weather_widgets.dart';
 import 'theme.dart';
 import 'track_screen.dart';
@@ -174,6 +175,22 @@ class ExpeditionScreen extends StatelessWidget {
                     style: TextStyle(
                       color: scheme.onSurfaceVariant,
                       fontSize: 13,
+                    ),
+                  ),
+                if (routes.length >= 2)
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: TextButton.icon(
+                      onPressed: () => Navigator.push(
+                        context,
+                        MaterialPageRoute<void>(
+                          builder: (_) => CompareScreen(
+                            initial: [for (final r in routes) r.id],
+                          ),
+                        ),
+                      ),
+                      icon: const Icon(Icons.compare_arrows_rounded, size: 18),
+                      label: const Text('Comparar rutas'),
                     ),
                   ),
                 const SizedBox(height: 10),

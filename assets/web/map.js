@@ -87,6 +87,7 @@
         topo: { type: 'vector', tiles: [`${ORIGIN}/tiles/topo/{z}/{x}/{y}`], maxzoom: 14, attribution: '© OpenMapTiles © colaboradores de OpenStreetMap' },
         contours: { type: 'vector', tiles: [contourTiles], maxzoom: 15 },
         route: { type: 'geojson', data: empty },
+        compare: { type: 'geojson', data: empty },
         plan: { type: 'geojson', data: empty },
         'plan-pts': { type: 'geojson', data: empty },
         pois: { type: 'geojson', data: empty },
@@ -132,6 +133,9 @@
         { id: 'regions-line', type: 'line', source: 'regions', paint: { 'line-color': ['case', ['get', 'complete'], '#00a8a3', '#c99630'], 'line-width': 2, 'line-dasharray': [4, 2] } },
         { id: 'route-casing', type: 'line', source: 'route', layout: { 'line-join': 'round', 'line-cap': 'round' }, paint: { 'line-color': '#0e1416', 'line-width': 7, 'line-opacity': 0.75 } },
         { id: 'route', type: 'line', source: 'route', layout: { 'line-join': 'round', 'line-cap': 'round' }, paint: { 'line-color': '#f0bf63', 'line-width': 4 } },
+        // Comparar rutas: varias líneas, cada una con su color
+        { id: 'compare-casing', type: 'line', source: 'compare', layout: { 'line-join': 'round', 'line-cap': 'round' }, paint: { 'line-color': '#0e1416', 'line-width': 8, 'line-opacity': 0.75 } },
+        { id: 'compare', type: 'line', source: 'compare', layout: { 'line-join': 'round', 'line-cap': 'round' }, paint: { 'line-color': ['get', 'color'], 'line-width': 4.5 } },
         // Planificador: tramos ajustados a sendero en oro continuo; los rectos, punteados
         { id: 'plan-casing', type: 'line', source: 'plan', layout: { 'line-join': 'round', 'line-cap': 'round' }, paint: { 'line-color': '#0e1416', 'line-width': 7, 'line-opacity': 0.75 } },
         { id: 'plan-snapped', type: 'line', source: 'plan', filter: ['==', ['get', 'snapped'], true], layout: { 'line-join': 'round', 'line-cap': 'round' }, paint: { 'line-color': '#f0bf63', 'line-width': 4 } },
@@ -435,6 +439,19 @@
       whenReady(() => map.getSource('route').setData(data
         ? { type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: data.coordinates } }
         : empty));
+    },
+    /// Rutas comparadas: lista de { coordinates: [[lng, lat], ...], color }; encuadra todas.
+    setCompare(list) {
+      whenReady(() => {
+        map.getSource('compare').setData({
+          type: 'FeatureCollection',
+          features: list.map((r) => ({ type: 'Feature', properties: { color: r.color }, geometry: { type: 'LineString', coordinates: r.coordinates } })),
+        });
+        if (!list.length) return;
+        const b = new maplibregl.LngLatBounds(list[0].coordinates[0], list[0].coordinates[0]);
+        list.forEach((r) => r.coordinates.forEach((pt) => b.extend(pt)));
+        map.fitBounds(b, { padding, pitch: 0, bearing: 0, duration: ms(1200) });
+      });
     },
     /// Tramos del recorrido: lista de listas de [lng, lat] (una por cada tramo entre pausas).
     setTrack(segments) {

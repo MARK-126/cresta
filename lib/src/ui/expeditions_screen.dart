@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../app_services.dart';
 import '../expeditions/expedition.dart';
+import 'compare_screen.dart';
 import 'expedition_screen.dart';
 import 'format.dart';
 import 'offline_widgets.dart';
@@ -141,11 +142,30 @@ List<Widget> _looseRoutes(BuildContext context, AppServices services) {
     for (final r in services.routes.all)
       if (r.expeditionId == null) r,
   ];
-  if (loose.isEmpty) return const [];
+  final canCompare = services.routes.all.length >= 2;
+  if (loose.isEmpty && !canCompare) return const [];
   return [
     const SizedBox(height: 18),
-    Text('RUTAS GUARDADAS', style: labelStyle(context)),
-    const SizedBox(height: 12),
+    Row(
+      children: [
+        Expanded(
+          child: Text(
+            loose.isEmpty ? 'RUTAS' : 'RUTAS GUARDADAS',
+            style: labelStyle(context),
+          ),
+        ),
+        if (canCompare)
+          TextButton.icon(
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute<void>(builder: (_) => const CompareScreen()),
+            ),
+            icon: const Icon(Icons.compare_arrows_rounded, size: 18),
+            label: const Text('Comparar'),
+          ),
+      ],
+    ),
+    const SizedBox(height: 6),
     for (final r in loose)
       Padding(
         padding: const EdgeInsets.only(bottom: 10),
