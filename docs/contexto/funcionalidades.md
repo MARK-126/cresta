@@ -12,6 +12,9 @@ Detalles técnicos en `estado.md`; qué se probó en `pruebas.md`.
 - Hora límite de retorno con aviso dentro de la app y notificación (30 min antes y a la hora) mientras se
   graba (la notificación, solo en Android).
 - Mapa libre: explorar el mapa desde el inicio sin crear una expedición.
+- Trazar rutas en el mapa libre y guardarlas solas o dentro de una expedición (nueva o existente).
+- Clima y mapa sin conexión por ruta ("Preparar sin conexión"), con descarga de la zona de la ruta.
+- Comparar de 2 a 3 rutas: cifras lado a lado, perfiles superpuestos y mapa.
 - Grabar recorridos sin señal, con la pantalla bloqueada, pausa y recuperación si la app se cierra.
 - Reloj de tiempo total, distancia, altitud, desnivel, velocidad vertical y aviso de GPS débil.
 - Aviso al salirse de la ruta planeada.
@@ -33,8 +36,10 @@ Detalles técnicos en `estado.md`; qué se probó en `pruebas.md`.
 
 ## Por implementar
 
-- Rutas borrador en el mapa libre (trazar, ver en 3D y, al guardar, elegir o crear la expedición).
-- Comparar rutas (hoy hay una por expedición): elegir si son alternativas de una expedición o de varias.
+- Ruta sugerida: buscar la mejor ruta entre los puntos marcados (más corta, más rápida, con menos desnivel),
+  con el relieve y los senderos descargados, y dejarla comparable con las demás.
+- Descargar solo un corredor alrededor de la ruta (rutas largas pesan mucho menos que la caja completa).
+- Mapa base ligero del mundo, para que el mapa libre no quede en blanco sin señal (medir su peso antes).
 - Notificación de la hora límite también en iPhone (falta el código nativo).
 - Poder quitar una hora límite ya fijada (hoy solo se cambia).
 - Descargas de mapas que sigan con la app cerrada (hoy necesitan la pantalla encendida).

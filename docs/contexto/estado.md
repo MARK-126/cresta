@@ -15,7 +15,10 @@ Actualizado: 28 oct 2026 · `main` con SOS probado, aviso al salir del perfil, n
 | 4 | Clima por altitud, lista de equipo, referencias | `feat/preparacion` | `f2496bf` |
 | Fix | Mapas del ejemplo, relieve interpolado (pendientes), umbral de nieve, graphify con Gemini | `fix/ejemplo-pendiente-nieve` | `7b7c2dc` |
 | Mejoras | Sangre con palabras en el SMS, aviso al salir del perfil, notificación de hora límite, mapa libre | `fix/sms-sangre`, `fix/perfil-sin-guardar`, `feat/notificacion-hora-limite`, `feat/mapa-libre` | `0bf2400` |
-| Rutas A | Rutas como entidades propias (id, expedición opcional), formato 2 con migración y respaldo | `feat/rutas-propias` | (este commit) |
+| Rutas A | Rutas como entidades propias (id, expedición opcional), formato 2 con migración y respaldo | `feat/rutas-propias` | `9d690f4` |
+| Rutas B | Trazar en el mapa libre y guardar sola o en una expedición; rutas guardadas en el inicio | `feat/rutas-b-mapa-libre` | (ver `git log`) |
+| Rutas C | Clima por ruta y descarga de la zona de mapa de la ruta | `feat/rutas-c-clima-mapa` | (ver `git log`) |
+| Rutas D | Comparar rutas: cifras, perfiles superpuestos y mapa | `feat/rutas-d-comparar` | (este commit) |
 
 ## Por área
 
@@ -77,7 +80,22 @@ Actualizado: 28 oct 2026 · `main` con SOS probado, aviso al salir del perfil, n
 ### Mapa libre (`ui/map_screen.dart`, `ui/expeditions_screen.dart`)
 - Tarjeta "Explorar mapa" en el inicio: abre `MapScreen` sin `expeditionId`. Capas, vistas 2D/3D, mi
   ubicación y SOS funcionan; encuadra la última zona descargada.
-- Grabar y planear ruta piden crear una expedición (`startNewExpedition`, que reemplaza el mapa).
+- Se pueden trazar rutas y guardarlas (ver abajo); grabar un recorrido pide crear una expedición
+  (`startNewExpedition`, que reemplaza el mapa).
+
+### Rutas sueltas, preparar sin conexión y comparar (fases B–D)
+- **Guardar:** en el mapa libre, "Guardar ruta" pregunta el nombre (por defecto con fecha y hora) y el destino
+  (`route_destination.dart`): solo la ruta, una expedición existente o una nueva. Las sueltas salen en el
+  inicio en "Rutas guardadas"; el detalle de ruta (`RouteScreen(routeId)`) permite cambiarla de expedición.
+  Una expedición muestra todas sus rutas; importar un GPX/KML agrega una más.
+- **Preparar sin conexión** (detalle de ruta): clima de la ruta (`weather.json`, clave `route:<id>`) y mapa. La
+  zona es la caja de la ruta más 0.02° (≈ 2 km) (`offline/route_zone.dart`): si una zona completa la cubre dice
+  "Mapa descargado"; si no, estima mosaicos y MB y descarga con "Descargar mapa de esta ruta" (detallado si cabe
+  en 40,000 mosaicos; si no, básico; si no, avisa). "Consultar clima y descargar mapa" hace las dos cosas.
+- **Comparar** (`ui/compare_screen.dart`, `routes/route_compare.dart`): de 2 a 3 rutas; tabla con lo mejor de
+  cada fila en cian (menor es mejor: distancia, subida, bajada, pendiente máx., tiempo; las de relieve solo
+  entre rutas con relieve), perfiles superpuestos y "Ver en el mapa" (capa `compare` de `map.js`). Se abre
+  desde el inicio, el detalle de ruta o la expedición.
 
 ### Interfaz
 - Pestañas: Expediciones · Bitácora · Resumen · Mapas (`ui/home_shell.dart`).
@@ -102,5 +120,5 @@ lib/src/ui/                    pantallas; theme.dart = paleta y componentes del 
 assets/web/                    map.js, MapLibre, maplibre-contour, tipografías del mapa
 assets/fonts/inter/            tipografía de la app · assets/images/ textura del splash
 tool/                          scripts de datos (Python) e ícono; tool/dev/ herramientas de prueba
-test/                          98 pruebas
+test/                          108 pruebas
 ```

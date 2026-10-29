@@ -40,7 +40,15 @@
 - **Salir del perfil sin guardar:** `PopScope` con `canPop: false` que compara el borrador con lo guardado
   y pregunta solo si hay cambios.
 - **Mapa libre:** `MapScreen` sin `expeditionId` usa una `Expedition` transitoria (`id: ''`, todas las zonas
-  descargadas); las acciones que guardan en una expedición (grabar, planear ruta) piden crear una.
+  descargadas); grabar un recorrido pide crear una expedición. Planear rutas sí se puede: al guardar se elige
+  destino (sola, expedición existente o nueva). `MapScreen` acepta `routeId` (mostrar/editar esa ruta) y
+  `compareRouteIds` (superponer rutas, sin planear ni grabar).
+- **Un solo conjunto de mapas:** las zonas descargadas son globales y comparten mosaicos; expediciones y rutas
+  solo apuntan a las que usan. Un mapa del mundo entero descargado no es viable (≈ 11 KB por mosaico).
+- **Clima por ruta:** misma `WeatherService` con clave `route:<id>` (`routeWeatherKey`); el clima de la
+  expedición sigue aparte. Se borra con la ruta.
+- **Comparar:** máximo 3 rutas (un color cada una: cian, oro, terracota); "mejor" = menor valor, y las cifras
+  de relieve no se comparan con rutas sin relieve para que los ceros no ganen.
 - **Grupo en tiempo real descartado** (no hay señal en la montaña).
 
 - **Ahorro de tokens** (pedido del usuario, 28 oct 2026): leer solo README y pendientes al empezar, graphify
@@ -64,6 +72,9 @@
 
 ## Errores resueltos (síntoma → causa → solución)
 
+- **Dos rutas con el mismo nombre en Comparar** → el nombre por defecto era solo la fecha → incluye la hora, y
+  los chips muestran los km.
+- **Botón 2D/3D desincronizado al comparar** → `_is3d` se cambiaba sin `setState` → con `setState`.
 - **"Sangre B ." en el SMS** → Mensajes de Samsung pierde el "+" del cuerpo aunque vaya codificado
   (`%2B`) → el tipo de sangre se escribe con palabras ("B positivo").
 - **Contactos o cambios del perfil perdidos** → salir sin "Guardar" los descartaba sin avisar → aviso

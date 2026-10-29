@@ -15,6 +15,27 @@ Teléfono de pruebas: Samsung Galaxy S23 Ultra (SM-S918B), Android 16, salvo que
 
 ## 2026-10-28
 
+**Rutas B, C y D · `feat/rutas-b-mapa-libre`, `feat/rutas-c-clima-mapa`, `feat/rutas-d-comparar`**
+- B: en el mapa libre se trazó una ruta (2 puntos, 10.6 km, +2,142 m), "Guardar ruta" pidió nombre y destino
+  (solo la ruta / nueva expedición / expediciones) y quedó suelta en `routes.json`; salió en "Rutas
+  guardadas" del inicio. En su detalle: "Ruta suelta, sin expedición". "Guardar en una expedición" la pasó al
+  ejemplo (el archivo y la pantalla de la expedición lo confirmaron y salió de las guardadas). **OK**.
+- C: en el detalle de ruta, "Preparar sin conexión": el mapa del Izta salió "descargado" (zona incluida cubre la
+  ruta); "Consultar clima" guardó el clima con 2 puntos (3,512 m: 3°/13° llovizna; 5,236 m: −8°/2° nieve) en
+  `weather.json` con clave `route:<id>`. Una ruta de 6.6 km fuera de las zonas dijo "3.1 MB (110 mosaicos)";
+  "Consultar clima y descargar mapa" guardó el clima y descargó la zona (5.1 MB, 31 % → completa), después
+  "Mapa descargado… funciona sin señal". Borrar la ruta quitó su clima. **OK**.
+- D: con 2 rutas guardadas el inicio muestra "Comparar"; la tabla destacó en cian lo mejor de cada fila, los
+  perfiles se superpusieron y "Ver en el mapa" dibujó las dos líneas con su leyenda. **OK**.
+- Fallos: (1) las dos rutas se llamaban igual en los chips → nombre con hora y km en el chip. (2) en el mapa de
+  comparar el botón 2D/3D quedó desincronizado y sobraba el de grabar → `setState` y ocultarlo. (3) un menú
+  emergente (con "Borrar expedición") quedó abierto por un atajo de prueba que no encontró el botón; se cerró sin
+  elegir nada y las expediciones siguieron intactas.
+- Limpieza: se borraron las rutas y las zonas de prueba (la de 5.1 MB desde Mapas); el teléfono quedó con 0 rutas,
+  2 zonas (16 MB) y las 2 expediciones. La caché de navegación (42 MB) creció al navegar; no se borró.
+- Pruebas automáticas: 108 en verde (5 de zona de ruta, 5 de comparar). Sin probar en el teléfono: importar GPX
+  como ruta adicional, "Nueva expedición" desde el destino de la ruta y comparar desde el detalle o la expedición.
+
 **Rutas como entidades propias · `feat/rutas-propias`**
 - Migración en el teléfono: con la versión anterior se guardó la ruta del ejemplo del Izta (formato
   antiguo, 469 puntos, 52,129 bytes); se instaló la nueva: apareció `routes.json.v1.bak` idéntico al
