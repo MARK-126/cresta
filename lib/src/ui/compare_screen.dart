@@ -129,7 +129,8 @@ class _RouteChip extends StatelessWidget {
       label: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 240),
         child: Text(
-          exp == null ? route.name : '${route.name} · ${exp.name}',
+          '${route.name} · ${fmtKm(route.profile.totalMeters)} km'
+          '${exp == null ? '' : ' · ${exp.name}'}',
           overflow: TextOverflow.ellipsis,
         ),
       ),

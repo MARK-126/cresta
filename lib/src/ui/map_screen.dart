@@ -194,7 +194,7 @@ class _MapScreenState extends State<MapScreen> {
         ? _services.maps.regions.lastOrNull?.bbox
         : _services.expeditions.statusOf(_expedition).bounds;
     if (_comparing) {
-      _is3d = false;
+      if (mounted) setState(() => _is3d = false);
       await _bridge.set3d(false);
       await _bridge.setCompare(_compareLines());
     } else if (_route != null) {
@@ -294,7 +294,7 @@ class _MapScreenState extends State<MapScreen> {
       context,
       saved?.name ??
           (_free
-              ? 'Ruta del ${fmtDate(DateTime.now())}'
+              ? 'Ruta del ${fmtDate(DateTime.now())}, ${_hhmm(DateTime.now())}'
               : 'Ruta de ${_expedition.name}'),
     );
     if (name == null || !mounted) return;
@@ -372,6 +372,9 @@ class _MapScreenState extends State<MapScreen> {
       n == s ? n + 0.001 : n,
     ).expandKm(0.3);
   }
+
+  static String _hhmm(DateTime t) =>
+      '${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}';
 
   /// En el mapa libre, lo que se guarda en una expedición (ruta, recorrido…) manda a crear una.
   Future<void> _needExpedition(String what) async {
@@ -852,17 +855,19 @@ class _MapScreenState extends State<MapScreen> {
                               : 'Mi ubicación',
                           onPressed: _locateMe,
                         ),
-                        const SizedBox(height: 8),
-                        _MapButton(
-                          icon: _recordingHere
-                              ? Icons.fiber_manual_record_rounded
-                              : Icons.radio_button_checked_rounded,
-                          color: recordColor,
-                          tooltip: _recordingHere
-                              ? 'Grabando'
-                              : 'Grabar recorrido',
-                          onPressed: _recordingHere ? () {} : _startRecording,
-                        ),
+                        if (!_comparing) ...[
+                          const SizedBox(height: 8),
+                          _MapButton(
+                            icon: _recordingHere
+                                ? Icons.fiber_manual_record_rounded
+                                : Icons.radio_button_checked_rounded,
+                            color: recordColor,
+                            tooltip: _recordingHere
+                                ? 'Grabando'
+                                : 'Grabar recorrido',
+                            onPressed: _recordingHere ? () {} : _startRecording,
+                          ),
+                        ],
                         if (!_recordingHere &&
                             _planner == null &&
                             !civil &&
