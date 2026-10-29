@@ -380,6 +380,30 @@ void main() {
       maps2.dispose();
     });
 
+    test('la hora límite se fija, se cambia, se quita y se guarda', () async {
+      final e = await expeditions.create(name: 'Izta');
+      expect(e.turnaroundMinutes, isNull);
+      await expeditions.update(e, turnaroundMinutes: 11 * 60 + 30);
+      await expeditions.update(e, name: 'Izta 2'); // otros cambios no la tocan
+      expect(e.turnaroundMinutes, 690);
+      final saved = ExpeditionStore(
+        JsonStore(File('${tmp.path}/expeditions.json')),
+        maps,
+      );
+      await saved.load();
+      expect(saved.all.single.turnaroundMinutes, 690);
+
+      await expeditions.update(e, clearTurnaround: true);
+      expect(e.turnaroundMinutes, isNull);
+      final cleared = ExpeditionStore(
+        JsonStore(File('${tmp.path}/expeditions.json')),
+        maps,
+      );
+      await cleared.load();
+      expect(cleared.all.single.turnaroundMinutes, isNull);
+      expect(cleared.all.single.turnaroundOn(DateTime(2026, 11, 15)), isNull);
+    });
+
     test('el ejemplo recupera sus mapas si se los quitaron', () async {
       final tile = store.file(MapSource.dem, 10, 231, 456);
       Future<void> install() => installSampleOnce(

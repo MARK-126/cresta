@@ -442,6 +442,24 @@ class _TurnaroundCheck extends StatelessWidget {
   const _TurnaroundCheck({required this.expedition});
   final Expedition expedition;
 
+  /// Quita la hora límite y deja "Deshacer" por si fue sin querer.
+  Future<void> _clear(BuildContext context) async {
+    final store = AppScope.of(context).expeditions;
+    final messenger = ScaffoldMessenger.of(context);
+    final before = expedition.turnaroundMinutes;
+    if (before == null) return;
+    await store.update(expedition, clearTurnaround: true);
+    messenger.showSnackBar(
+      SnackBar(
+        content: const Text('Hora límite quitada.'),
+        action: SnackBarAction(
+          label: 'Deshacer',
+          onPressed: () => store.update(expedition, turnaroundMinutes: before),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final m = expedition.turnaroundMinutes;
@@ -456,6 +474,8 @@ class _TurnaroundCheck extends StatelessWidget {
         final picked = await showTimePicker(
           context: context,
           helpText: 'Hora límite para regresar',
+          // El modo teclado del selector falla con el tema de la app (pantalla roja): solo reloj
+          initialEntryMode: TimePickerEntryMode.dialOnly,
           initialTime: TimeOfDay(
             hour: m == null ? 11 : m ~/ 60,
             minute: m == null ? 0 : m % 60,
@@ -503,7 +523,7 @@ class _TurnaroundCheck extends StatelessWidget {
                 ],
               ),
             ),
-            if (text != null)
+            if (text != null) ...[
               Text(
                 text,
                 style: dataStyle(
@@ -513,6 +533,13 @@ class _TurnaroundCheck extends StatelessWidget {
                   color: Andes.gold,
                 ),
               ),
+              IconButton(
+                tooltip: 'Quitar la hora límite',
+                visualDensity: VisualDensity.compact,
+                icon: const Icon(Icons.close_rounded, size: 18),
+                onPressed: () => _clear(context),
+              ),
+            ],
           ],
         ),
       ),
