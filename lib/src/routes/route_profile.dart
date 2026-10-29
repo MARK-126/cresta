@@ -113,6 +113,53 @@ double _climb(List<double> e, {required bool up}) {
 
 double _mean(List<double> v) => v.reduce((a, b) => a + b) / v.length;
 
+/// Un tramo de la ruta, en metros desde la salida, y su pendiente más fuerte.
+class Stretch {
+  const Stretch(this.from, this.to, this.maxPct);
+  final double from, to, maxPct;
+  double get length => to - from;
+}
+
+/// Pendiente (en %) desde la cual se avisa que un tramo es muy empinado.
+const steepThresholdPct = 40.0;
+
+/// Tramos seguidos con [thresholdPct] % de pendiente o más (subiendo o bajando), medida sobre
+/// ventanas de [window] metros para no exagerar por un par de puntos muy juntos. El relieve
+/// descargado suaviza (~30 m por píxel): un tramo que aquí no sale puede ser más duro en la realidad.
+List<Stretch> steepStretches(
+  TrailRoute r, {
+  double thresholdPct = steepThresholdPct,
+  double window = 100,
+}) {
+  final out = <Stretch>[];
+  double? from;
+  var end = 0.0, peak = 0.0;
+  void close() {
+    if (from == null) return;
+    if (out.isNotEmpty && from! <= out.last.to + 1e-6) {
+      final last = out.removeLast();
+      out.add(Stretch(last.from, end, math.max(last.maxPct, peak)));
+    } else {
+      out.add(Stretch(from!, end, peak));
+    }
+    from = null;
+    peak = 0;
+  }
+
+  for (var m = 0.0; m + window <= r.totalMeters; m += window / 2) {
+    final s = r.slopeAt(m, window: window).abs();
+    if (s >= thresholdPct) {
+      from ??= m;
+      peak = math.max(peak, s);
+      end = m + window;
+    } else {
+      close();
+    }
+  }
+  close();
+  return out;
+}
+
 /// Pendiente máxima (en %) sobre tramos de al menos [window] metros, para no exagerar
 /// por un par de puntos muy juntos.
 double maxSlope(TrailRoute r, {double window = 100}) {

@@ -147,7 +147,10 @@ class _Table extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final stats = [for (final r in routes) RouteStats(r.profile)];
+    final stats = [
+      for (final r in routes)
+        RouteStats(r.profile, straightMeters: r.straightMeters),
+    ];
     final muted = Theme.of(context).colorScheme.onSurfaceVariant;
 
     TableRow row(
@@ -241,6 +244,18 @@ class _Table extends StatelessWidget {
             (s) => '${s.maxSlopePct.round()} %',
             metric: CompareMetric.maxSlope,
             relief: true,
+          ),
+          row(
+            'Muy empinado',
+            (s) => '${fmtInt(s.steepMeters)} m',
+            metric: CompareMetric.steep,
+            relief: true,
+          ),
+          row(
+            'Sin sendero',
+            (s) =>
+                s.straightMeters == 0 ? '0' : '${fmtKm(s.straightMeters)} km',
+            metric: CompareMetric.straight,
           ),
           row(
             'Altitud máx.',

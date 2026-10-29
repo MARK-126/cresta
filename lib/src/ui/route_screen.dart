@@ -98,6 +98,11 @@ class _RouteScreenState extends State<RouteScreen> {
                   style: TextStyle(color: Andes.gold, fontSize: 12.5),
                 ),
               ],
+              _SafetyNotes(
+                straight: route.straightMeters,
+                straightLegs: route.straightLegs,
+                steep: steepStretches(r),
+              ),
               const SizedBox(height: 20),
               Figure(
                 fmtKm(r.totalMeters),
@@ -372,6 +377,73 @@ class _MapCoverage extends StatelessWidget {
           ],
         );
     }
+  }
+}
+
+/// Avisos de seguridad de la ruta: tramos sin sendero y tramos muy empinados.
+class _SafetyNotes extends StatelessWidget {
+  const _SafetyNotes({
+    required this.straight,
+    required this.straightLegs,
+    required this.steep,
+  });
+  final double straight;
+  final int straightLegs;
+  final List<Stretch> steep;
+
+  @override
+  Widget build(BuildContext context) {
+    if (straight <= 0 && steep.isEmpty) return const SizedBox.shrink();
+    final steepTotal = steep.fold<double>(0, (a, t) => a + t.length);
+    final steepPeak = steep.fold<double>(
+      0,
+      (a, t) => t.maxPct > a ? t.maxPct : a,
+    );
+    String plural(int n, String one, String many) => n == 1 ? one : many;
+    const style = TextStyle(fontSize: 13, height: 1.4);
+    return Padding(
+      padding: const EdgeInsets.only(top: 16),
+      child: TonalCard(
+        accent: Andes.terracottaContainer,
+        padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(
+                  Icons.warning_amber_rounded,
+                  color: Andes.terracottaContainer,
+                  size: 20,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'Revisa antes de salir',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w800,
+                    fontSize: 14.5,
+                  ),
+                ),
+              ],
+            ),
+            if (straight > 0) ...[
+              const SizedBox(height: 8),
+              Text(
+                'Sin sendero: ${fmtKm(straight)} km ($straightLegs ${plural(straightLegs, 'tramo', 'tramos')}) van en línea recta porque no hay un sendero conocido ahí. El terreno real puede ser muy distinto; en el mapa van punteados.',
+                style: style,
+              ),
+            ],
+            if (steep.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Text(
+                'Muy empinado: ${steep.length} ${plural(steep.length, 'tramo', 'tramos')} de más de ${steepThresholdPct.round()} % (${fmtInt(steepTotal)} m en total, hasta ${steepPeak.round()} %). Van en rojo en el perfil. El relieve descargado suaviza: en la realidad pueden ser peores.',
+                style: style,
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
   }
 }
 

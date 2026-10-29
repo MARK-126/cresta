@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import '../data/trail_route.dart';
+import '../routes/route_profile.dart' show Stretch, steepStretches;
 import 'format.dart';
 
 /// Perfil de elevación que se puede recorrer con el dedo.
@@ -34,6 +35,7 @@ class ElevationProfile extends StatelessWidget {
           grid: scheme.outlineVariant,
           text: scheme.onSurfaceVariant,
           dot: scheme.surface,
+          steep: steepStretches(route),
         );
         void scrub(Offset local) =>
             onScrub?.call(painter.metersAt(local.dx, box.maxWidth));
@@ -64,11 +66,16 @@ class _ProfilePainter extends CustomPainter {
     required this.grid,
     required this.text,
     required this.dot,
+    this.steep = const [],
   });
 
   final TrailRoute route;
   final double? cursor;
   final Color line, grid, text, dot;
+
+  /// Tramos muy empinados: se dibujan encima en color de alerta.
+  final List<Stretch> steep;
+  static const _steepColor = Color(0xFFFFA089);
 
   static const _left = 38.0, _right = 6.0, _top = 8.0, _bottom = 18.0;
 
@@ -145,6 +152,24 @@ class _ProfilePainter extends CustomPainter {
         ..strokeJoin = StrokeJoin.round,
     );
 
+    for (final s in steep) {
+      final seg = Path();
+      const n = 24;
+      for (var k = 0; k <= n; k++) {
+        final m = s.from + s.length * k / n;
+        final p = Offset(sx(m), sy(route.along(m).elevation));
+        k == 0 ? seg.moveTo(p.dx, p.dy) : seg.lineTo(p.dx, p.dy);
+      }
+      canvas.drawPath(
+        seg,
+        Paint()
+          ..color = _steepColor
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 3.5
+          ..strokeCap = StrokeCap.round,
+      );
+    }
+
     if (cursor != null) {
       final p = route.along(cursor!);
       final x = sx(p.meters);
@@ -165,5 +190,8 @@ class _ProfilePainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_ProfilePainter old) =>
-      old.cursor != cursor || old.route != route || old.line != line;
+      old.cursor != cursor ||
+      old.route != route ||
+      old.line != line ||
+      old.steep.length != steep.length;
 }

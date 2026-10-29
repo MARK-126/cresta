@@ -14,13 +14,14 @@ Color compareColor(int i) =>
 
 /// Las cifras de una ruta para ponerla al lado de otras.
 class RouteStats {
-  RouteStats(TrailRoute r)
+  RouteStats(TrailRoute r, {this.straightMeters = 0})
     : meters = r.totalMeters,
       gain = r.gain,
       loss = elevationLoss(r.elevations),
       maxElevation = r.maxElevation,
       minElevation = r.minElevation,
       maxSlopePct = maxSlope(r),
+      steepMeters = steepStretches(r).fold<double>(0, (a, t) => a + t.length),
       time = r.estimatedTime;
 
   final double meters;
@@ -30,6 +31,12 @@ class RouteStats {
   final double minElevation;
   final double maxSlopePct;
   final Duration time;
+
+  /// Metros con pendiente de [steepThresholdPct] % o más.
+  final double steepMeters;
+
+  /// Metros en línea recta, sin sendero.
+  final double straightMeters;
 
   /// Sin relieve descargado no hay desnivel ni altitudes que comparar.
   bool get hasRelief => gain > 0 || loss > 0;
@@ -41,6 +48,8 @@ enum CompareMetric {
   gain(true),
   loss(true),
   maxSlope(true),
+  steep(true),
+  straight(false),
   time(false);
 
   const CompareMetric(this.needsRelief);
@@ -51,6 +60,8 @@ enum CompareMetric {
     gain => s.gain,
     loss => s.loss,
     maxSlope => s.maxSlopePct,
+    steep => s.steepMeters,
+    straight => s.straightMeters,
     time => s.time.inMinutes.toDouble(),
   };
 }

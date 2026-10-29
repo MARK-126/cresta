@@ -132,7 +132,12 @@
           paint: { 'line-color': C.path, 'line-width': ['interpolate', ['linear'], ['zoom'], 11, 1, 15, 2.4], 'line-dasharray': [2, 1.2] } },
         { id: 'regions-line', type: 'line', source: 'regions', paint: { 'line-color': ['case', ['get', 'complete'], '#00a8a3', '#c99630'], 'line-width': 2, 'line-dasharray': [4, 2] } },
         { id: 'route-casing', type: 'line', source: 'route', layout: { 'line-join': 'round', 'line-cap': 'round' }, paint: { 'line-color': '#0e1416', 'line-width': 7, 'line-opacity': 0.75 } },
-        { id: 'route', type: 'line', source: 'route', layout: { 'line-join': 'round', 'line-cap': 'round' }, paint: { 'line-color': '#f0bf63', 'line-width': 4 } },
+        { id: 'route', type: 'line', source: 'route', filter: ['!=', ['get', 'snapped'], false], layout: { 'line-join': 'round', 'line-cap': 'round' }, paint: { 'line-color': '#f0bf63', 'line-width': 4 } },
+        // Tramos sin sendero (línea recta): punteados y con etiqueta
+        { id: 'route-straight', type: 'line', source: 'route', filter: ['==', ['get', 'snapped'], false], layout: { 'line-join': 'round' }, paint: { 'line-color': '#f0bf63', 'line-width': 3.5, 'line-dasharray': [1.6, 1.2] } },
+        { id: 'route-straight-label', type: 'symbol', source: 'route', filter: ['==', ['get', 'snapped'], false], layout: {
+          'symbol-placement': 'line', 'symbol-spacing': 260, 'text-field': 'sin sendero', 'text-font': font(), 'text-size': 11 },
+          paint: { 'text-color': '#ffa089', 'text-halo-color': '#0e1416', 'text-halo-width': 1.6 } },
         // Comparar rutas: varias líneas, cada una con su color
         { id: 'compare-casing', type: 'line', source: 'compare', layout: { 'line-join': 'round', 'line-cap': 'round' }, paint: { 'line-color': '#0e1416', 'line-width': 8, 'line-opacity': 0.75 } },
         { id: 'compare', type: 'line', source: 'compare', layout: { 'line-join': 'round', 'line-cap': 'round' }, paint: { 'line-color': ['get', 'color'], 'line-width': 4.5 } },
@@ -181,7 +186,7 @@
 
   // Capas lógicas (las que ve el usuario) → capas de MapLibre o grupos de marcadores
   const LAYER_MAP = {
-    route: { layers: ['route', 'route-casing', 'pois-dot', 'pois-label'] },
+    route: { layers: ['route', 'route-casing', 'route-straight', 'route-straight-label', 'pois-dot', 'pois-label'] },
     track: { layers: ['track', 'track-casing'] },
     trails: { layers: ['trails', 'tracks'] },
     contours: { layers: ['contours', 'contour-labels'] },
@@ -436,8 +441,10 @@
     fitBounds,
     setRoute(data) {
       route = data;
+      // Con tramos (ruta guardada) cada uno lleva si sigue sendero; sin ellos (ruta de ejemplo) es uno solo
+      const legs = data && data.legs && data.legs.length ? data.legs : data ? [{ coordinates: data.coordinates, snapped: true }] : [];
       whenReady(() => map.getSource('route').setData(data
-        ? { type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: data.coordinates } }
+        ? { type: 'FeatureCollection', features: legs.map((l) => ({ type: 'Feature', properties: { snapped: l.snapped }, geometry: { type: 'LineString', coordinates: l.coordinates } })) }
         : empty));
     },
     /// Rutas comparadas: lista de { coordinates: [[lng, lat], ...], color }; encuadra todas.

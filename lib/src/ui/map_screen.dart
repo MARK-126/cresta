@@ -87,6 +87,20 @@ class _MapScreenState extends State<MapScreen> {
       if (_services.routes.byId(id) != null) _services.routes.byId(id)!,
   ];
 
+  /// La ruta para el mapa: su perfil más los tramos y si siguen sendero (los rectos van punteados).
+  Map<String, dynamic> _mapJson(PlannedRoute r) => {
+    ...r.profile.toJson(),
+    'legs': [
+      for (var i = 0; i < r.legs.length; i++)
+        {
+          'coordinates': [
+            for (final p in r.legs[i]) [p.lng, p.lat],
+          ],
+          'snapped': r.snapped[i],
+        },
+    ],
+  };
+
   List<Map<String, Object>> _compareLines() => [
     for (var i = 0; i < _compared.length; i++)
       {
@@ -153,7 +167,7 @@ class _MapScreenState extends State<MapScreen> {
     final saved = _savedRoute;
     if (saved != null) {
       _route = saved.profile;
-      _routeJson = saved.profile.toJson();
+      _routeJson = _mapJson(saved);
     } else if (_expedition.routeAsset != null) {
       final (route, json) = await assets.route(_expedition.routeAsset!);
       _routeJson = json;
@@ -309,7 +323,7 @@ class _MapScreenState extends State<MapScreen> {
     await _services.routes.save(route);
     _routeId = route.id;
     _route = route.profile;
-    _routeJson = route.profile.toJson();
+    _routeJson = _mapJson(route);
     _endPlanning();
     if (!mounted) return;
     _setLayer('route', true);

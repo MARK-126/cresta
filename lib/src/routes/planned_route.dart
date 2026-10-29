@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import '../data/trail_route.dart';
+import '../tracking/track.dart' show haversine;
 
 /// Tipos de punto de interés que se marcan en la ruta.
 enum PoiKind {
@@ -152,6 +153,27 @@ class PlannedRoute {
     ),
     origin: origin,
   );
+
+  /// Cuántos tramos van en línea recta porque no se siguió ningún sendero.
+  int get straightLegs => snapped.where((s) => !s).length;
+
+  /// Metros de la ruta que van en línea recta (sin sendero).
+  double get straightMeters {
+    var total = 0.0;
+    for (var i = 0; i < legs.length; i++) {
+      if (snapped[i]) continue;
+      final leg = legs[i];
+      for (var j = 1; j < leg.length; j++) {
+        total += haversine(
+          leg[j - 1].lat,
+          leg[j - 1].lng,
+          leg[j].lat,
+          leg[j].lng,
+        );
+      }
+    }
+    return total;
+  }
 
   /// La misma ruta ligada a otra expedición (o a ninguna).
   PlannedRoute linkedTo(String? expedition) => PlannedRoute(
