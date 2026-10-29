@@ -11,13 +11,14 @@ import 'offline_widgets.dart';
 import 'panels.dart';
 import 'planner_panel.dart';
 import 'route_actions.dart';
+import 'route_destination.dart';
 import 'theme.dart';
 
 /// Detalle de la ruta de una expedición (diseño "Route Details" de Stitch): cifras,
 /// perfil y la bitácora de paradas con su hora estimada desde la salida.
 class RouteScreen extends StatefulWidget {
-  const RouteScreen({super.key, required this.expeditionId});
-  final String expeditionId;
+  const RouteScreen({super.key, required this.routeId});
+  final String routeId;
 
   @override
   State<RouteScreen> createState() => _RouteScreenState();
@@ -32,7 +33,7 @@ class _RouteScreenState extends State<RouteScreen> {
     return ListenableBuilder(
       listenable: services.routes,
       builder: (context, _) {
-        final route = services.routes.forExpedition(widget.expeditionId);
+        final route = services.routes.byId(widget.routeId);
         if (route == null) {
           return const Scaffold(body: SizedBox.shrink()); // se acaba de borrar
         }
@@ -49,11 +50,16 @@ class _RouteScreenState extends State<RouteScreen> {
               PopupMenuButton<String>(
                 onSelected: (v) => switch (v) {
                   'rename' => _rename(route),
+                  'move' => _move(route),
                   'delete' => _delete(),
                   _ => null,
                 },
                 itemBuilder: (_) => const [
                   PopupMenuItem(value: 'rename', child: Text('Cambiar nombre')),
+                  PopupMenuItem(
+                    value: 'move',
+                    child: Text('Guardar en una expedición'),
+                  ),
                   PopupMenuItem(value: 'delete', child: Text('Borrar ruta')),
                 ],
               ),
@@ -68,6 +74,13 @@ class _RouteScreenState extends State<RouteScreen> {
               ),
               const SizedBox(height: 6),
               Text(route.name, style: signage(context, size: 30)),
+              const SizedBox(height: 4),
+              Text(
+                route.expeditionId == null
+                    ? 'Ruta suelta, sin expedición'
+                    : 'Expedición: ${services.expeditions.byId(route.expeditionId!)?.name ?? ''}',
+                style: TextStyle(color: muted, fontSize: 13),
+              ),
               if (!hasRelief) ...[
                 const SizedBox(height: 6),
                 Text(
@@ -148,8 +161,10 @@ class _RouteScreenState extends State<RouteScreen> {
                 onPressed: () => Navigator.push(
                   context,
                   MaterialPageRoute<void>(
-                    builder: (_) =>
-                        MapScreen(expeditionId: widget.expeditionId),
+                    builder: (_) => MapScreen(
+                      expeditionId: route.expeditionId,
+                      routeId: route.id,
+                    ),
                   ),
                 ),
               ),
@@ -162,7 +177,8 @@ class _RouteScreenState extends State<RouteScreen> {
                         context,
                         MaterialPageRoute<void>(
                           builder: (_) => MapScreen(
-                            expeditionId: widget.expeditionId,
+                            expeditionId: route.expeditionId,
+                            routeId: route.id,
                             plan: true,
                           ),
                         ),
@@ -203,18 +219,28 @@ class _RouteScreenState extends State<RouteScreen> {
     await services.routes.save(route.withName(name));
   }
 
+  Future<void> _move(PlannedRoute route) async {
+    final services = AppScope.of(context);
+    final dest = await askRouteDestination(
+      context,
+      current: route.expeditionId,
+    );
+    if (dest == null) return;
+    await services.routes.save(route.linkedTo(dest.expeditionId));
+  }
+
   Future<void> _delete() async {
     final services = AppScope.of(context);
     final navigator = Navigator.of(context);
     final ok = await confirmDialog(
       context,
       title: 'Borrar la ruta',
-      body: 'Se borra la ruta de esta expedición. Los recorridos grabados no se tocan.',
+      body: 'Se borra la ruta. Los recorridos grabados no se tocan.',
       action: 'Borrar',
     );
     if (!ok) return;
     navigator.pop();
-    await services.routes.deleteOf(widget.expeditionId);
+    await services.routes.delete(widget.routeId);
   }
 }
 

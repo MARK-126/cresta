@@ -20,6 +20,7 @@ import '../tracking/track.dart';
 import '../tracking/track_recorder.dart';
 import 'area_picker_screen.dart';
 import 'expeditions_screen.dart' show startNewExpedition;
+import 'route_destination.dart';
 import 'format.dart';
 import 'offline_widgets.dart';
 import 'panels.dart';
@@ -37,10 +38,14 @@ class MapScreen extends StatefulWidget {
   const MapScreen({
     super.key,
     this.expeditionId,
+    this.routeId,
     this.showTrackId,
     this.plan = false,
   });
   final String? expeditionId;
+
+  /// Ruta guardada que se muestra (y se edita) al abrir; sin ella, la de la expedición.
+  final String? routeId;
 
   /// Abrir directo en modo planificar ruta.
   final bool plan;
@@ -69,6 +74,15 @@ class _MapScreenState extends State<MapScreen> {
   /// Mapa abierto desde el inicio, sin expedición.
   bool get _free => widget.expeditionId == null;
 
+  /// Ruta guardada que se muestra y se edita: la pedida, o la de la expedición.
+  String? _routeId;
+
+  PlannedRoute? get _savedRoute {
+    final id = _routeId;
+    if (id != null) return _services.routes.byId(id);
+    return _free ? null : _services.routes.forExpedition(_expedition.id);
+  }
+
   TrailRoute? _route;
   Map<String, dynamic>? _routeJson;
 
@@ -94,6 +108,7 @@ class _MapScreenState extends State<MapScreen> {
     if (_started) return;
     _started = true;
     _services = AppScope.of(context);
+    _routeId = widget.routeId;
     _expedition = _free
         ? Expedition(
             id: '',
@@ -112,7 +127,7 @@ class _MapScreenState extends State<MapScreen> {
     const assets = AssetData();
     Map<String, dynamic>? civilJson;
     // La ruta guardada (planeada o importada) tiene prioridad sobre la de ejemplo
-    final saved = _services.routes.forExpedition(_expedition.id);
+    final saved = _savedRoute;
     if (saved != null) {
       _route = saved.profile;
       _routeJson = saved.profile.toJson();
@@ -186,13 +201,9 @@ class _MapScreenState extends State<MapScreen> {
   // ------------------------------------------------------------ Planificar ruta
 
   void _startPlanning() {
-    if (_free) {
-      _needExpedition('planear una ruta');
-      return;
-    }
     if (_recordingHere) return;
     _bridge.stopFly();
-    final saved = _services.routes.forExpedition(_expedition.id);
+    final saved = _savedRoute;
     final route = _route;
     final planner = RoutePlanner(
       snap: _bridge.snapLeg,
@@ -251,14 +262,25 @@ class _MapScreenState extends State<MapScreen> {
   Future<void> _savePlan() async {
     final p = _planner;
     if (p == null || !p.canSave) return;
-    final saved = _services.routes.forExpedition(_expedition.id);
+    final saved = _savedRoute;
     final name = await askRouteName(
       context,
-      saved?.name ?? 'Ruta de ${_expedition.name}',
+      saved?.name ??
+          (_free
+              ? 'Ruta del ${fmtDate(DateTime.now())}'
+              : 'Ruta de ${_expedition.name}'),
     );
     if (name == null || !mounted) return;
-    final route = p.toRoute(name, id: saved?.id, expeditionId: _expedition.id);
+    // En el mapa libre una ruta nueva puede quedar sola o ir a una expedición
+    var expeditionId = saved?.expeditionId ?? (_free ? null : _expedition.id);
+    if (_free && saved == null) {
+      final dest = await askRouteDestination(context);
+      if (dest == null || !mounted) return;
+      expeditionId = dest.expeditionId;
+    }
+    final route = p.toRoute(name, id: saved?.id, expeditionId: expeditionId);
     await _services.routes.save(route);
+    _routeId = route.id;
     _route = route.profile;
     _routeJson = route.profile.toJson();
     _endPlanning();
@@ -276,7 +298,7 @@ class _MapScreenState extends State<MapScreen> {
   Future<bool> _cancelPlan() async {
     final p = _planner;
     if (p == null) return true;
-    final saved = _services.routes.forExpedition(_expedition.id);
+    final saved = _savedRoute;
     final changed = saved == null ? !p.isEmpty : true;
     if (changed) {
       final ok = await confirmDialog(
@@ -298,7 +320,7 @@ class _MapScreenState extends State<MapScreen> {
     _bridge.setPlanMode(false);
     _bridge.setPlan(null);
     _bridge.setRoute(_routeJson);
-    _bridge.setPois(_services.routes.forExpedition(_expedition.id)?.pois ?? []);
+    _bridge.setPois(_savedRoute?.pois ?? []);
     if (mounted) {
       setState(() {
         _planner = null;
@@ -752,7 +774,10 @@ class _MapScreenState extends State<MapScreen> {
                                         ).copyWith(fontSize: 9.5),
                                       ),
                                       Text(
-                                        _expedition.name,
+                                        _free
+                                            ? (_savedRoute?.name ??
+                                                  'Mapa libre')
+                                            : _expedition.name,
                                         overflow: TextOverflow.ellipsis,
                                         style: const TextStyle(
                                           fontWeight: FontWeight.w800,
@@ -1015,7 +1040,7 @@ class _FreeMapCard extends StatelessWidget {
       children: [
         const SectionTitle('Mapa libre'),
         Text(
-          'Explora el mapa, cambia de vista y usa tu ubicación sin crear nada. Las líneas punteadas marcan lo que ya descargaste. Para planear una ruta, grabar un recorrido o preparar la salida necesitas una expedición.',
+          'Explora el mapa, cambia de vista y usa tu ubicación sin crear nada. Las líneas punteadas marcan lo que ya descargaste. Toca el botón de ruta para marcar puntos y guardarla sola o en una expedición. Para grabar un recorrido o preparar la salida (clima, equipo) necesitas una expedición.',
           style: TextStyle(color: muted, fontSize: 13, height: 1.35),
         ),
         const SizedBox(height: 10),

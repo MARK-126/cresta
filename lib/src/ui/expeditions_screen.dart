@@ -21,7 +21,7 @@ class ExpeditionsScreen extends StatelessWidget {
     final services = AppScope.of(context);
     final store = services.expeditions;
     return ListenableBuilder(
-      listenable: Listenable.merge([store, services.recorder]),
+      listenable: Listenable.merge([store, services.recorder, services.routes]),
       builder: (context, _) {
         final items = store.all;
         final ready = items
@@ -94,6 +94,7 @@ class ExpeditionsScreen extends StatelessWidget {
                     const SizedBox(height: 10),
                   ],
                 ],
+                ..._looseRoutes(context, services),
               ],
             ),
           ),
@@ -103,22 +104,27 @@ class ExpeditionsScreen extends StatelessWidget {
   }
 }
 
-/// Pide nombre y fecha, crea la expedición y abre su pantalla. Con [replace] reemplaza la
-/// pantalla actual (p. ej. el mapa libre) en lugar de apilarse sobre ella.
-Future<void> startNewExpedition(
-  BuildContext context, {
-  bool replace = false,
-}) async {
+/// Pide nombre y fecha y crea la expedición; null si el usuario cancela.
+Future<Expedition?> askNewExpedition(BuildContext context) async {
   final result = await showModalBottomSheet<(String, DateTime?)>(
     context: context,
     isScrollControlled: true,
     showDragHandle: true,
     builder: (_) => const ExpeditionForm(),
   );
-  if (result == null || !context.mounted) return;
-  final e = await AppScope.of(context).expeditions
+  if (result == null || !context.mounted) return null;
+  return AppScope.of(context).expeditions
       .create(name: result.$1, date: result.$2);
-  if (!context.mounted) return;
+}
+
+/// Crea una expedición y abre su pantalla. Con [replace] reemplaza la pantalla actual
+/// (p. ej. el mapa libre) en lugar de apilarse sobre ella.
+Future<void> startNewExpedition(
+  BuildContext context, {
+  bool replace = false,
+}) async {
+  final e = await askNewExpedition(context);
+  if (e == null || !context.mounted) return;
   final route = MaterialPageRoute<void>(
     builder: (_) => ExpeditionScreen(expeditionId: e.id),
   );
@@ -127,6 +133,25 @@ Future<void> startNewExpedition(
   } else {
     Navigator.push(context, route);
   }
+}
+
+/// Rutas guardadas que no pertenecen a ninguna expedición.
+List<Widget> _looseRoutes(BuildContext context, AppServices services) {
+  final loose = [
+    for (final r in services.routes.all)
+      if (r.expeditionId == null) r,
+  ];
+  if (loose.isEmpty) return const [];
+  return [
+    const SizedBox(height: 18),
+    Text('RUTAS GUARDADAS', style: labelStyle(context)),
+    const SizedBox(height: 12),
+    for (final r in loose)
+      Padding(
+        padding: const EdgeInsets.only(bottom: 10),
+        child: RouteSummaryCard(routeId: r.id),
+      ),
+  ];
 }
 
 class _ExpeditionCard extends StatelessWidget {

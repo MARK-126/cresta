@@ -14,7 +14,7 @@ import '../routes/route_profile.dart';
 import 'format.dart';
 import 'offline_widgets.dart';
 
-/// Importa un GPX o KML del teléfono como ruta de la expedición. Devuelve la ruta guardada,
+/// Importa un GPX o KML del teléfono como una ruta más de la expedición. Devuelve la ruta guardada,
 /// o null si el usuario canceló o el archivo no sirve (en ese caso ya se le avisó).
 Future<PlannedRoute?> importRouteFile(
   BuildContext context,
@@ -45,16 +45,6 @@ Future<PlannedRoute?> importRouteFile(
   }
   if (!context.mounted) return null;
 
-  if (services.routes.forExpedition(expeditionId) != null) {
-    final ok = await confirmDialog(
-      context,
-      title: 'Reemplazar la ruta',
-      body: 'Esta expedición ya tiene una ruta. La importada la reemplaza; la anterior se borra.',
-      action: 'Reemplazar',
-    );
-    if (!ok) return null;
-  }
-
   final baseName = file.name.replaceAll(
     RegExp(r'\.(gpx|kml)$', caseSensitive: false),
     '',
@@ -70,6 +60,7 @@ Future<PlannedRoute?> importRouteFile(
         : 'Importada de GPX',
   );
   final route = PlannedRoute(
+    expeditionId: expeditionId,
     name: name,
     waypoints: [imported.line.first, imported.line.last],
     // El archivo ya trae el trazo bueno: un solo tramo que se respeta tal cual
@@ -79,7 +70,7 @@ Future<PlannedRoute?> importRouteFile(
     profile: profile,
     origin: imported.origin,
   );
-  await services.routes.replaceOf(expeditionId, route);
+  await services.routes.save(route);
   say(
     'Ruta importada: ${fmtKm(profile.totalMeters)} km'
     '${imported.pois.isEmpty ? '' : ' y ${imported.pois.length} puntos de interés'}.',

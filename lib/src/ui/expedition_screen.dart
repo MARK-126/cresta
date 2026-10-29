@@ -39,7 +39,8 @@ class ExpeditionScreen extends StatelessWidget {
           return const Scaffold(body: SizedBox.shrink()); // se acaba de borrar
         }
         final status = store.statusOf(e);
-        final route = services.routes.forExpedition(e.id);
+        final routes = services.routes.of(e.id);
+        final route = routes.firstOrNull;
         final hasRoute = route != null || e.routeAsset != null;
         final weather = services.weather.forExpedition(e.id);
         final gear = services.gear.forExpedition(e.id);
@@ -158,8 +159,12 @@ class ExpeditionScreen extends StatelessWidget {
                   ),
                 ),
                 const SectionTitle('Ruta'),
-                if (route != null)
-                  _RouteCard(expeditionId: e.id)
+                if (routes.isNotEmpty)
+                  for (final r in routes)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: RouteSummaryCard(routeId: r.id),
+                    )
                 else
                   Text(
                     e.routeAsset != null
@@ -491,23 +496,22 @@ class _TurnaroundCheck extends StatelessWidget {
   }
 }
 
-/// Resumen de la ruta guardada; abre su detalle.
-class _RouteCard extends StatelessWidget {
-  const _RouteCard({required this.expeditionId});
-  final String expeditionId;
+/// Resumen de una ruta guardada; abre su detalle.
+class RouteSummaryCard extends StatelessWidget {
+  const RouteSummaryCard({super.key, required this.routeId});
+  final String routeId;
 
   @override
   Widget build(BuildContext context) {
-    final route = AppScope.of(context).routes.forExpedition(expeditionId)!;
+    final route = AppScope.of(context).routes.byId(routeId);
+    if (route == null) return const SizedBox.shrink();
     final r = route.profile;
     return TonalCard(
       accent: Andes.gold,
       padding: const EdgeInsets.fromLTRB(16, 14, 12, 14),
       onTap: () => Navigator.push(
         context,
-        MaterialPageRoute<void>(
-          builder: (_) => RouteScreen(expeditionId: expeditionId),
-        ),
+        MaterialPageRoute<void>(builder: (_) => RouteScreen(routeId: routeId)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
