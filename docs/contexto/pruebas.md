@@ -15,6 +15,29 @@ Teléfono de pruebas: Samsung Galaxy S23 Ultra (SM-S918B), Android 16, salvo que
 
 ## 2026-10-28
 
+**Mejoras · `fix/sms-sangre`, `fix/perfil-sin-guardar`, `feat/notificacion-hora-limite`, `feat/mapa-libre`**
+- Aviso al salir del perfil: sin cambios sale directo; con cambios pregunta "¿Salir sin guardar?";
+  "Cancelar" se queda y "Salir" descarta (el nombre escrito no se guardó). **OK**. Ojo: el primer "atrás"
+  solo cierra el teclado.
+- Notificación de hora límite 21:05, grabando con la pantalla **bloqueada**: el aviso previo salió a las
+  20:35:00 ("Hora límite en 30 min"). **OK**. La grabación siguió corriendo bloqueada.
+- Hora límite 20:55 con la pantalla encendida: "Es tu hora límite de regreso · Son las 20:55…" salió a las
+  20:55:00. **OK**. Al descartar el recorrido desaparecen las notificaciones (la barra del teléfono no
+  muestra nada de Cresta). `dumpsys notification` seguía listándolas minutos después: no fiarse de él.
+- Fallo (conexión): al bloquear la pantalla con el botón de encendido adb quedó "offline" y hubo que
+  reconectar con otro puerto; el teléfono siguió grabando.
+- Fallo (selector de hora): el modo teclado muestra una pantalla roja ("non-normalized height"); anotado.
+- Fallo (Samsung): Mensajes de Samsung ofrece cambiar la app predeterminada y transferir el historial al
+  abrir el SMS; no se aceptó. El selector "Abrir con" cambia de orden: usar "Solo una vez".
+- Texto del SOS con la sangre en palabras: prueba automática ("O positivo"); en el teléfono la vista previa
+  de "Compartir" corta el texto antes de ese tramo. Falta verlo en un SMS real con Mensajes de Samsung.
+- Mapa libre: la tarjeta "Explorar mapa" abre el mapa (título "EXPLORAR · Mapa libre", encuadra el Izta);
+  grabar y planear ruta muestran "Necesitas una expedición"; "Nueva expedición" crea la expedición y
+  reemplaza el mapa (atrás vuelve al inicio). **OK**. La expedición de prueba se borró.
+- Limpieza: la interfaz no permite quitar una hora límite; se quitó de la expedición de ejemplo editando
+  `expeditions.json` con `run-as`. Se descartó el recorrido de prueba.
+- Pruebas automáticas: 95 en verde (4 de `TurnaroundAlerts`, 1 de sangre con palabras).
+
 **SOS con la ubicación encendida · `main`**
 - Pantalla SOS con GPS fijo (±16 m): coordenadas decimales, grados-minutos-segundos y UTM coherentes
   entre sí (revisado a mano), altitud 738 m, precisión y "hace N s" que se actualiza. **OK**.

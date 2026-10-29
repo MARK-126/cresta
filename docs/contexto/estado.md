@@ -1,6 +1,6 @@
 # Estado: qué está hecho
 
-Actualizado: 28 oct 2026 · `main` en `c041dc3`; correcciones en `fix/ejemplo-pendiente-nieve` (sin merge).
+Actualizado: 28 oct 2026 · `main` con SOS probado, aviso al salir del perfil, notificación de hora límite y mapa libre.
 
 ## Fases
 
@@ -13,7 +13,8 @@ Actualizado: 28 oct 2026 · `main` en `c041dc3`; correcciones en `fix/ejemplo-pe
 | 3 | Planificador de rutas, detalle de ruta, importar/exportar GPX y KML | `feat/planificador-rutas` | `abe6e0f` |
 | SOS | Perfil de emergencia y pantalla SOS | `feat/perfil-sos` | `f54c534` |
 | 4 | Clima por altitud, lista de equipo, referencias | `feat/preparacion` | `f2496bf` |
-| Fix | Mapas del ejemplo, relieve interpolado (pendientes), umbral de nieve, graphify con Gemini | `fix/ejemplo-pendiente-nieve` | (este commit) |
+| Fix | Mapas del ejemplo, relieve interpolado (pendientes), umbral de nieve, graphify con Gemini | `fix/ejemplo-pendiente-nieve` | `7b7c2dc` |
+| Mejoras | Sangre con palabras en el SMS, aviso al salir del perfil, notificación de hora límite, mapa libre | `fix/sms-sangre`, `fix/perfil-sin-guardar`, `feat/notificacion-hora-limite`, `feat/mapa-libre` | (ver `git log`) |
 
 ## Por área
 
@@ -62,6 +63,18 @@ Actualizado: 28 oct 2026 · `main` en `c041dc3`; correcciones en `fix/ejemplo-pe
   sin escalones de píxel.
 - "Nieve probable" solo si en las horas frías del día caen ≥ 1 mm (`snowMinMm` en `forecast.dart`).
 
+### Hora límite: notificación (`lib/src/tracking/turnaround_alerts.dart`)
+- Con un recorrido en curso (grabando o en pausa) y hora límite fijada, avisa **30 min antes** y **a la hora**.
+- Temporizadores en Dart (la app sigue viva por el servicio en primer plano de la grabación) y canal nativo
+  `cresta/notify` en `MainActivity.kt` (canal `cresta_alerts`, importancia alta). Se retiran al terminar o
+  descartar el recorrido. Solo Android: en iOS las llamadas no hacen nada.
+- Lo que ya pasó al empezar no se avisa (el panel de grabación ya lo muestra).
+
+### Mapa libre (`ui/map_screen.dart`, `ui/expeditions_screen.dart`)
+- Tarjeta "Explorar mapa" en el inicio: abre `MapScreen` sin `expeditionId`. Capas, vistas 2D/3D, mi
+  ubicación y SOS funcionan; encuadra la última zona descargada.
+- Grabar y planear ruta piden crear una expedición (`startNewExpedition`, que reemplaza el mapa).
+
 ### Interfaz
 - Pestañas: Expediciones · Bitácora · Resumen · Mapas (`ui/home_shell.dart`).
 - Splash de Android 12+ y splash cinematográfico de Flutter (mín. 2 s, "BY FRUTAL"); ícono propio.
@@ -74,7 +87,7 @@ lib/src/app_services.dart      crea todos los servicios y almacenes
 lib/src/expeditions/           expediciones
 lib/src/offline/               zonas, mosaicos, fuentes, descargas, paquete de ejemplo
 lib/src/tiles/tile_server.dart servidor local para el WebView
-lib/src/tracking/              grabador, estadísticas, resumen, altitud del terreno, GPX
+lib/src/tracking/              grabador, estadísticas, resumen, altitud del terreno, GPX, avisos de hora límite
 lib/src/routes/                rutas: modelo, perfil, planificador, importar/exportar, bitácora
 lib/src/profile/               perfil de emergencia, UTM, mensaje SOS
 lib/src/weather/               pronóstico (Open-Meteo)
@@ -85,5 +98,5 @@ lib/src/ui/                    pantallas; theme.dart = paleta y componentes del 
 assets/web/                    map.js, MapLibre, maplibre-contour, tipografías del mapa
 assets/fonts/inter/            tipografía de la app · assets/images/ textura del splash
 tool/                          scripts de datos (Python) e ícono; tool/dev/ herramientas de prueba
-test/                          90 pruebas
+test/                          95 pruebas
 ```

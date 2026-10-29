@@ -9,7 +9,9 @@ Detalles técnicos en `estado.md`; qué se probó en `pruebas.md`.
 - Descargar mapas de cualquier zona del mundo para usarlos sin señal; gestor de mapas descargados.
 - Buscador de lugares (cumbres, parques, pueblos).
 - Expediciones: nombre, fecha, notas, zonas de mapas y lista "Antes de salir".
-- Hora límite de retorno con aviso dentro de la app mientras se graba.
+- Hora límite de retorno con aviso dentro de la app y notificación (30 min antes y a la hora) mientras se
+  graba (la notificación, solo en Android).
+- Mapa libre: explorar el mapa desde el inicio sin crear una expedición.
 - Grabar recorridos sin señal, con la pantalla bloqueada, pausa y recuperación si la app se cierra.
 - Reloj de tiempo total, distancia, altitud, desnivel, velocidad vertical y aviso de GPS débil.
 - Aviso al salirse de la ruta planeada.
@@ -31,7 +33,10 @@ Detalles técnicos en `estado.md`; qué se probó en `pruebas.md`.
 
 ## Por implementar
 
-- Notificación cuando llega la hora límite de retorno (hoy el aviso solo se ve dentro de la app).
+- Rutas borrador en el mapa libre (trazar, ver en 3D y, al guardar, elegir o crear la expedición).
+- Comparar rutas (hoy hay una por expedición): elegir si son alternativas de una expedición o de varias.
+- Notificación de la hora límite también en iPhone (falta el código nativo).
+- Poder quitar una hora límite ya fijada (hoy solo se cambia).
 - Descargas de mapas que sigan con la app cerrada (hoy necesitan la pantalla encendida).
 - Altímetro barométrico como complemento del relieve y del GPS.
 - Brújula y rumbo de regreso al punto de salida.

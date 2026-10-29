@@ -30,6 +30,13 @@
   Sin merge driver de graphify (sirve solo si `graph.json` se versiona). Skill propia y breve en el repo
   en lugar de la oficial (793 líneas, asume que `graphify` existe donde corre Claude, que aquí es Windows).
   El README de graphify está desactualizado: **sí** soporta Dart (extractor por expresiones regulares).
+- **Avisos de hora límite:** temporizadores en Dart (`TurnaroundAlerts`) más un canal nativo propio
+  (`cresta/notify`), sin plugin de notificaciones: la grabación ya mantiene la app viva con el servicio en
+  primer plano. Solo mientras hay recorrido en curso; en iOS sin efecto hasta que haya código nativo.
+- **Salir del perfil sin guardar:** `PopScope` con `canPop: false` que compara el borrador con lo guardado
+  y pregunta solo si hay cambios.
+- **Mapa libre:** `MapScreen` sin `expeditionId` usa una `Expedition` transitoria (`id: ''`, todas las zonas
+  descargadas); las acciones que guardan en una expedición (grabar, planear ruta) piden crear una.
 - **Grupo en tiempo real descartado** (no hay señal en la montaña).
 
 - **Ahorro de tokens** (pedido del usuario, 28 oct 2026): leer solo README y pendientes al empezar, graphify
@@ -53,6 +60,10 @@
 
 ## Errores resueltos (síntoma → causa → solución)
 
+- **"Sangre B ." en el SMS** → Mensajes de Samsung pierde el "+" del cuerpo aunque vaya codificado
+  (`%2B`) → el tipo de sangre se escribe con palabras ("B positivo").
+- **Contactos o cambios del perfil perdidos** → salir sin "Guardar" los descartaba sin avisar → aviso
+  "¿Salir sin guardar?" cuando hay cambios.
 - **Pantalla roja `_dependents.isEmpty` al guardar** → `TextEditingController` liberado al volver de
   `showDialog`, mientras el diálogo seguía animando → usar `askText` (el controlador vive en el estado).
 - **El splash ocupaba parte del ancho** → `AnimatedSwitcher` apila con restricciones sueltas →
