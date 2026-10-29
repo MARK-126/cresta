@@ -15,6 +15,7 @@ import 'references_section.dart';
 import 'route_actions.dart';
 import 'route_screen.dart';
 import 'compare_screen.dart';
+import 'sun_card.dart';
 import 'weather_widgets.dart';
 import 'theme.dart';
 import 'track_screen.dart';
@@ -160,6 +161,8 @@ class ExpeditionScreen extends StatelessWidget {
                     ],
                   ),
                 ),
+                const SectionTitle('Luz del día'),
+                SunCard(expedition: e),
                 const SectionTitle('Ruta'),
                 if (routes.isNotEmpty)
                   for (final r in routes)
