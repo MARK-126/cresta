@@ -15,6 +15,8 @@ Detalles técnicos en `estado.md`; qué se probó en `pruebas.md`.
 - Trazar rutas en el mapa libre y guardarlas solas o dentro de una expedición (nueva o existente).
 - Clima y mapa sin conexión por ruta ("Preparar sin conexión"), con descarga de la zona de la ruta.
 - Comparar de 2 a 3 rutas: cifras lado a lado, perfiles superpuestos y mapa.
+- Luz del día sin conexión: amanecer, atardecer y horas de luz de la expedición, con una hora límite sugerida
+  que deja 2 h de luz para bajar.
 - Avisos de seguridad de la ruta: tramos sin sendero punteados y con etiqueta, y tramos de más de 40 % de
   pendiente marcados en el perfil y avisados en el detalle.
 - Grabar recorridos sin señal, con la pantalla bloqueada, pausa y recuperación si la app se cierra.
@@ -47,7 +49,6 @@ Detalles técnicos en `estado.md`; qué se probó en `pruebas.md`.
 - Descargas de mapas que sigan con la app cerrada (hoy necesitan la pantalla encendida).
 - Altímetro barométrico como complemento del relieve y del GPS.
 - Brújula y rumbo de regreso al punto de salida.
-- Hora de salida y puesta del sol para la fecha de la expedición, sin conexión.
 - Fotos geolocalizadas durante el recorrido, visibles en el mapa.
 - Ajuste a senderos que tome en cuenta el desnivel, no solo la distancia.
 

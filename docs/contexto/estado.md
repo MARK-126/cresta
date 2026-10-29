@@ -19,7 +19,8 @@ Actualizado: 28 oct 2026 · `main` con SOS probado, aviso al salir del perfil, n
 | Rutas B | Trazar en el mapa libre y guardar sola o en una expedición; rutas guardadas en el inicio | `feat/rutas-b-mapa-libre` | (ver `git log`) |
 | Rutas C | Clima por ruta y descarga de la zona de mapa de la ruta | `feat/rutas-c-clima-mapa` | (ver `git log`) |
 | Rutas D | Comparar rutas: cifras, perfiles superpuestos y mapa | `feat/rutas-d-comparar` | `c3f01e7` |
-| Seguridad | Tramos sin sendero punteados y con etiqueta, pendientes de más de 40 % marcadas, aviso en el detalle | `feat/tramos-sin-sendero` | (este commit) |
+| Seguridad | Tramos sin sendero punteados y con etiqueta, pendientes de más de 40 % marcadas, aviso en el detalle | `feat/tramos-sin-sendero` | `1d26731` |
+| Fase 5 · sol | Amanecer, atardecer y hora límite sugerida, sin conexión | `feat/luz-del-dia` | (este commit) |
 
 ## Por área
 
@@ -107,6 +108,15 @@ Actualizado: 28 oct 2026 · `main` con SOS probado, aviso al salir del perfil, n
   ("Revisa antes de salir"). El relieve de ~30 m suaviza, así que la realidad puede ser peor.
 - "Comparar" suma las filas "Muy empinado" y "Sin sendero" (menor es mejor).
 
+### Luz del día (`lib/src/sun/sun_times.dart`, `ui/sun_card.dart`)
+- `sunTimes(date, lat, lng)`: amanecer, atardecer y crepúsculo civil (sol a −6°) con la ecuación de salida del
+  sol (error de un par de minutos), sin conexión ni datos. Devuelve horas locales **del teléfono**; no cuenta la
+  altitud ni las sombras de montañas. Día/noche polar sin horas.
+- Tarjeta "Luz del día" en la expedición (día de la salida, o hoy sin fecha; lugar = salida de la primera ruta o
+  centro de las zonas): amanecer, atardecer y horas de luz. Sugiere la hora límite más tarde que deja 2 h de luz
+  (`descentMargin`; atardecer menos 2 h, bajado a múltiplo de 5 min), con botón "Usar HH:MM como hora límite", y
+  avisa si la hora límite fijada deja menos.
+
 ### Interfaz
 - Pestañas: Expediciones · Bitácora · Resumen · Mapas (`ui/home_shell.dart`).
 - Splash de Android 12+ y splash cinematográfico de Flutter (mín. 2 s, "BY FRUTAL"); ícono propio.
@@ -130,5 +140,5 @@ lib/src/ui/                    pantallas; theme.dart = paleta y componentes del 
 assets/web/                    map.js, MapLibre, maplibre-contour, tipografías del mapa
 assets/fonts/inter/            tipografía de la app · assets/images/ textura del splash
 tool/                          scripts de datos (Python) e ícono; tool/dev/ herramientas de prueba
-test/                          114 pruebas
+test/                          124 pruebas
 ```

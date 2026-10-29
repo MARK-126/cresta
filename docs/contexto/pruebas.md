@@ -15,6 +15,17 @@ Teléfono de pruebas: Samsung Galaxy S23 Ultra (SM-S918B), Android 16, salvo que
 
 ## 2026-10-28
 
+**Luz del día · `feat/luz-del-dia`**
+- Pruebas automáticas: 10 nuevas contra valores de referencia de astral (Ciudad de México, salida del Izta,
+  Londres, Ecuador, Mendoza, Nueva York, Tokio, todos a ≤ 2.5 min), día/noche polar, hora sugerida y duración.
+  Pasaron a la primera.
+- En el S23 (zona Buenos Aires): la tarjeta del ejemplo del Izta dijo amanecer 09:33, atardecer 21:03, 11 h 30 de
+  luz, igual que la referencia (12:33:36Z y 00:02:43Z). "Usar 19:00 como hora límite" fijó 19:00 y la tarjeta
+  dijo "deja 2 h 03 de luz". Con 20:30 (editado en el archivo) avisó "deja menos de 2 h… adelántala a las
+  19:00". **OK**. La hora límite del ejemplo se quitó al terminar (editando `expeditions.json`).
+- Nota: para una expedición en otro país las horas salen en la zona del teléfono (aquí, Argentina para el Izta).
+- Fallo de prueba (mío): faltaba crear la carpeta `lib/src/sun/` antes de escribir el archivo.
+
 **Tramos sin sendero y pendientes fuertes · `feat/tramos-sin-sendero`**
 - Ruta recta de 10.6 km sobre el Popo (1 tramo sin sendero): en el mapa va punteada y repite "sin sendero"
   (visible al acercar); en el perfil los tramos muy empinados van en terracota; el detalle dice "Revisa antes
