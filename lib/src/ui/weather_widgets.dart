@@ -145,8 +145,10 @@ class _WeatherCardState extends State<WeatherCard> {
               onTap: () => Navigator.push(
                 context,
                 MaterialPageRoute<void>(
-                  builder: (_) =>
-                      WeatherScreen(expeditionId: widget.expedition.id),
+                  builder: (_) => WeatherScreen(
+                    expeditionId: widget.expedition.id,
+                    subject: widget.expedition,
+                  ),
                 ),
               ),
               child: Column(
@@ -313,8 +315,11 @@ class _Chip extends StatelessWidget {
 
 /// Pronóstico completo: 16 días por punto y, para el día elegido, cada 3 horas.
 class WeatherScreen extends StatefulWidget {
-  const WeatherScreen({super.key, required this.expeditionId});
+  const WeatherScreen({super.key, required this.expeditionId, this.subject});
   final String expeditionId;
+
+  /// De quién es el clima cuando no es una expedición guardada (el de una ruta).
+  final Expedition? subject;
 
   @override
   State<WeatherScreen> createState() => _WeatherScreenState();
@@ -327,7 +332,7 @@ class _WeatherScreenState extends State<WeatherScreen> {
   @override
   Widget build(BuildContext context) {
     final services = AppScope.of(context);
-    final e = services.expeditions.byId(widget.expeditionId);
+    final e = services.expeditions.byId(widget.expeditionId) ?? widget.subject;
     return ListenableBuilder(
       listenable: services.weather,
       builder: (context, _) {

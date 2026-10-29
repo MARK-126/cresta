@@ -7,12 +7,18 @@ import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../app_services.dart';
+import '../expeditions/expedition.dart';
+import '../offline/map_sources.dart';
+import '../offline/offline_region.dart';
+import '../offline/route_zone.dart';
 import '../routes/planned_route.dart';
 import '../routes/route_export.dart';
 import '../routes/route_import.dart';
 import '../routes/route_profile.dart';
+import '../weather/weather_service.dart' show routeWeatherKey;
 import 'format.dart';
 import 'offline_widgets.dart';
+import 'weather_widgets.dart' show refreshWeather;
 
 /// Importa un GPX o KML del teléfono como una ruta más de la expedición. Devuelve la ruta guardada,
 /// o null si el usuario canceló o el archivo no sirve (en ese caso ya se le avisó).
@@ -76,6 +82,67 @@ Future<PlannedRoute?> importRouteFile(
     '${imported.pois.isEmpty ? '' : ' y ${imported.pois.length} puntos de interés'}.',
   );
   return route;
+}
+
+/// De quién es el clima de una ruta: una expedición virtual con clave propia y, si la ruta
+/// está en una expedición, su fecha de salida.
+Expedition routeWeatherSubject(AppServices services, PlannedRoute route) {
+  final e = route.expeditionId == null
+      ? null
+      : services.expeditions.byId(route.expeditionId!);
+  return Expedition(
+    id: routeWeatherKey(route.id),
+    name: route.name,
+    date: e?.date,
+  );
+}
+
+/// Descarga la zona de mapa de la ruta (y la liga a su expedición, si tiene). Devuelve la zona,
+/// o null si no hace falta o no cabe en una descarga.
+Future<OfflineRegion?> downloadRouteMap(
+  BuildContext context,
+  PlannedRoute route,
+) async {
+  final services = AppScope.of(context);
+  final messenger = ScaffoldMessenger.of(context);
+  final plan = planRouteMap(route.profile.coordinates, services.maps.regions);
+  if (plan.state != RouteMapState.none) return null;
+  final region = await services.maps.add(
+    name: 'Ruta: ${route.name}',
+    bbox: plan.zone,
+    detail: plan.detail!,
+    sources: {MapSource.dem, MapSource.sat, MapSource.topo},
+  );
+  final e = route.expeditionId == null
+      ? null
+      : services.expeditions.byId(route.expeditionId!);
+  if (e != null) await services.expeditions.attachRegion(e, region.id);
+  final reason = services.maps.blockedReason;
+  messenger.showSnackBar(
+    SnackBar(
+      content: Text(
+        reason == null
+            ? 'Descargando el mapa de la ruta. Mantén la app abierta hasta que termine.'
+            : 'El mapa de la ruta quedó en la cola: ${reason.toLowerCase()}.',
+      ),
+    ),
+  );
+  return region;
+}
+
+/// Consulta el clima de la ruta y, si su zona de mapa no está descargada, la descarga.
+Future<void> prepareRouteOffline(
+  BuildContext context,
+  PlannedRoute route,
+) async {
+  final services = AppScope.of(context);
+  await refreshWeather(
+    context,
+    routeWeatherSubject(services, route),
+    route.profile,
+  );
+  if (!context.mounted) return;
+  await downloadRouteMap(context, route);
 }
 
 /// Comparte la ruta como GPX (Wikiloc, Garmin, Google Earth…).

@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 
 import '../app_services.dart';
+import '../offline/offline_region.dart';
+import '../offline/route_zone.dart';
 import '../routes/planned_route.dart';
 import '../routes/route_ledger.dart';
 import '../routes/route_profile.dart';
+import '../weather/weather_service.dart' show routeWeatherKey;
 import 'elevation_profile.dart';
 import 'format.dart';
 import 'map_screen.dart';
@@ -13,6 +16,7 @@ import 'planner_panel.dart';
 import 'route_actions.dart';
 import 'route_destination.dart';
 import 'theme.dart';
+import 'weather_widgets.dart' show WeatherCard;
 
 /// Detalle de la ruta de una expedición (diseño "Route Details" de Stitch): cifras,
 /// perfil y la bitácora de paradas con su hora estimada desde la salida.
@@ -137,6 +141,7 @@ class _RouteScreenState extends State<RouteScreen> {
                   style: dataStyle(context, size: 12, color: muted),
                 ),
               ],
+              _OfflineSection(route: route),
               const SectionTitle('Bitácora de la ruta'),
               TonalCard(
                 padding: const EdgeInsets.fromLTRB(16, 18, 16, 4),
@@ -240,7 +245,122 @@ class _RouteScreenState extends State<RouteScreen> {
     );
     if (!ok) return;
     navigator.pop();
+    await services.weather.delete(routeWeatherKey(widget.routeId));
     await services.routes.delete(widget.routeId);
+  }
+}
+
+/// Lo que falta para usar la ruta sin señal: su clima y la zona de mapa.
+class _OfflineSection extends StatelessWidget {
+  const _OfflineSection({required this.route});
+  final PlannedRoute route;
+
+  @override
+  Widget build(BuildContext context) {
+    final services = AppScope.of(context);
+    return ListenableBuilder(
+      listenable: Listenable.merge([services.maps, services.weather]),
+      builder: (context, _) {
+        final plan = planRouteMap(
+          route.profile.coordinates,
+          services.maps.regions,
+        );
+        final hasWeather =
+            services.weather.forExpedition(routeWeatherKey(route.id)) != null;
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const SectionTitle('Preparar sin conexión'),
+            WeatherCard(
+              expedition: routeWeatherSubject(services, route),
+              route: route.profile,
+            ),
+            const SizedBox(height: 14),
+            _MapCoverage(plan: plan, route: route),
+            if (!hasWeather && plan.state == RouteMapState.none) ...[
+              const SizedBox(height: 14),
+              GlowButton(
+                label: 'Consultar clima y descargar mapa',
+                icon: Icons.cloud_download_outlined,
+                onPressed: () => prepareRouteOffline(context, route),
+              ),
+            ],
+          ],
+        );
+      },
+    );
+  }
+}
+
+/// Estado del mapa sin conexión de la ruta y cómo descargarlo.
+class _MapCoverage extends StatelessWidget {
+  const _MapCoverage({required this.plan, required this.route});
+  final RouteMapPlan plan;
+  final PlannedRoute route;
+
+  @override
+  Widget build(BuildContext context) {
+    final services = AppScope.of(context);
+    final muted = Theme.of(context).colorScheme.onSurfaceVariant;
+    final r = plan.region;
+    switch (plan.state) {
+      case RouteMapState.ready:
+        return Row(
+          children: [
+            const Icon(Icons.check_circle_rounded, color: Andes.cyan, size: 20),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                'Mapa descargado: ${r!.name} · ${fmtBytes(r.bytes)}. La ruta funciona sin señal.',
+                style: const TextStyle(fontSize: 13.5, height: 1.35),
+              ),
+            ),
+          ],
+        );
+      case RouteMapState.inProgress:
+        final paused = r!.status == RegionStatus.paused;
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              paused
+                  ? 'Descarga del mapa en pausa (${(r.progress * 100).round()} %).'
+                  : 'Descargando el mapa de la ruta: ${(r.progress * 100).round()} %. Mantén la app abierta.',
+              style: const TextStyle(fontSize: 13.5, height: 1.35),
+            ),
+            const SizedBox(height: 8),
+            LinearProgressIndicator(value: r.progress),
+            if (paused) ...[
+              const SizedBox(height: 8),
+              OutlinedButton(
+                onPressed: () => services.maps.resume(r.id),
+                child: const Text('Reanudar descarga'),
+              ),
+            ],
+          ],
+        );
+      case RouteMapState.tooLarge:
+        return Text(
+          'La zona de esta ruta es demasiado grande para una sola descarga (${plan.estimate!.tiles} mosaicos; el máximo es $maxTilesPerRegion). Elige zonas más pequeñas en la pestaña Mapas.',
+          style: TextStyle(color: muted, fontSize: 13, height: 1.35),
+        );
+      case RouteMapState.none:
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              'Mapa sin descargar. Para usar la ruta sin señal hay que bajar su zona: unos ${fmtBytes(plan.estimate!.bytes)} (${plan.estimate!.tiles} mosaicos, detalle ${plan.detail!.label.toLowerCase()}). Mejor con Wi-Fi.',
+              style: TextStyle(color: muted, fontSize: 13, height: 1.35),
+            ),
+            const SizedBox(height: 10),
+            OutlinedButton.icon(
+              onPressed: () => downloadRouteMap(context, route),
+              icon: const Icon(Icons.download_rounded),
+              label: const Text('Descargar mapa de esta ruta'),
+            ),
+          ],
+        );
+    }
   }
 }
 

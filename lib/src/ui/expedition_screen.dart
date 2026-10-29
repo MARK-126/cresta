@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../app_services.dart';
+import '../weather/weather_service.dart' show routeWeatherKey;
 import '../expeditions/expedition.dart';
 import '../offline/offline_region.dart';
 import 'area_picker_screen.dart';
@@ -292,6 +293,9 @@ class ExpeditionScreen extends StatelessWidget {
     if (!ok) return;
     navigator.pop();
     await services.tracks.deleteForExpedition(e.id);
+    for (final r in services.routes.of(e.id)) {
+      await services.weather.delete(routeWeatherKey(r.id));
+    }
     await services.routes.deleteOf(e.id);
     await services.weather.delete(e.id);
     await services.gear.deleteExpedition(e.id);

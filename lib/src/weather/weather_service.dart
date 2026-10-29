@@ -11,6 +11,9 @@ import '../routes/route_profile.dart' show ElevationAt;
 import '../storage/json_store.dart';
 import 'forecast.dart';
 
+/// Clave con la que se guarda el clima de una ruta (distinta de la de las expediciones).
+String routeWeatherKey(String routeId) => 'route:$routeId';
+
 /// El pronóstico guardado de una expedición: se consulta con conexión y se lee sin ella.
 class WeatherSnapshot {
   WeatherSnapshot({required this.fetchedAt, required this.points});
