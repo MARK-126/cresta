@@ -49,6 +49,13 @@
   expedición sigue aparte. Se borra con la ruta.
 - **Avisos de la ruta:** son parte de la seguridad, no de "mejor ruta"; valen aunque no haya fase E. Umbral de
   40 % sobre ventanas de 100 m; un tramo sin sendero se dibuja punteado con etiqueta y se avisa en el detalle.
+- **Búsqueda de rutas en Dart (fase E): viable y recomendada.** Medido el 28 oct 2026 (ver `pruebas.md`): leer un
+  mosaico tarda 0.2–0.6 ms, un grafo de 18 mil nodos se busca en ~8 ms, y las coordenadas coinciden con la ruta real
+  a ≤ 1 m. Condiciones: (1) recortar cada línea al cuadro de su mosaico (los márgenes duplican senderos); (2) unir
+  solo los **extremos sueltos** a la línea más cercana (resultado estable con 3–30 m); unir cualquier nodo con
+  cualquier nodo depende de un radio de filo (≤ 2 m falla, ≥ 5 m inventa atajos); (3) hacen falta los mosaicos de
+  **zoom 14** (descarga Detallado): a zoom 13 hay ~14 veces menos senderos y el grafo no conecta; (4) medir contra
+  el costo de la ruta real, no contra su trazo: la más corta puede ser otra trocha igual de real.
 - **Hora límite:** se quita con una "x" en su fila (y "Deshacer"). El selector usa solo el reloj
   (`TimePickerEntryMode.dialOnly`): su modo teclado fallaba con el tema de la app (pantalla roja
   "BoxConstraints has non-normalized height").

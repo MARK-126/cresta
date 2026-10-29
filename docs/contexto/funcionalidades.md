@@ -42,7 +42,8 @@ Detalles técnicos en `estado.md`; qué se probó en `pruebas.md`.
 ## Por implementar
 
 - Ruta sugerida: buscar la mejor ruta entre los puntos marcados (más corta, más rápida, con menos desnivel),
-  con el relieve y los senderos descargados, y dejarla comparable con las demás.
+  con el relieve y los senderos descargados, y dejarla comparable con las demás. Necesita los mosaicos de zoom 14
+  (descarga Detallado) y la búsqueda en Dart (ver `decisiones.md`).
 - Descargar solo un corredor alrededor de la ruta (rutas largas pesan mucho menos que la caja completa).
 - Mapa base ligero del mundo, para que el mapa libre no quede en blanco sin señal (medir su peso antes).
 - Notificación de la hora límite también en iPhone (falta el código nativo).

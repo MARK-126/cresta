@@ -15,7 +15,8 @@ Lo que falta **probar** está al inicio de `pruebas.md`. La lista de funciones p
 - La notificación de la hora límite solo funciona grabando y en Android; la hora no se puede fijar con la
   app cerrada.
 - En la lista de recorridos, nombres antiguos pueden repetir la fecha.
-- El ajuste a senderos solo usa lo visible y solo distancia (no desnivel).
+- El ajuste a senderos solo usa lo visible y solo distancia (no desnivel). La fase E lo pasa a Dart con los mosaicos
+  de zoom 14 de toda la zona (base ya hecha: `lib/src/tiles/`).
 - Descargas de mapas: solo con la app abierta.
 
 ## Herramientas

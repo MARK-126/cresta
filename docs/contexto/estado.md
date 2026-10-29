@@ -21,7 +21,8 @@ Actualizado: 28 oct 2026 · `main` con SOS probado, aviso al salir del perfil, n
 | Rutas D | Comparar rutas: cifras, perfiles superpuestos y mapa | `feat/rutas-d-comparar` | `c3f01e7` |
 | Seguridad | Tramos sin sendero punteados y con etiqueta, pendientes de más de 40 % marcadas, aviso en el detalle | `feat/tramos-sin-sendero` | `1d26731` |
 | Fase 5 · sol | Amanecer, atardecer y hora límite sugerida, sin conexión | `feat/luz-del-dia` | `323ebff` |
-| Fase 5 · hora límite | Botón para quitarla (con Deshacer) y selector solo de reloj | `feat/quitar-hora-limite` | (este commit) |
+| Fase 5 · hora límite | Botón para quitarla (con Deshacer) y selector solo de reloj | `feat/quitar-hora-limite` | `18a5a46` |
+| Experimento | Leer senderos de los mosaicos en Dart (base de la fase E) | `spike/senderos-dart` | (este commit) |
 
 ## Por área
 
@@ -118,6 +119,13 @@ Actualizado: 28 oct 2026 · `main` con SOS probado, aviso al salir del perfil, n
   (`descentMargin`; atardecer menos 2 h, bajado a múltiplo de 5 min), con botón "Usar HH:MM como hora límite", y
   avisa si la hora límite fijada deja menos.
 
+### Senderos en Dart (base de la fase E, aún sin usar en la app)
+- `lib/src/tiles/mvt.dart`: decodificador mínimo de mosaicos vectoriales (Mapbox Vector Tile, sin comprimir: así los
+  guarda `TileStore`) y `tilePointToLngLat`. `lib/src/tiles/tile_clip.dart`: recorta cada línea al cuadro del mosaico.
+- `tool/dev/spike_senderos.dart`, `spike_ruta.dart` y `spike_zona.dart` reproducen las mediciones (ver `pruebas.md`).
+  Se corren con `dart tool/dev/spike_ruta.dart CARPETA_CON_topo/ assets/data/arista_del_sol.json`; variables:
+  `Z` (zoom), `CLIP`, `MODE` (`ends`, `border`), `TAU`, `LINK`, `DUMP`.
+
 ### Interfaz
 - Pestañas: Expediciones · Bitácora · Resumen · Mapas (`ui/home_shell.dart`).
 - Splash de Android 12+ y splash cinematográfico de Flutter (mín. 2 s, "BY FRUTAL"); ícono propio.
@@ -141,5 +149,5 @@ lib/src/ui/                    pantallas; theme.dart = paleta y componentes del 
 assets/web/                    map.js, MapLibre, maplibre-contour, tipografías del mapa
 assets/fonts/inter/            tipografía de la app · assets/images/ textura del splash
 tool/                          scripts de datos (Python) e ícono; tool/dev/ herramientas de prueba
-test/                          125 pruebas
+test/                          135 pruebas
 ```

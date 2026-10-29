@@ -15,6 +15,31 @@ Teléfono de pruebas: Samsung Galaxy S23 Ultra (SM-S918B), Android 16, salvo que
 
 ## 2026-10-28
 
+**Experimento: senderos de los mosaicos en Dart · `spike/senderos-dart`**
+- Lectura: los mosaicos topo se guardan sin comprimir; el decodificador de `mvt.dart` lee 193 mosaicos del paquete
+  del Izta en 65 ms (0.3 ms cada uno) y 417 del teléfono en 83 ms. Senderos (`path`, `track`) solo desde zoom 13.
+- Izta, zoom 14 (72 mosaicos): 691 líneas, 530 km (317 `path` + 213 `track`). Los 469 puntos de La Arista del Sol
+  caen a ≤ 1 m de un sendero leído: la conversión de coordenadas es correcta.
+- Grafo (18 mil nodos) y búsqueda por distancia (~8 ms), inicio→final de La Arista:
+  - Sin recortar mosaicos: 14.4–15.7 km (ruta real 12.1) y hasta 145 piezas sueltas. Recortar cada línea al mosaico
+    fue necesario (el margen duplica los senderos con otros vértices).
+  - Unir todos los nodos a ≤ R m: R = 1–2 m falla (15.7 km); R = 3 m reproduce la ruta (12.1 km, 98 % a ≤ 50 m); R ≥ 5 m
+    inventa atajos (11.8 km, 37 %). Es de filo: no sirve como método.
+  - Hipótesis descartada (la mía): unir solo en los bordes de mosaico no arregla nada; el desajuste está dentro de los
+    mosaicos (un sendero termina a 1–3 m del otro sin compartir vértice).
+  - Unir solo los **extremos sueltos** a la línea más cercana (3–30 m): resultado estable, 11.8 km. Dibujado contra la
+    ruta real (`/tmp/cresta-capturas/spike_ruta.png`): coincide en la mitad de abajo y en la de arriba usa **otro sendero
+    real** (valle del oeste, 0.3 km más corto) en vez de la arista del este. La más corta no es la mejor.
+- Zoom 13 (descarga Básica): 154 líneas, 41 km (contra 561 km a zoom 14 en la misma zona); el grafo queda en 108–129
+  piezas y no conecta inicio y final. Para sugerir rutas hace falta Detallado.
+- **Corrección:** los mosaicos de Vallecitos (210 a zoom 14, del teléfono) traen **104 km de senderos** (87 `path` y 17
+  `track`) en 44 de ellos (~0.5 km por mosaico; el Izta ~7). Lo anotado en octubre ("OpenStreetMap no tiene senderos
+  ahí", 15 puntos de prueba sin resultado) era demasiado fuerte: hay pocos, no ninguno.
+- Tropiezos míos: un filtro de longitud invertido mezcló los mosaicos de México con los de Argentina (se rehízo).
+- Pruebas automáticas (135 en verde, 10 nuevas): decodificar un mosaico real de 1.5 KB (4 senderos), tamaño de un
+  mosaico z14 (~2.3 km) y esquina del mundo, y 6 casos de recorte (dentro, sale, atraviesa, fuera, sale y vuelve,
+  diagonal).
+
 **Quitar la hora límite · `feat/quitar-hora-limite`**
 - En el S23: el selector ya no trae el botón de teclado (solo reloj, Cancelar y ACEPTAR). Se fijó 11:00; la "x"
   la quitó (`turnaroundMinutes` volvió a vacío en el archivo) y salió "Hora límite quitada · Deshacer"; Deshacer
