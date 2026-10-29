@@ -47,6 +47,8 @@
   solo apuntan a las que usan. Un mapa del mundo entero descargado no es viable (≈ 11 KB por mosaico).
 - **Clima por ruta:** misma `WeatherService` con clave `route:<id>` (`routeWeatherKey`); el clima de la
   expedición sigue aparte. Se borra con la ruta.
+- **Avisos de la ruta:** son parte de la seguridad, no de "mejor ruta"; valen aunque no haya fase E. Umbral de
+  40 % sobre ventanas de 100 m; un tramo sin sendero se dibuja punteado con etiqueta y se avisa en el detalle.
 - **Comparar:** máximo 3 rutas (un color cada una: cian, oro, terracota); "mejor" = menor valor, y las cifras
   de relieve no se comparan con rutas sin relieve para que los ceros no ganen.
 - **Grupo en tiempo real descartado** (no hay señal en la montaña).

@@ -18,7 +18,8 @@ Actualizado: 28 oct 2026 · `main` con SOS probado, aviso al salir del perfil, n
 | Rutas A | Rutas como entidades propias (id, expedición opcional), formato 2 con migración y respaldo | `feat/rutas-propias` | `9d690f4` |
 | Rutas B | Trazar en el mapa libre y guardar sola o en una expedición; rutas guardadas en el inicio | `feat/rutas-b-mapa-libre` | (ver `git log`) |
 | Rutas C | Clima por ruta y descarga de la zona de mapa de la ruta | `feat/rutas-c-clima-mapa` | (ver `git log`) |
-| Rutas D | Comparar rutas: cifras, perfiles superpuestos y mapa | `feat/rutas-d-comparar` | (este commit) |
+| Rutas D | Comparar rutas: cifras, perfiles superpuestos y mapa | `feat/rutas-d-comparar` | `c3f01e7` |
+| Seguridad | Tramos sin sendero punteados y con etiqueta, pendientes de más de 40 % marcadas, aviso en el detalle | `feat/tramos-sin-sendero` | (este commit) |
 
 ## Por área
 
@@ -97,6 +98,15 @@ Actualizado: 28 oct 2026 · `main` con SOS probado, aviso al salir del perfil, n
   entre rutas con relieve), perfiles superpuestos y "Ver en el mapa" (capa `compare` de `map.js`). Se abre
   desde el inicio, el detalle de ruta o la expedición.
 
+### Avisos de seguridad de la ruta
+- **Sin sendero:** cada tramo guarda si siguió un sendero (`snapped`). Los que no, van punteados con la etiqueta
+  "sin sendero" en el mapa (capa `route-straight` de `map.js`; `MapScreen._mapJson` manda los tramos) y suman
+  `PlannedRoute.straightMeters`. La ruta de ejemplo y las importadas cuentan como con sendero.
+- **Muy empinado:** `steepStretches` (`routes/route_profile.dart`) junta los tramos de `steepThresholdPct` = 40 %
+  o más (ventanas de 100 m, subiendo o bajando); el perfil los dibuja en terracota y el detalle de ruta avisa
+  ("Revisa antes de salir"). El relieve de ~30 m suaviza, así que la realidad puede ser peor.
+- "Comparar" suma las filas "Muy empinado" y "Sin sendero" (menor es mejor).
+
 ### Interfaz
 - Pestañas: Expediciones · Bitácora · Resumen · Mapas (`ui/home_shell.dart`).
 - Splash de Android 12+ y splash cinematográfico de Flutter (mín. 2 s, "BY FRUTAL"); ícono propio.
@@ -120,5 +130,5 @@ lib/src/ui/                    pantallas; theme.dart = paleta y componentes del 
 assets/web/                    map.js, MapLibre, maplibre-contour, tipografías del mapa
 assets/fonts/inter/            tipografía de la app · assets/images/ textura del splash
 tool/                          scripts de datos (Python) e ícono; tool/dev/ herramientas de prueba
-test/                          108 pruebas
+test/                          114 pruebas
 ```

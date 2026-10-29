@@ -15,6 +15,15 @@ Teléfono de pruebas: Samsung Galaxy S23 Ultra (SM-S918B), Android 16, salvo que
 
 ## 2026-10-28
 
+**Tramos sin sendero y pendientes fuertes · `feat/tramos-sin-sendero`**
+- Ruta recta de 10.6 km sobre el Popo (1 tramo sin sendero): en el mapa va punteada y repite "sin sendero"
+  (visible al acercar); en el perfil los tramos muy empinados van en terracota; el detalle dice "Revisa antes
+  de salir: sin sendero 10.6 km (1 tramo); muy empinado: 14 tramos de más de 40 % (5,350 m, hasta 103 %)". **OK**.
+- A zoom amplio la etiqueta no se alcanza a leer (solo se ve el punteado): es lo esperado.
+- Fallo de prueba (mía): el ayudante de la prueba fijaba `gain: 0` y ninguna ruta contaba con relieve.
+- Pruebas automáticas: 114 en verde (6 nuevas: tramos empinados, sin sendero, filas de Comparar). Sin probar en
+  el teléfono: las filas nuevas de Comparar. Se borró la ruta de prueba.
+
 **Rutas B, C y D · `feat/rutas-b-mapa-libre`, `feat/rutas-c-clima-mapa`, `feat/rutas-d-comparar`**
 - B: en el mapa libre se trazó una ruta (2 puntos, 10.6 km, +2,142 m), "Guardar ruta" pidió nombre y destino
   (solo la ruta / nueva expedición / expediciones) y quedó suelta en `routes.json`; salió en "Rutas
