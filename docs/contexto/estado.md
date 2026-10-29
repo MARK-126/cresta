@@ -14,7 +14,8 @@ Actualizado: 28 oct 2026 · `main` con SOS probado, aviso al salir del perfil, n
 | SOS | Perfil de emergencia y pantalla SOS | `feat/perfil-sos` | `f54c534` |
 | 4 | Clima por altitud, lista de equipo, referencias | `feat/preparacion` | `f2496bf` |
 | Fix | Mapas del ejemplo, relieve interpolado (pendientes), umbral de nieve, graphify con Gemini | `fix/ejemplo-pendiente-nieve` | `7b7c2dc` |
-| Mejoras | Sangre con palabras en el SMS, aviso al salir del perfil, notificación de hora límite, mapa libre | `fix/sms-sangre`, `fix/perfil-sin-guardar`, `feat/notificacion-hora-limite`, `feat/mapa-libre` | (ver `git log`) |
+| Mejoras | Sangre con palabras en el SMS, aviso al salir del perfil, notificación de hora límite, mapa libre | `fix/sms-sangre`, `fix/perfil-sin-guardar`, `feat/notificacion-hora-limite`, `feat/mapa-libre` | `0bf2400` |
+| Rutas A | Rutas como entidades propias (id, expedición opcional), formato 2 con migración y respaldo | `feat/rutas-propias` | (este commit) |
 
 ## Por área
 
@@ -38,7 +39,10 @@ Actualizado: 28 oct 2026 · `main` con SOS probado, aviso al salir del perfil, n
 - Estadísticas, desnivel con relieve, hora límite, aviso de salida de ruta, exportar GPX.
 
 ### Rutas (`lib/src/routes/`, `ui/planner_panel.dart`, `ui/route_screen.dart`)
-- Una ruta por expedición (`routes.json`). Planificar tocando el mapa; ajuste a senderos visibles
+- Cada ruta tiene su `id` y puede estar ligada a una expedición o existir sola (`RouteStore`: `all`, `byId`,
+  `of`, `save`, `delete`, `deleteOf`, `replaceOf`). Las pantallas siguen manejando una por expedición
+  (`forExpedition`). `routes.json` es `{"version": 2, "routes": [...]}`.
+- Planificar tocando el mapa; ajuste a senderos visibles
   (`snapLeg` en `map.js`), deshacer, invertir, puntos de interés (agua, campamento, refugio, cumbre,
   punto de no retorno, peligro).
 - Detalle "Route Details": cifras, perfil, bitácora de paradas con hora estimada, renombrar, borrar,
@@ -98,5 +102,5 @@ lib/src/ui/                    pantallas; theme.dart = paleta y componentes del 
 assets/web/                    map.js, MapLibre, maplibre-contour, tipografías del mapa
 assets/fonts/inter/            tipografía de la app · assets/images/ textura del splash
 tool/                          scripts de datos (Python) e ícono; tool/dev/ herramientas de prueba
-test/                          95 pruebas
+test/                          98 pruebas
 ```

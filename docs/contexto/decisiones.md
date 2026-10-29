@@ -20,7 +20,11 @@
   con umbral de 5 m.
 - **Grabación en segundo plano:** Android, servicio en primer plano de `geolocator`; iOS,
   `UIBackgroundModes: location`. Puntos cada 10 s. Reloj = tiempo activo guardado en `activeS`.
-- **Rutas:** una por expedición. Ajuste a senderos en `map.js` con lo **visible** (decisión del usuario,
+- **Rutas:** entidades propias con `id` y `expeditionId` opcional (fase A del plan de rutas sueltas, clima y
+  comparar). Archivo `routes.json` en formato 2 (`{"version": 2, "routes": [...]}`); el formato anterior
+  (mapa expedición → ruta) se migra al abrir con id `r-<expedición>` y queda `routes.json.v1.bak`; si no se
+  puede hacer el respaldo no se reescribe. Las rutas ilegibles se omiten y siguen en el respaldo.
+  Una por expedición hasta que las pantallas muestren varias. Ajuste a senderos en `map.js` con lo **visible** (decisión del usuario,
   más simple que leer los mosaicos desde Dart); Dijkstra por distancia.
 - **Clima:** Open-Meteo, gratis y sin clave; se guarda la respuesta cruda y se interpreta al leer.
 - **SOS:** SMS con `sms:` y cuerpo codificado a mano (con `queryParameters` los espacios salen como `+`).

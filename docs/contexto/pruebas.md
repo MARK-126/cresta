@@ -15,6 +15,18 @@ Teléfono de pruebas: Samsung Galaxy S23 Ultra (SM-S918B), Android 16, salvo que
 
 ## 2026-10-28
 
+**Rutas como entidades propias · `feat/rutas-propias`**
+- Migración en el teléfono: con la versión anterior se guardó la ruta del ejemplo del Izta (formato
+  antiguo, 469 puntos, 52,129 bytes); se instaló la nueva: apareció `routes.json.v1.bak` idéntico al
+  original, `routes.json` en formato 2 con 1 ruta (id `r-sample-arista-del-sol`) y contenido idéntico salvo
+  id y expedición. La expedición muestra su ruta y el detalle da lo mismo (12.1 km, +1,633 m, 60 %). **OK**.
+- Editar y guardar con el planificador deja 1 ruta con el mismo id (no se duplica). **OK**.
+- Borrar la ruta desde el detalle: 0 rutas y la expedición vuelve a "Ruta de ejemplo cargada". **OK**.
+  Se borró el respaldo de prueba al terminar.
+- Pruebas automáticas (98 en verde): migración con respaldo y sin repetir, ruta ilegible, varias rutas por
+  expedición, rutas sueltas, reemplazar, editar sin duplicar y borrar. Sin probar en el teléfono: importar
+  GPX (usa `replaceOf`) y borrar una expedición con ruta (usa `deleteOf`), solo por pruebas automáticas.
+
 **Mejoras · `fix/sms-sangre`, `fix/perfil-sin-guardar`, `feat/notificacion-hora-limite`, `feat/mapa-libre`**
 - Aviso al salir del perfil: sin cambios sale directo; con cambios pregunta "¿Salir sin guardar?";
   "Cancelar" se queda y "Salir" descarta (el nombre escrito no se guardó). **OK**. Ojo: el primer "atrás"
