@@ -187,10 +187,12 @@ class RoutePlanner extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// La ruta lista para guardar.
-  PlannedRoute toRoute(String name) {
+  /// La ruta lista para guardar. Al editar una guardada se pasa su [id] para que la reemplace.
+  PlannedRoute toRoute(String name, {String? id, String? expeditionId}) {
     final p = preview!;
     return PlannedRoute(
+      id: id,
+      expeditionId: expeditionId,
       name: name,
       waypoints: List.of(waypoints),
       legs: [for (final l in legs) List.of(l)],

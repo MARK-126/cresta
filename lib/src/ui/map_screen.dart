@@ -257,8 +257,8 @@ class _MapScreenState extends State<MapScreen> {
       saved?.name ?? 'Ruta de ${_expedition.name}',
     );
     if (name == null || !mounted) return;
-    final route = p.toRoute(name);
-    await _services.routes.save(_expedition.id, route);
+    final route = p.toRoute(name, id: saved?.id, expeditionId: _expedition.id);
+    await _services.routes.save(route);
     _route = route.profile;
     _routeJson = route.profile.toJson();
     _endPlanning();

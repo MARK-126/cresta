@@ -79,7 +79,7 @@ Future<PlannedRoute?> importRouteFile(
     profile: profile,
     origin: imported.origin,
   );
-  await services.routes.save(expeditionId, route);
+  await services.routes.replaceOf(expeditionId, route);
   say(
     'Ruta importada: ${fmtKm(profile.totalMeters)} km'
     '${imported.pois.isEmpty ? '' : ' y ${imported.pois.length} puntos de interés'}.',

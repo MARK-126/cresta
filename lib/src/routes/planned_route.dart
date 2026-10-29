@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import '../data/trail_route.dart';
 
 /// Tipos de punto de interés que se marcan en la ruta.
@@ -39,10 +41,16 @@ class Poi {
 /// De dónde salió la ruta.
 enum RouteOrigin { planner, gpx, kml }
 
-/// La ruta de una expedición: los puntos que tocó el usuario, los tramos entre ellos
-/// (ajustados a senderos o en línea recta), los puntos de interés y el perfil calculado.
+String newRouteId() =>
+    'r${DateTime.now().microsecondsSinceEpoch.toRadixString(36)}${math.Random().nextInt(1 << 20).toRadixString(36)}';
+
+/// Una ruta: los puntos que tocó el usuario, los tramos entre ellos (ajustados a senderos o
+/// en línea recta), los puntos de interés y el perfil calculado. Tiene su propio [id] y puede
+/// estar ligada a una expedición ([expeditionId]) o existir sola.
 class PlannedRoute {
   PlannedRoute({
+    String? id,
+    this.expeditionId,
     required this.name,
     required this.waypoints,
     required this.legs,
@@ -52,13 +60,23 @@ class PlannedRoute {
     this.origin = RouteOrigin.planner,
     DateTime? updatedAt,
   }) : assert(legs.length == snapped.length),
+       id = id ?? newRouteId(),
        updatedAt = updatedAt ?? DateTime.now();
 
-  factory PlannedRoute.fromJson(Map<String, dynamic> j) {
+  /// [legacyExpeditionId]: en el formato anterior (una ruta por expedición, con la expedición
+  /// como clave) la ruta no traía id ni expedición.
+  factory PlannedRoute.fromJson(
+    Map<String, dynamic> j, {
+    String? legacyExpeditionId,
+  }) {
     List<LngLat> line(List raw) => [
       for (final p in raw) LngLat.fromJson(p as List),
     ];
     return PlannedRoute(
+      id:
+          j['id'] as String? ??
+          (legacyExpeditionId == null ? null : 'r-$legacyExpeditionId'),
+      expeditionId: j['expeditionId'] as String? ?? legacyExpeditionId,
       name: j['name'] as String,
       waypoints: line(j['waypoints'] as List),
       legs: [for (final l in j['legs'] as List) line(l as List)],
@@ -74,6 +92,10 @@ class PlannedRoute {
     );
   }
 
+  final String id;
+
+  /// Expedición a la que pertenece; null si la ruta existe sola.
+  final String? expeditionId;
   final String name;
   final List<LngLat> waypoints;
 
@@ -90,6 +112,8 @@ class PlannedRoute {
   final DateTime updatedAt;
 
   Map<String, dynamic> toJson() => {
+    'id': id,
+    if (expeditionId != null) 'expeditionId': expeditionId,
     'name': name,
     'waypoints': [
       for (final w in waypoints) [w.lng, w.lat],
@@ -109,6 +133,8 @@ class PlannedRoute {
 
   /// La misma ruta con otro nombre (también en el perfil, que es lo que muestra el mapa).
   PlannedRoute withName(String newName) => PlannedRoute(
+    id: id,
+    expeditionId: expeditionId,
     name: newName,
     waypoints: waypoints,
     legs: legs,
@@ -125,6 +151,20 @@ class PlannedRoute {
       source: profile.source,
     ),
     origin: origin,
+  );
+
+  /// La misma ruta ligada a otra expedición (o a ninguna).
+  PlannedRoute linkedTo(String? expedition) => PlannedRoute(
+    id: id,
+    expeditionId: expedition,
+    name: name,
+    waypoints: waypoints,
+    legs: legs,
+    snapped: snapped,
+    pois: pois,
+    profile: profile,
+    origin: origin,
+    updatedAt: updatedAt,
   );
 
   /// Une los tramos en una sola línea, sin repetir el punto donde se tocan.

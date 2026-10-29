@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:cresta/src/data/trail_route.dart';
@@ -160,7 +161,7 @@ void main() {
       Poi(kind: PoiKind.summit, at: const LngLat(-98.6, 19.009), name: 'Cima'),
     );
     final store = RouteStore(file);
-    await store.save('exp1', p.toRoute('Subida norte'));
+    await store.save(p.toRoute('Subida norte', expeditionId: 'exp1'));
 
     final again = RouteStore(file);
     await again.load();
@@ -179,6 +180,114 @@ void main() {
     expect(edit.canSave, isTrue);
     await edit.undo();
     expect(edit.pois, isEmpty);
+  });
+
+  group('RouteStore', () {
+    late Directory dir;
+    late File raw;
+    late JsonStore file;
+    Future<PlannedRoute> route(String name, {String? expeditionId}) async {
+      final p = RoutePlanner(snap: (a, b) async => null, elevation: _slope);
+      await p.addPoint(const LngLat(-98.6, 19.0));
+      await p.addPoint(const LngLat(-98.6, 19.0 + _kmLat));
+      return p.toRoute(name, expeditionId: expeditionId);
+    }
+
+    setUp(() {
+      dir = Directory.systemTemp.createTempSync('cresta_rstore');
+      raw = File('${dir.path}/routes.json');
+      file = JsonStore(raw);
+    });
+    tearDown(() => dir.deleteSync(recursive: true));
+
+    test(
+      'migra el formato anterior (una ruta por expedición) con respaldo',
+      () async {
+        final a = (await route('Izta')).toJson()
+          ..remove('id')
+          ..remove('expeditionId');
+        final b = (await route('Popo')).toJson()
+          ..remove('id')
+          ..remove('expeditionId');
+        final legacy = jsonEncode({'exp1': a, 'exp2': b});
+        await raw.writeAsString(legacy);
+
+        final store = RouteStore(file);
+        await store.load();
+        expect(store.forExpedition('exp1')!.name, 'Izta');
+        expect(store.forExpedition('exp2')!.name, 'Popo');
+        expect(store.forExpedition('exp1')!.id, 'r-exp1');
+        expect(store.all.length, 2);
+
+        // Quedó el respaldo intacto y el archivo nuevo en el formato 2
+        expect(await File('${raw.path}.v1.bak').readAsString(), legacy);
+        final now =
+            jsonDecode(await raw.readAsString()) as Map<String, dynamic>;
+        expect(now['version'], 2);
+        expect((now['routes'] as List).length, 2);
+
+        // Abrirlo otra vez da lo mismo y no vuelve a migrar
+        final again = RouteStore(file);
+        await again.load();
+        expect(again.all.map((r) => r.id), ['r-exp1', 'r-exp2']);
+        expect(await File('${raw.path}.v1.bak').readAsString(), legacy);
+      },
+    );
+
+    test(
+      'una ruta ilegible del formato anterior no se lleva a las demás',
+      () async {
+        final ok = (await route('Izta')).toJson()
+          ..remove('id')
+          ..remove('expeditionId');
+        final legacy = jsonEncode({
+          'exp1': ok,
+          'exp2': {'name': 1},
+        });
+        await raw.writeAsString(legacy);
+        final store = RouteStore(file);
+        await store.load();
+        expect(store.all.single.name, 'Izta');
+        // La dañada sigue en el respaldo
+        expect(await File('${raw.path}.v1.bak').readAsString(), legacy);
+      },
+    );
+
+    test(
+      'varias rutas por expedición, rutas sueltas, reemplazar y borrar',
+      () async {
+        final store = RouteStore(file);
+        final r1 = await route('A', expeditionId: 'e1');
+        final r2 = await route('B', expeditionId: 'e1');
+        final solo = await route('Suelta');
+        await store.save(r1);
+        await store.save(r2);
+        await store.save(solo);
+        expect(store.of('e1').map((r) => r.name), ['A', 'B']);
+        expect(store.forExpedition('e1')!.name, 'A');
+        expect(store.byId(solo.id)!.expeditionId, isNull);
+
+        // Guardar con el mismo id reemplaza (editar una ruta no la duplica)
+        await store.save(r1.withName('A2'));
+        expect(store.of('e1').map((r) => r.name), ['A2', 'B']);
+
+        final nueva = await route('Nueva');
+        await store.replaceOf('e1', nueva);
+        expect(store.of('e1').single.name, 'Nueva');
+        expect(store.all.length, 2);
+
+        await store.save(store.byId(solo.id)!.linkedTo('e2'));
+        expect(store.forExpedition('e2')!.name, 'Suelta');
+
+        final again = RouteStore(file);
+        await again.load();
+        expect(again.all.map((r) => r.name), ['Suelta', 'Nueva']);
+        await again.deleteOf('e1');
+        expect(again.of('e1'), isEmpty);
+        await again.delete(solo.id);
+        expect(again.all, isEmpty);
+      },
+    );
   });
 
   group('Importar', () {

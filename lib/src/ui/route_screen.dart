@@ -200,7 +200,7 @@ class _RouteScreenState extends State<RouteScreen> {
     final services = AppScope.of(context);
     final name = await askRouteName(context, route.name);
     if (name == null) return;
-    await services.routes.save(widget.expeditionId, route.withName(name));
+    await services.routes.save(route.withName(name));
   }
 
   Future<void> _delete() async {
@@ -214,7 +214,7 @@ class _RouteScreenState extends State<RouteScreen> {
     );
     if (!ok) return;
     navigator.pop();
-    await services.routes.delete(widget.expeditionId);
+    await services.routes.deleteOf(widget.expeditionId);
   }
 }
 

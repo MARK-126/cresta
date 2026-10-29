@@ -287,7 +287,7 @@ class ExpeditionScreen extends StatelessWidget {
     if (!ok) return;
     navigator.pop();
     await services.tracks.deleteForExpedition(e.id);
-    await services.routes.delete(e.id);
+    await services.routes.deleteOf(e.id);
     await services.weather.delete(e.id);
     await services.gear.deleteExpedition(e.id);
     await services.references.deleteExpedition(e.id);
