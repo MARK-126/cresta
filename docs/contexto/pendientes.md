@@ -5,6 +5,9 @@ Lo que falta **probar** está al inicio de `pruebas.md`. La lista de funciones p
 
 ## Prioridad
 
+0. **Pruebas del usuario:** ver [`guia-de-pruebas.md`](guia-de-pruebas.md) (búsqueda sin señal en casa; grabación,
+   avisos, regreso por la traza y llegada en vivo en el terreno).
+
 1. **Prueba de grabación al aire libre** (la hace el usuario): pantalla bloqueada, notificación fija,
    reloj, bitácora y resumen con datos reales.
 

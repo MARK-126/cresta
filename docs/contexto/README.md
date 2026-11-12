@@ -15,6 +15,8 @@ qué se construyó, qué se probó y con qué resultado, qué se decidió y por 
 6. [`decisiones.md`](decisiones.md) antes de cambiar algo de arquitectura o diseño.
 7. [`funcionalidades.md`](funcionalidades.md): lista de lo que ya funciona, lo que queremos implementar
    y lo deseable a futuro.
+8. [`guia-de-pruebas.md`](guia-de-pruebas.md): para el usuario. Lo hecho en la última sesión y qué le toca probar
+   (en casa y en el terreno), paso a paso y con el resultado esperado.
 
 **Al terminar una tarea** (antes del commit final de la rama):
 
@@ -23,6 +25,7 @@ qué se construyó, qué se probó y con qué resultado, qué se decidió y por 
 - `decisiones.md`: decisiones nuevas y errores resueltos (síntoma → causa → solución).
 - `pendientes.md`: quitar lo resuelto y agregar lo nuevo.
 - `funcionalidades.md`: pasar lo terminado de "Por implementar" a "Ya funcionan".
+- `guia-de-pruebas.md`: agregar lo que el usuario debe probar y quitar lo que ya probó.
 
 Se escribe en español, breve y concreto, con fechas absolutas (no "ayer").
 
