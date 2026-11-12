@@ -486,6 +486,19 @@ class _MapScreenState extends State<MapScreen> {
     _setLayer('track', true);
   }
 
+  /// Guía de regreso por lo recorrido: la traza al revés pasa a ser la ruta a seguir
+  /// (avance, lo que falta y aviso al salirse); la línea ya se ve en el mapa.
+  void _toggleBacktrack() {
+    if (_recorder.backtracking) {
+      _recorder.stopBacktrack();
+      return;
+    }
+    if (_recorder.startBacktrack()) {
+      _following = true;
+      _bridge.setFollow(true);
+    }
+  }
+
   Future<void> _stopRecording() async {
     final choice = await showDialog<String>(
       context: context,
@@ -1029,6 +1042,7 @@ class _MapScreenState extends State<MapScreen> {
                                   onPause: _recorder.pause,
                                   onResume: _recorder.resume,
                                   onStop: _stopRecording,
+                                  onBacktrack: _toggleBacktrack,
                                 ),
                               if (civil && _civil != null) ...[
                                 VolcanoAlertCard(civil: _civil!),

@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../tracking/backtrack.dart';
+import '../tracking/track.dart' show haversine;
 import '../tracking/track_recorder.dart';
 import 'format.dart';
 import 'offline_widgets.dart';
@@ -18,12 +20,16 @@ class RecordingPanel extends StatelessWidget {
     required this.onPause,
     required this.onResume,
     required this.onStop,
+    this.onBacktrack,
   });
 
   final TrackRecorder recorder;
   final VoidCallback onPause;
   final VoidCallback onResume;
   final VoidCallback onStop;
+
+  /// Empezar o dejar la guía de regreso por la propia traza (null: no se ofrece).
+  final VoidCallback? onBacktrack;
 
   @override
   Widget build(BuildContext context) {
@@ -46,7 +52,9 @@ class RecordingPanel extends StatelessWidget {
               _Dot(active: recording),
               const SizedBox(width: 8),
               Text(
-                recording ? 'GRABANDO' : 'EN PAUSA',
+                r.backtracking
+                    ? (recording ? 'REGRESANDO' : 'EN PAUSA · REGRESO')
+                    : (recording ? 'GRABANDO' : 'EN PAUSA'),
                 style: labelStyle(
                   context,
                   color: recording ? recordColor : null,
@@ -88,8 +96,9 @@ class RecordingPanel extends StatelessWidget {
           _Banner(
             color: warnColor,
             icon: Icons.wrong_location_outlined,
-            text:
-                'Estás a ${fmtInt(r.progress!.offRoute)} m de la ruta planeada.',
+            text: r.backtracking
+                ? 'Estás a ${fmtInt(r.progress!.offRoute)} m de tu traza. Vuelve a ella para regresar por donde viniste.'
+                : 'Estás a ${fmtInt(r.progress!.offRoute)} m de la ruta planeada.',
           ),
         // Las dos cifras protagonistas, grandes para leerlas de un vistazo
         Row(
@@ -158,8 +167,23 @@ class RecordingPanel extends StatelessWidget {
           const SizedBox(height: 12),
         if (r.progress != null)
           Text(
-            'Faltan ${fmtKm(r.progress!.remainingMeters)} km y ${fmtInt(r.progress!.remainingGain)} m de subida hasta el final de la ruta.',
+            r.backtracking
+                ? 'Faltan ${fmtKm(r.progress!.remainingMeters)} km y ${fmtInt(r.progress!.remainingGain)} m de subida por tu traza hasta el inicio.'
+                : 'Faltan ${fmtKm(r.progress!.remainingMeters)} km y ${fmtInt(r.progress!.remainingGain)} m de subida hasta el final de la ruta.',
             style: TextStyle(fontSize: 12.5, color: scheme.onSurfaceVariant),
+          ),
+        if (r.backtracking && fix != null && r.points.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.only(top: 4),
+            child: Text(
+              _toStart(
+                fix.lat,
+                fix.lng,
+                r.points.first.lat,
+                r.points.first.lng,
+              ),
+              style: TextStyle(fontSize: 12.5, color: scheme.onSurfaceVariant),
+            ),
           ),
         if (r.turnaroundState == TurnaroundState.ok)
           Padding(
@@ -203,8 +227,38 @@ class RecordingPanel extends StatelessWidget {
             ),
           ],
         ),
+        if (onBacktrack != null &&
+            (r.backtracking || r.points.length >= 2)) ...[
+          const SizedBox(height: 8),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: onBacktrack,
+              icon: Icon(
+                r.backtracking
+                    ? Icons.close_rounded
+                    : Icons.u_turn_left_rounded,
+              ),
+              label: Text(
+                r.backtracking
+                    ? 'Dejar de guiar el regreso'
+                    : 'Volver al inicio por mi traza',
+              ),
+            ),
+          ),
+        ],
       ],
     );
+  }
+
+  /// "El inicio está a 2.3 km en línea recta, rumbo 215° (SO)": sirve sin brújula, con el sol
+  /// o el relieve, y para decirlo por radio.
+  static String _toStart(double lat, double lng, double sLat, double sLng) {
+    final m = haversine(lat, lng, sLat, sLng);
+    if (m < 30) return 'Estás en el punto de salida.';
+    final deg = bearingDeg(lat, lng, sLat, sLng);
+    final dist = m < 1000 ? '${fmtInt(m)} m' : '${fmtKm(m)} km';
+    return 'El inicio está a $dist en línea recta, rumbo ${deg.round()}° (${cardinal(deg)}).';
   }
 
   static String _hhmm(DateTime t) =>

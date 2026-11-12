@@ -4,6 +4,7 @@ import 'dart:math' as math;
 import 'package:flutter/foundation.dart';
 
 import '../data/trail_route.dart';
+import 'backtrack.dart';
 import 'route_progress.dart';
 import 'track.dart';
 import 'track_stats.dart';
@@ -68,6 +69,39 @@ class TrackRecorder extends ChangeNotifier {
   RecordingMode mode = RecordingMode.normal;
   Track? track;
   TrailRoute? route;
+
+  /// Guiando de regreso por la propia traza ([route] es el recorrido al revés).
+  bool backtracking = false;
+
+  /// La ruta planeada mientras se guía de regreso, para devolverla al dejar de guiar.
+  TrailRoute? _plannedRoute;
+
+  /// Empieza a guiar de regreso al punto de salida por lo ya recorrido. Devuelve false si
+  /// aún no hay recorrido.
+  bool startBacktrack() {
+    final back = backtrackRoute(points);
+    if (back == null) return false;
+    if (!backtracking) _plannedRoute = route;
+    route = back;
+    backtracking = true;
+    final f = lastFix;
+    progress = f == null ? null : RouteProgress.of(back, f.lng, f.lat);
+    notifyListeners();
+    return true;
+  }
+
+  /// Deja de guiar de regreso y vuelve a la ruta planeada (si había).
+  void stopBacktrack() {
+    if (!backtracking) return;
+    backtracking = false;
+    route = _plannedRoute;
+    _plannedRoute = null;
+    final f = lastFix;
+    progress = route == null || f == null
+        ? null
+        : RouteProgress.of(route!, f.lng, f.lat);
+    notifyListeners();
+  }
 
   /// Hora límite para emprender el regreso (de la expedición).
   DateTime? turnaround;
@@ -157,6 +191,8 @@ class TrackRecorder extends ChangeNotifier {
     await store.add(t);
     track = t;
     this.route = route;
+    backtracking = false;
+    _plannedRoute = null;
     this.turnaround = turnaround;
     this.mode = mode;
     points.clear();
@@ -230,6 +266,8 @@ class TrackRecorder extends ChangeNotifier {
     state = RecorderState.idle;
     track = null;
     route = null;
+    backtracking = false;
+    _plannedRoute = null;
     turnaround = null;
     progress = null;
     points.clear();

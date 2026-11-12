@@ -92,6 +92,9 @@
   revisa por antigüedad (90 días), no por la versión semanal de OpenFreeMap: los senderos de montaña cambian despacio
   y avisar cada semana sería ruido. Se ofrece, no se descarga solo (la descarga necesita la app abierta). Solo el
   topográfico; cada actualización respeta el tope de 3,000 mosaicos.
+- **Volver por mi traza:** reutiliza la ruta del grabador (avance y aviso de salida) en vez de un modo aparte. El rumbo
+  al inicio va en grados y punto cardinal, sin brújula: se usa con el sol o el relieve y se dicta por radio. La brújula
+  (sensor) sigue pendiente.
 - **Grupo en tiempo real descartado** (no hay señal en la montaña).
 
 - **Ahorro de tokens** (pedido del usuario, 28 oct 2026): leer solo README y pendientes al empezar, graphify

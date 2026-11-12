@@ -5,6 +5,7 @@ import 'dart:math' as math;
 
 import 'package:cresta/src/data/trail_route.dart';
 import 'package:cresta/src/expeditions/expedition.dart';
+import 'package:cresta/src/tracking/backtrack.dart';
 import 'package:cresta/src/tracking/gpx.dart';
 import 'package:cresta/src/tracking/route_progress.dart';
 import 'package:cresta/src/tracking/track.dart';
@@ -246,6 +247,47 @@ void main() {
       expect(again.byId(t.id), isNotNull);
     });
 
+    test(
+      'volver por la traza: guía al inicio y luego devuelve la ruta planeada',
+      () async {
+        final planned = TrailRoute(
+          id: 'p',
+          name: 'Planeada',
+          summary: '',
+          coordinates: const [LngLat(-98.65, 19.10), LngLat(-98.65, 19.12)],
+          distances: [0, 2211],
+          elevations: [3700, 3900],
+          gain: 200,
+          source: '',
+        );
+        await rec.start(name: 'Subida', route: planned);
+        expect(rec.startBacktrack(), isFalse, reason: 'aún no hay recorrido');
+        await feed(_walk(21)); // 500 m al norte, subiendo 100 m
+        expect(rec.startBacktrack(), isTrue);
+        expect(rec.backtracking, isTrue);
+        expect(rec.route!.name, 'Regreso por tu traza');
+        // Al final de la subida: falta todo el camino de vuelta, sin subidas
+        expect(rec.progress!.remainingMeters, closeTo(500, 10));
+        expect(rec.progress!.remainingGain, 0);
+        expect(rec.progress!.isOffRoute, isFalse);
+        // Bajando, lo que falta se reduce
+        final last = _walk(21).last;
+        await feed([
+          GpsFix(
+            time: last.time.add(const Duration(minutes: 2)),
+            lng: -98.65,
+            lat: 19.10 + 250 / 110570,
+            altitude: 3750,
+            accuracy: 5,
+          ),
+        ]);
+        expect(rec.progress!.remainingMeters, closeTo(250, 15));
+        rec.stopBacktrack();
+        expect(rec.backtracking, isFalse);
+        expect(rec.route, same(planned));
+      },
+    );
+
     test('pausar y reanudar empieza un tramo nuevo', () async {
       await rec.start(expeditionId: 'e', name: 'x');
       await feed(_walk(3));
@@ -429,6 +471,44 @@ void main() {
     rec.dispose();
     await Future<void>.delayed(const Duration(milliseconds: 50));
     tmp.deleteSync(recursive: true);
+  });
+
+  group('Volver por la traza', () {
+    TrackPoint at(double lat, {double? alt, int s = 0}) => TrackPoint(
+      time: _t0.add(Duration(seconds: s)),
+      lng: -98.65,
+      lat: lat,
+      altitude: alt,
+    );
+
+    test('la traza al revés, sin la nube de puntos de cuando estás parado', () {
+      final pts = [
+        at(19.10, alt: 3700),
+        at(19.10 + 1 / 110570, alt: 3700), // 1 m: parado
+        at(19.10 + 100 / 110570, alt: 3750),
+        at(19.10 + 200 / 110570), // sin altitud
+        at(19.10 + 300 / 110570, alt: 3800),
+      ];
+      final r = backtrackRoute(pts)!;
+      expect(r.coordinates.first.lat, closeTo(19.10 + 300 / 110570, 1e-9));
+      expect(r.coordinates.last.lat, closeTo(19.10, 1e-9));
+      expect(r.coordinates.length, 4);
+      expect(r.distances.last, closeTo(300, 2));
+      expect(r.elevations.every((e) => e > 0), isTrue, reason: 'sin huecos');
+      expect(r.gain, 0, reason: 'de regreso todo es bajada');
+      expect(backtrackRoute([at(19.1)]), isNull);
+      expect(backtrackRoute([at(19.1), at(19.1 + 1 / 110570)]), isNull);
+    });
+
+    test('rumbo y punto cardinal al inicio', () {
+      expect(bearingDeg(19.0, -98.6, 19.1, -98.6), closeTo(0, 0.01));
+      expect(bearingDeg(19.0, -98.6, 19.0, -98.5), closeTo(90, 0.1));
+      expect(bearingDeg(19.0, -98.6, 18.9, -98.7), closeTo(223, 1));
+      expect(cardinal(0), 'N');
+      expect(cardinal(215), 'SO');
+      expect(cardinal(350), 'N');
+      expect(cardinal(270), 'O');
+    });
   });
 }
 

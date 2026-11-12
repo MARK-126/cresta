@@ -6,6 +6,10 @@ Teléfono de pruebas: Samsung Galaxy S23 Ultra (SM-S918B), Android 16, salvo que
 
 ## Sin probar todavía (revisar antes de dar por hecho)
 
+- **Volver por mi traza en el teléfono** (12 nov 2026): el teléfono se desconectó antes de probarlo. Falta: grabar
+  caminando unos cientos de metros, tocar "Volver al inicio por mi traza", ver "REGRESANDO", lo que falta y el rumbo, y
+  salirse > 80 m para ver el aviso. Cubierto por pruebas automáticas (abajo).
+
 - Grabación **al aire libre** con la pantalla bloqueada: reloj, notificación fija, que siga grabando,
   y que la Bitácora y el Resumen se llenen con un recorrido real.
 - Importar un GPX/KML real desde el teléfono (la lectura está cubierta por pruebas automáticas).
@@ -14,6 +18,15 @@ Teléfono de pruebas: Samsung Galaxy S23 Ultra (SM-S918B), Android 16, salvo que
 - Descargas de mapas en Android con conexión móvil (opción "solo Wi-Fi").
 
 ## 2026-11-12
+
+**Volver por mi traza · `feat/volver-traza`** (solo pruebas automáticas; el teléfono se desconectó)
+- Traza al revés sin la nube de puntos de cuando estás parado y terminando justo en la salida; rumbo y punto cardinal;
+  grabador: sin recorrido no guía, tras 500 m faltan 500 m y 0 m de subida, a la mitad faltan 250, y al dejar de guiar
+  vuelve la ruta planeada; panel (widget): "Volver al inicio por mi traza" → "REGRESANDO", lo que falta y "El inicio
+  está a 503 m en línea recta, rumbo 180° (S)"; "Dejar de guiar el regreso" vuelve a "GRABANDO". 158 en verde.
+- **Fallas mías:** el filtro de 5 m dejaba la traza terminando a 1 m de la salida (ahora termina en ella); al insertar
+  pruebas borré una función auxiliar del archivo (`_sinh`); y la prueba de widget con una grabación real se colgaba
+  (temporizadores reales del grabador): se arma el estado del grabador a mano.
 
 **Actualizar mapas con Wi-Fi · `feat/actualizar-mapas`**
 - Pruebas automáticas: al actualizar el descargador solo pide topo viejo (relieve y satélite no) y es reanudable;

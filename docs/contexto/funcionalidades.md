@@ -31,6 +31,8 @@ Detalles técnicos en `estado.md`; qué se probó en `pruebas.md`.
   expedición ("recorrido libre", en la Bitácora).
 - Reloj de tiempo total, distancia, altitud, desnivel, velocidad vertical y aviso de GPS débil.
 - Aviso al salirse de la ruta planeada.
+- Volver al inicio por la propia traza mientras grabas: lo que falta, aviso si te sales de ella, y distancia y rumbo en
+  línea recta al punto de salida.
 - Exportar recorridos a GPX.
 - Bitácora de todos los recorridos y resumen personal (semana, mes, altitud máxima, desnivel por semana).
 - Planificar rutas tocando el mapa, ajustadas a los senderos (donde OpenStreetMap los tiene): con los mapas
@@ -53,7 +55,6 @@ Detalles técnicos en `estado.md`; qué se probó en `pruebas.md`.
 ## Por implementar
 
 De la revisión del 12 nov 2026 (detalle en `pendientes.md`):
-- Volver por mi traza (guía de regreso por el recorrido grabado).
 - Tiempo restante y hora de llegada en vivo (Tobler) comparados con la hora límite.
 - Modo ahorro de batería (intervalo de GPS, exención de optimización de Android).
 - Aviso al acercarse a un punto de interés (agua, punto de no retorno, peligro).

@@ -1,6 +1,6 @@
 # Estado: qué está hecho
 
-Actualizado: 12 nov 2026 · actualizar los mapas descargados con Wi-Fi (solo el topográfico).
+Actualizado: 12 nov 2026 · volver al inicio por la propia traza, con rumbo y distancia al punto de salida.
 
 ## Fases
 
@@ -29,7 +29,8 @@ Actualizado: 12 nov 2026 · actualizar los mapas descargados con Wi-Fi (solo el 
 | Fase E (1) | Ruta A → B por senderos y calles con los mosaicos guardados (`TrailRouter`) | `feat/ruta-senderos` | `0cb231b` |
 | Fase E (2) | Ruta a campo traviesa sobre el relieve y senderos por tiempo (Tobler) | `feat/ruta-terreno` | `1fd44ab` |
 | Diseño | Botones tonales sin borde, "Descargar una zona" en Mapas, ícono de ruta unificado | `fix/diseno-revision` | `e69aaff` |
-| Actualizar mapas | Aviso con Wi-Fi para zonas de más de 3 meses y botón por zona; vuelve a bajar solo el topográfico | `feat/actualizar-mapas` | (ver `git log`) |
+| Actualizar mapas | Aviso con Wi-Fi para zonas de más de 3 meses y botón por zona; vuelve a bajar solo el topográfico | `feat/actualizar-mapas` | `45ca74a` |
+| Volver por mi traza | Guía de regreso por lo grabado: avance, lo que falta, aviso al salirse, rumbo al inicio | `feat/volver-traza` | (ver `git log`) |
 
 ## Por área
 
@@ -76,6 +77,11 @@ Actualizado: 12 nov 2026 · actualizar los mapas descargados con Wi-Fi (solo el 
   precisa" si la precisión es peor que ±50 m.
 - Permiso de notificaciones (Android 13+) por canal propio `cresta/permissions` (`MainActivity.kt`).
 - Estadísticas, desnivel con relieve, hora límite, aviso de salida de ruta, exportar GPX.
+- **Volver por mi traza** (`tracking/backtrack.dart`, `TrackRecorder.startBacktrack`/`stopBacktrack`): el recorrido al
+  revés (sin puntos a < 5 m del anterior, termina justo en la salida) pasa a ser `recorder.route`, así que sirven el
+  avance, "faltan X km y Y m de subida por tu traza" y el aviso al salirse (80 m). La ruta planeada se guarda y vuelve al
+  dejar de guiar. El panel dice "REGRESANDO" y "El inicio está a 2.3 km en línea recta, rumbo 215° (SO)" (`bearingDeg`,
+  `cardinal`; sin brújula). Botón "Volver al inicio por mi traza" con al menos 2 puntos. No sobrevive a cerrar la app.
 
 ### Rutas (`lib/src/routes/`, `ui/planner_panel.dart`, `ui/route_screen.dart`)
 - Cada ruta tiene su `id` y puede estar ligada a una expedición o existir sola (`RouteStore`: `all`, `byId`,
