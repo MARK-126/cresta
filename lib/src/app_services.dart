@@ -18,6 +18,7 @@ import 'offline/tile_store.dart';
 import 'profile/emergency_profile.dart';
 import 'references/references.dart';
 import 'routes/route_store.dart';
+import 'routing/terrain_router.dart';
 import 'routing/trail_router.dart';
 import 'storage/json_store.dart';
 import 'tiles/tile_server.dart';
@@ -57,6 +58,7 @@ class AppServices {
     this.gear,
     this.references,
     this.trails,
+    this.overland,
   );
 
   final TileServer server;
@@ -89,6 +91,9 @@ class AppServices {
 
   /// Camino por senderos entre dos puntos con los mapas guardados (sin conexión).
   final TrailRouter trails;
+
+  /// Camino a campo traviesa sobre el relieve guardado, donde no hay sendero.
+  final TerrainRouter overland;
 
   static Future<AppServices> start() async {
     final support = await getApplicationSupportDirectory();
@@ -183,7 +188,8 @@ class AppServices {
       weather,
       gear,
       references,
-      TrailRouter.fromStores([offline, cache]),
+      TrailRouter.fromStores([offline, cache], dem: terrain.grid),
+      TerrainRouter(terrain.grid),
     );
   }
 }

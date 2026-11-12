@@ -81,6 +81,13 @@
   Distancia pura con carreteras grandes ×2 (para caminar, mejor brecha que autopista); el desnivel entra en la parte 2.
   Pegar el punto marcado a ≤ 150 m: con el dedo a zoom 12 se falla por cientos de metros, pero ese conector cuenta
   como "con sendero", así que no conviene más.
+- **Campo traviesa (fase E, parte 2):** costo = tiempo de Tobler × 0.6 (su factor fuera de sendero), que ya prefiere
+  lo llano y rodea lo empinado sin reglas extra; tope duro de 45° (en relieve de 30 m eso es pared). En Dart con la
+  cuadrícula del relieve (no en `map.js`), para que sirva igual que los senderos y se pruebe con relieves sintéticos.
+  Va como último recurso antes de la línea recta y se dibuja como "sin sendero": no ve ríos, barrancas cortas,
+  vegetación ni cercas.
+- **Senderos por tiempo, no por distancia:** con el relieve, cada arista cuesta lo que tarda a pie (Tobler, distinto
+  subiendo y bajando). En el Izta no cambió la ruta, pero evita rodeos que suben de más.
 - **Grupo en tiempo real descartado** (no hay señal en la montaña).
 
 - **Ahorro de tokens** (pedido del usuario, 28 oct 2026): leer solo README y pendientes al empezar, graphify

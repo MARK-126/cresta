@@ -8,6 +8,8 @@ import '../offline/tile_math.dart';
 import '../offline/tile_store.dart';
 import '../tiles/mvt.dart';
 import '../tiles/tile_clip.dart';
+import 'dem_grid.dart';
+import 'terrain_router.dart' show DemLoader, boxAround;
 
 /// Lee un mosaico topográfico guardado (MVT sin comprimir) o null si no está.
 typedef TopoTileReader = Future<Uint8List?> Function(int z, int x, int y);
@@ -21,20 +23,24 @@ typedef TopoTile = ({int z, int x, int y, Uint8List bytes});
 ///
 /// Medido en el experimento del 28 oct 2026 (ver `docs/contexto/pruebas.md`): hay que
 /// recortar cada línea a su mosaico y unir solo los extremos sueltos a la línea más cercana.
+///
+/// Con relieve ([dem]) busca el camino más rápido a pie (Tobler: cuenta subidas y
+/// bajadas); sin él, el más corto.
 class TrailRouter {
-  TrailRouter(this.read);
+  TrailRouter(this.read, {this.dem});
 
   /// Lee de las zonas descargadas y, si no, de la caché de navegación.
-  factory TrailRouter.fromStores(List<TileStore> stores) =>
+  factory TrailRouter.fromStores(List<TileStore> stores, {DemLoader? dem}) =>
       TrailRouter((z, x, y) async {
         for (final s in stores) {
           final bytes = await s.read(MapSource.topo, z, x, y);
           if (bytes != null) return bytes;
         }
         return null;
-      });
+      }, dem: dem);
 
   final TopoTileReader read;
+  final DemLoader? dem;
 
   /// Tope de mosaicos de zoom 14 por búsqueda (~55 × 55 km).
   static const maxTiles = 600;
@@ -42,20 +48,23 @@ class TrailRouter {
   /// Camino de [a] a [b], o null si no hay mapas, algún punto queda lejos de todo
   /// sendero o los senderos no se conectan.
   Future<List<LngLat>?> route(LngLat a, LngLat b) async {
-    final tiles = await _load(a, b);
+    final (tiles, box) = await _load(a, b);
     if (tiles.isEmpty) return null;
-    return Isolate.run(() => findTrailPath(tiles, a, b));
+    final grid = await dem?.call(box);
+    return Isolate.run(() => findTrailPath(tiles, a, b, grid));
   }
 
-  Future<List<TopoTile>> _load(LngLat a, LngLat b) async {
+  Future<(List<TopoTile>, BBox)> _load(LngLat a, LngLat b) async {
     // Margen: los senderos rodean barrancas, así que se busca más allá de la línea recta
     var margin = math.max(1500.0, _meters(a, b) * 0.5);
     late TileRange range;
+    late BBox box;
     do {
-      range = tileRange(_box(a, b, margin), 14);
+      box = boxAround(a, b, margin);
+      range = tileRange(box, 14);
       margin *= 0.7;
     } while (range.count > maxTiles && margin > 300);
-    if (range.count > maxTiles) return const [];
+    if (range.count > maxTiles) return (const <TopoTile>[], box);
     final tiles = <TopoTile>[];
     final parents = <(int, int)>{};
     for (final (x, y) in range.tiles) {
@@ -67,20 +76,8 @@ class TrailRouter {
         if (up != null) tiles.add((z: 13, x: x >> 1, y: y >> 1, bytes: up));
       }
     }
-    return tiles;
+    return (tiles, box);
   }
-}
-
-BBox _box(LngLat a, LngLat b, double marginM) {
-  final dLat = marginM / 111320;
-  final dLng =
-      marginM / (111320 * math.cos((a.lat + b.lat) / 2 * math.pi / 180));
-  return BBox(
-    math.min(a.lng, b.lng) - dLng,
-    math.min(a.lat, b.lat) - dLat,
-    math.max(a.lng, b.lng) + dLng,
-    math.max(a.lat, b.lat) + dLat,
-  );
 }
 
 typedef _P = (double, double);
@@ -106,7 +103,7 @@ double _m(_P a, _P b) {
   return (math.sqrt(px * px + py * py), t);
 }
 
-/// Clases de OpenMapTiles por las que se puede caminar, con su costo por metro.
+/// Clases de OpenMapTiles por las que se puede caminar, con lo que se multiplica su tiempo.
 /// Las carreteras grandes cuestan el doble: solo se usan si no hay otra forma.
 const _walkable = {
   'path': 1.0,
@@ -128,8 +125,13 @@ const joinLooseEndsMeters = 15.0;
 const snapMeters = 150.0;
 
 /// Busca el camino (función pura, corre en otro isolate). Ver [TrailRouter].
-List<LngLat>? findTrailPath(List<TopoTile> tiles, LngLat a, LngLat b) {
-  final g = _Graph();
+List<LngLat>? findTrailPath(
+  List<TopoTile> tiles,
+  LngLat a,
+  LngLat b, [
+  DemGrid? dem,
+]) {
+  final g = _Graph(dem);
   for (final t in tiles) {
     final MvtLayer layer;
     try {
@@ -164,7 +166,7 @@ List<LngLat>? findTrailPath(List<TopoTile> tiles, LngLat a, LngLat b) {
   final t = g.attach((b.lng, b.lat));
   if (s == null || t == null) return null;
   // Los dos sobre el mismo segmento: directo, sin ir hasta sus extremos
-  if (g.attachedTo[s] == g.attachedTo[t]) g.link(s, t, 1);
+  if (g.attachedTo[s] == g.attachedTo[t]) g.link(s, t, 1, flat: true);
   final path = g.search(s, t);
   if (path == null) return null;
   final out = <LngLat>[a];
@@ -181,8 +183,21 @@ List<LngLat>? findTrailPath(List<TopoTile> tiles, LngLat a, LngLat b) {
   return out.length < 2 ? null : out;
 }
 
+/// Velocidad en llano (Tobler a 0 %), m/s: la de los enlaces sin relieve.
+final _flatMs = toblerKmh(0) / 3.6;
+
+/// Costo en segundos de caminar [m] metros en llano.
+double _flat(double m) => m / _flatMs;
+
 class _Graph {
+  _Graph(this.dem);
+
+  /// Relieve para la altitud de cada nodo (null: todo cuenta como llano).
+  final DemGrid? dem;
   final pos = <_P>[];
+  final ele = <double>[];
+
+  /// Vecinos con el costo en segundos de ir hacia ellos (no es simétrico: subir cuesta más).
   final adj = <List<(int, double)>>[];
 
   /// Segmento al que quedó pegado cada punto marcado (ver [attach]).
@@ -198,15 +213,24 @@ class _Graph {
   int node(_P p) =>
       _ids.putIfAbsent(((p.$1 * 1e5).round(), (p.$2 * 1e5).round()), () {
         pos.add(p);
+        ele.add(dem?.at(p.$1, p.$2) ?? double.nan);
         adj.add([]);
         return pos.length - 1;
       });
 
-  /// Arista en los dos sentidos; [factor] multiplica los metros (costo de la clase).
-  void link(int u, int v, double factor) {
-    final w = _m(pos[u], pos[v]) * factor;
-    adj[u].add((v, w));
-    adj[v].add((u, w));
+  /// Arista en los dos sentidos; el tiempo sale de Tobler con la pendiente del tramo
+  /// (o del llano sin relieve o con [flat]) y se multiplica por [factor] (la clase).
+  void link(int u, int v, double factor, {bool flat = false}) {
+    final m = _m(pos[u], pos[v]);
+    if (flat || m < 1e-6 || ele[u].isNaN || ele[v].isNaN) {
+      final w = _flat(m) * factor;
+      adj[u].add((v, w));
+      adj[v].add((u, w));
+      return;
+    }
+    final grade = (ele[v] - ele[u]) / m;
+    adj[u].add((v, m / (toblerKmh(grade) / 3.6) * factor));
+    adj[v].add((u, m / (toblerKmh(-grade) / 3.6) * factor));
   }
 
   (int, int) _key(_P p) => ((p.$1 / _cell).floor(), (p.$2 / _cell).floor());
@@ -267,11 +291,11 @@ class _Graph {
       final len = _m(pos[u], pos[v]);
       links.add((i, u, v, d + t * len, d + (1 - t) * len));
     }
-    for (final (i, u, v, wu, wv) in links) {
-      adj[i].add((u, wu));
-      adj[u].add((i, wu));
-      adj[i].add((v, wv));
-      adj[v].add((i, wv));
+    for (final (i, u, v, mu, mv) in links) {
+      adj[i].add((u, _flat(mu)));
+      adj[u].add((i, _flat(mu)));
+      adj[i].add((v, _flat(mv)));
+      adj[v].add((i, _flat(mv)));
     }
   }
 
@@ -284,32 +308,35 @@ class _Graph {
     final a = pos[u], b = pos[v];
     final q = (a.$1 + (b.$1 - a.$1) * t, a.$2 + (b.$2 - a.$2) * t);
     pos.add(q);
+    ele.add(double.nan);
     adj.add([]);
     final n = pos.length - 1;
     attachedTo[n] = (u, v);
-    adj[n].add((u, _m(q, a)));
-    adj[u].add((n, _m(q, a)));
-    adj[n].add((v, _m(q, b)));
-    adj[v].add((n, _m(q, b)));
+    adj[n].add((u, _flat(_m(q, a))));
+    adj[u].add((n, _flat(_m(q, a))));
+    adj[n].add((v, _flat(_m(q, b))));
+    adj[v].add((n, _flat(_m(q, b))));
     return n;
   }
 
-  /// A*: el costo nunca es menor que los metros en línea recta, así que la estimación vale.
+  /// A*: ningún tramo se camina más rápido que el máximo de Tobler, así que estimar con
+  /// la línea recta a esa velocidad nunca se pasa.
   List<int>? search(int s, int t) {
     final dist = List<double>.filled(pos.length, double.infinity);
     final prev = List<int>.filled(pos.length, -1);
     dist[s] = 0;
-    final heap = _Heap()..push(_m(pos[s], pos[t]), s);
+    double h(int i) => _m(pos[i], pos[t]) / toblerMaxMs;
+    final heap = _Heap()..push(h(s), s);
     while (heap.isNotEmpty) {
       final (f, u) = heap.pop();
       if (u == t) break;
-      if (f - _m(pos[u], pos[t]) > dist[u] + 1e-6) continue; // entrada vieja
+      if (f - h(u) > dist[u] + 1e-6) continue; // entrada vieja
       for (final (v, w) in adj[u]) {
         final nd = dist[u] + w;
         if (nd < dist[v]) {
           dist[v] = nd;
           prev[v] = u;
-          heap.push(nd + _m(pos[v], pos[t]), v);
+          heap.push(nd + h(v), v);
         }
       }
     }

@@ -15,6 +15,7 @@ class RoutePlanner extends ChangeNotifier {
   RoutePlanner({
     required this.snap,
     required this.elevation,
+    this.overland,
     PlannedRoute? initial,
   }) {
     if (initial == null) return;
@@ -32,6 +33,9 @@ class RoutePlanner extends ChangeNotifier {
 
   final SnapLeg snap;
   final ElevationAt elevation;
+
+  /// Donde no hay sendero: camino por el terreno (el tramo queda "sin sendero").
+  final SnapLeg? overland;
 
   final waypoints = <LngLat>[];
   final legs = <List<LngLat>>[];
@@ -76,15 +80,18 @@ class RoutePlanner extends ChangeNotifier {
     busy = true;
     notifyListeners();
     final from = waypoints.last;
-    List<LngLat>? path;
+    List<LngLat>? path, ground;
     if (snapToTrails) {
       path = await snap(from, p);
-      if (path == null) {
+      if (path == null) ground = await overland?.call(from, p);
+      if (ground != null) {
+        notice = 'No hay sendero entre esos puntos: el tramo va a campo traviesa por la pendiente más suave del relieve. Revísalo en el mapa y en el terreno: no ve barrancas cortas, ríos ni vegetación.';
+      } else if (path == null) {
         notice = 'No encontré un sendero entre esos puntos en tus mapas descargados ni en lo que se ve: el tramo va en línea recta.';
       }
     }
     waypoints.add(p);
-    legs.add(path ?? [from, p]);
+    legs.add(path ?? ground ?? [from, p]);
     snapped.add(path != null);
     _history.add(_Step.point);
     busy = false;

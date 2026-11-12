@@ -5,7 +5,11 @@ import 'dart:typed_data';
 
 import 'package:archive/archive.dart';
 import 'package:cresta/src/data/trail_route.dart';
+import 'package:cresta/src/offline/map_sources.dart';
+import 'package:cresta/src/offline/tile_store.dart';
+import 'package:cresta/src/routing/terrain_router.dart';
 import 'package:cresta/src/routing/trail_router.dart';
+import 'package:cresta/src/tracking/terrain_elevation.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 double _m(LngLat a, LngLat b) {
@@ -27,8 +31,13 @@ double _near(LngLat p, List<LngLat> line) =>
     line.map((q) => _m(p, q)).reduce(math.min);
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized(); // decodificar PNG del relieve
   // Mosaicos topográficos del paquete del ejemplo (Izta–Popo): 78 de zoom 14 y 90 de 13
   final tiles = <(int, int, int), Uint8List>{};
+  // Relieve del paquete en una carpeta temporal, como en el teléfono
+  final demDir = Directory.systemTemp.createTempSync('cresta_dem');
+  tearDownAll(() => demDir.deleteSync(recursive: true));
+  final demStore = TileStore(demDir);
   final zip = ZipDecoder().decodeBytes(
     File('assets/packs/izta_popo.zip').readAsBytesSync(),
   );
@@ -38,6 +47,19 @@ void main() {
     tiles[(int.parse(parts[1]), int.parse(parts[2]), int.parse(parts[3]))] =
         Uint8List.fromList(f.content as List<int>);
   }
+  for (final f in zip.files) {
+    final parts = f.name.split('/');
+    if (!f.isFile || parts.length != 4 || parts[0] != 'dem') continue;
+    final file = demStore.file(
+      MapSource.dem,
+      int.parse(parts[1]),
+      int.parse(parts[2]),
+      int.parse(parts[3]),
+    );
+    file.parent.createSync(recursive: true);
+    file.writeAsBytesSync(f.content as List<int>);
+  }
+  final terrain = TerrainElevation([demStore]);
   final router = TrailRouter((z, x, y) async => tiles[(z, x, y)]);
 
   final real = [
@@ -69,6 +91,40 @@ void main() {
     expect(path, isNotNull);
     final along = _len(real.sublist(40, 81));
     expect(_len(path!), closeTo(along, along * 0.15));
+  });
+
+  test(
+    'con relieve: la ruta más rápida a pie, también hasta la cumbre',
+    () async {
+      final withDem = TrailRouter(
+        (z, x, y) async => tiles[(z, x, y)],
+        dem: terrain.grid,
+      );
+      final path = await withDem.route(real.first, real.last);
+      expect(path, isNotNull);
+      expect(_len(path!) / 1000, inInclusiveRange(10.5, 14));
+      expect((path.last.lng, path.last.lat), (real.last.lng, real.last.lat));
+    },
+  );
+
+  test('a campo traviesa sobre el relieve real: sin pasar de 45°', () async {
+    // Del collado de Paso de Cortés hacia el Popo, sin sendero: ~2 km
+    const a = LngLat(-98.6447, 19.0866), b = LngLat(-98.6380, 19.0700);
+    final grid = (await terrain.grid(boxAround(a, b, 800)))!;
+    final path = findTerrainPath(grid, a, b);
+    expect(path, isNotNull);
+    expect(_len(path!), greaterThan(_m(a, b) * 0.99));
+    expect(_len(path), lessThan(_m(a, b) * 1.6));
+    for (var i = 1; i < path.length; i++) {
+      final d = _m(path[i - 1], path[i]);
+      if (d < 20) continue;
+      final dh =
+          grid.at(path[i].lng, path[i].lat)! -
+          grid.at(path[i - 1].lng, path[i - 1].lat)!;
+      expect((dh / d).abs(), lessThan(1.0), reason: 'tramo $i');
+    }
+    final router = TerrainRouter(terrain.grid);
+    expect(await router.route(a, b), isNotNull);
   });
 
   test('lejos de todo sendero o sin mapas no inventa nada', () async {

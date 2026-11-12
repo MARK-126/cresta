@@ -4,7 +4,9 @@ import 'dart:ui' as ui;
 import 'package:flutter/foundation.dart';
 
 import '../offline/map_sources.dart';
+import '../offline/tile_math.dart';
 import '../offline/tile_store.dart';
+import '../routing/dem_grid.dart';
 
 /// Altitud del terreno a partir del relieve descargado (Terrain Tiles, ~30 m por píxel a zoom 12).
 ///
@@ -21,7 +23,8 @@ class TerrainElevation {
   final Future<Uint8List?> Function(Uint8List png) decode;
 
   final _cache = <String, Uint8List?>{};
-  static const _maxTiles = 12;
+  static const _maxTiles =
+      24; // ~6 MB: alcanza para la caja de una búsqueda de ruta
 
   /// Metros sobre el nivel del mar, o null si no hay relieve de ese lugar en el teléfono.
   Future<double?> at(double lng, double lat) async {
@@ -60,8 +63,52 @@ class TerrainElevation {
     return rgba[i] * 256 + rgba[i + 1] + rgba[i + 2] / 256 - 32768;
   }
 
-  Future<Uint8List?> _tile(int x, int y) async {
-    final key = '$x/$y';
+  /// Relieve de una caja como [DemGrid] (para buscar rutas en otro isolate), o null si
+  /// no hay nada descargado ahí o la caja pasa de [maxPixels]. Donde falta el zoom 12
+  /// (zonas Básicas) usa el 11, ampliado.
+  Future<DemGrid?> grid(BBox box, {int maxPixels = 300000}) async {
+    final n = (1 << zoom) * 256.0;
+    double py(double lat) {
+      final r = lat.clamp(-85.0, 85.0) * math.pi / 180;
+      return (1 - math.log(math.tan(r) + 1 / math.cos(r)) / math.pi) / 2 * n;
+    }
+
+    final x0 = ((box.west + 180) / 360 * n).floor();
+    final x1 = ((box.east + 180) / 360 * n).floor();
+    final y0 = py(box.north).floor(), y1 = py(box.south).floor();
+    final w = x1 - x0 + 1, h = y1 - y0 + 1;
+    if (w * h > maxPixels) return null;
+    final ele = Float32List(w * h)..fillRange(0, w * h, double.nan);
+    var any = false;
+    for (var tx = x0 ~/ 256; tx <= x1 ~/ 256; tx++) {
+      for (var ty = y0 ~/ 256; ty <= y1 ~/ 256; ty++) {
+        var shift = 0;
+        var rgba = await _tileAt(zoom, tx, ty);
+        if (rgba == null) {
+          shift = 1;
+          rgba = await _tileAt(zoom - 1, tx >> 1, ty >> 1);
+        }
+        if (rgba == null || rgba.length < 256 * 256 * 4) continue;
+        any = true;
+        final cx0 = math.max(x0, tx * 256), cx1 = math.min(x1, tx * 256 + 255);
+        final cy0 = math.max(y0, ty * 256), cy1 = math.min(y1, ty * 256 + 255);
+        for (var gy = cy0; gy <= cy1; gy++) {
+          for (var gx = cx0; gx <= cx1; gx++) {
+            final i = (((gy >> shift) % 256) * 256 + (gx >> shift) % 256) * 4;
+            ele[(gy - y0) * w + gx - x0] =
+                rgba[i] * 256 + rgba[i + 1] + rgba[i + 2] / 256 - 32768;
+          }
+        }
+      }
+    }
+    if (!any) return null;
+    return DemGrid(zoom: zoom, x0: x0, y0: y0, width: w, height: h, ele: ele);
+  }
+
+  Future<Uint8List?> _tile(int x, int y) => _tileAt(zoom, x, y);
+
+  Future<Uint8List?> _tileAt(int z, int x, int y) async {
+    final key = '$z/$x/$y';
     if (_cache.containsKey(key)) {
       final v = _cache.remove(key);
       _cache[key] = v; // al final: usado hace poco
@@ -69,7 +116,7 @@ class TerrainElevation {
     }
     Uint8List? rgba;
     for (final s in stores) {
-      final png = await s.read(MapSource.dem, zoom, x, y);
+      final png = await s.read(MapSource.dem, z, x, y);
       if (png == null) continue;
       rgba = await decode(png);
       break;

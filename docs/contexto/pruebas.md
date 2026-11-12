@@ -15,6 +15,18 @@ Teléfono de pruebas: Samsung Galaxy S23 Ultra (SM-S918B), Android 16, salvo que
 
 ## 2026-11-12
 
+**Ruta a campo traviesa y senderos con desnivel (fase E, parte 2) · `feat/ruta-terreno`**
+- Pruebas automáticas: Tobler; ida y vuelta píxel ↔ coordenadas; en lo plano va recto (±2 %); rodea un cono de 500 m
+  (no pasa de 3,200 m); cruza una pared de 300 m solo por su hueco; sin paso o sin relieve → null; relieve real del
+  Izta (PNG decodificados en la prueba): campo traviesa de Paso de Cortés hacia el Popo sin tramos de más de 45°, y la
+  ruta por senderos con relieve; planificador: sin sendero usa el terreno, queda `snapped: false` con aviso, y sin
+  terreno, línea recta. 151 en verde. **Fallas mías:** dos patrones en un mismo `final` (Dart no lo permite) y
+  comparar `LngLat` con `==` (no tiene igualdad por valor).
+- Medición: Izta por senderos con relieve 11.80 km / 125 ms (sin relieve 11.78 km); ambos a < 60 m de la real en ~40 %
+  (arriba va por el valle del oeste, igual que antes). Campo traviesa: 2,126 m contra 1,978 en línea recta, 17 ms.
+- En el S23, ladera del Popo con la capa de pendiente encendida: tramo punteado de 2.7 km, +233 m, 1 h 16 que rodea lo
+  rojo/morado por lo verde/amarillo, con el aviso de campo traviesa. **OK**. Salí sin guardar (`routes.json` igual).
+
 **Ruta por senderos (fase E, parte 1) · `feat/ruta-senderos`**
 - Pruebas automáticas con los mosaicos del paquete del Izta (78 de z14): Paso de Cortés → cumbre por senderos (10.5–14 km,
   la mitad de abajo a < 60 m de la ruta real en > 80 % de los puntos), tramo corto sobre el mismo sendero (±15 %), sin

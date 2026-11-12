@@ -10,9 +10,7 @@ Lo que falta **probar** está al inicio de `pruebas.md`. La lista de funciones p
 
 ## Siguiente (revisión de diseño del 12 nov 2026)
 
-1. **Fase E, parte 2:** sin sendero, por el terreno con costo de Tobler y la pendiente (ya calculada en `map.js`;
-   hay que llevarla a Dart o hacer la búsqueda allá). También: que la ruta por senderos pese el desnivel.
-2. Actualizar mapas con Wi-Fi: guardar fecha por zona y ofrecer "Actualizar" a los ~3 meses (solo el topo).
+1. Actualizar mapas con Wi-Fi: guardar fecha por zona y ofrecer "Actualizar" a los ~3 meses (solo el topo).
 
 Recorridos libres: falta poder pasarlos a una expedición desde su detalle. "Trazar ruta" hoy es el planificador
 de siempre (ajuste a lo visible); la fase E lo vuelve una búsqueda completa.
@@ -22,6 +20,10 @@ de mapas", "Agregar referencia") contra la regla del diseño; textos grises pequ
 descargar una zona desde la pestaña Mapas; etiqueta en el botón de "Planear ruta".
 
 ## Técnicos
+
+- Campo traviesa: no evita agua ni zonas sin paso que el relieve no ve. Se podría castigar cruzar `water`/`waterway` de
+  los mosaicos topo. Tampoco combina en un mismo tramo sendero + terreno (p. ej. salir a campo traviesa hasta un
+  sendero lejano): hoy es todo sendero o todo terreno.
 
 - Ruta por senderos: el conector del punto marcado al sendero (hasta 150 m) se marca como "con sendero"; habría que
   separar ese pedazo como tramo recto. Con zonas Básicas (sin z14) casi no hay senderos: se cae al ajuste visible.

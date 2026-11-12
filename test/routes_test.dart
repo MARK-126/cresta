@@ -150,6 +150,31 @@ void main() {
     });
   });
 
+  test('sin sendero, el tramo va por el terreno y queda marcado', () async {
+    const a = LngLat(-98.6, 19.0), b = LngLat(-98.6, 19.0 + _kmLat);
+    const bend = LngLat(-98.595, 19.0 + _kmLat / 2);
+    final p = RoutePlanner(
+      snap: (a, b) async => null,
+      overland: (a, b) async => [a, bend, b],
+      elevation: _slope,
+    );
+    await p.addPoint(a);
+    await p.addPoint(b);
+    expect(p.legs.single, [a, bend, b]);
+    expect(p.snapped.single, isFalse, reason: 'se dibuja punteado');
+    expect(p.notice, contains('campo traviesa'));
+    // Sin sendero ni terreno: línea recta
+    final straight = RoutePlanner(
+      snap: (a, b) async => null,
+      overland: (a, b) async => null,
+      elevation: _slope,
+    );
+    await straight.addPoint(a);
+    await straight.addPoint(b);
+    expect(straight.legs.single, [a, b]);
+    expect(straight.notice, contains('línea recta'));
+  });
+
   test('la ruta se guarda y se vuelve a leer igual', () async {
     final dir = Directory.systemTemp.createTempSync('cresta_routes');
     addTearDown(() => dir.deleteSync(recursive: true));

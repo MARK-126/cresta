@@ -1,6 +1,6 @@
 # Estado: qué está hecho
 
-Actualizado: 12 nov 2026 · fase E (1): ruta por senderos con los mapas guardados, en Dart.
+Actualizado: 12 nov 2026 · fase E (2): ruta a campo traviesa por el relieve y senderos con desnivel (Tobler).
 
 ## Fases
 
@@ -26,7 +26,8 @@ Actualizado: 12 nov 2026 · fase E (1): ruta por senderos con los mapas guardado
 | Fix mapa libre | Centrar en cada toque, nombres de calles/colonias/estados, tope de 3,000 mosaicos del topo, "Abrir ajustes" | `fix/mapa-libre` | `eefee29` |
 | Inicio | Inicio con cuatro acciones (grabar, explorar, trazar ruta, planear) y recorridos libres sin expedición | `feat/inicio` | `1ee1c41` |
 | Pendientes | Capas "Pendiente del terreno" y "Zonas planas" calculadas del relieve en el teléfono | `feat/pendientes` | `73fa366` |
-| Fase E (1) | Ruta A → B por senderos y calles con los mosaicos guardados (`TrailRouter`) | `feat/ruta-senderos` | (ver `git log`) |
+| Fase E (1) | Ruta A → B por senderos y calles con los mosaicos guardados (`TrailRouter`) | `feat/ruta-senderos` | `0cb231b` |
+| Fase E (2) | Ruta a campo traviesa sobre el relieve y senderos por tiempo (Tobler) | `feat/ruta-terreno` | (ver `git log`) |
 
 ## Por área
 
@@ -151,6 +152,19 @@ Actualizado: 12 nov 2026 · fase E (1): ruta por senderos con los mapas guardado
   línea recta con aviso.
 - Medido: Paso de Cortés → cumbre del Izta 11.78 km en 125 ms (incluye el isolate); un tramo de la ruta real 4.56 km
   contra 4.55.
+
+### Ruta a campo traviesa y desnivel (fase E, parte 2: `lib/src/routing/`)
+- `DemGrid` (`dem_grid.dart`): altitudes de una ventana de píxeles de zoom 12, sin Flutter (va a otro isolate);
+  `TerrainElevation.grid(box)` la arma (si falta z12, usa z11 ampliado; tope 300 mil píxeles). `toblerKmh(grade)`.
+- `TerrainRouter` (`terrain_router.dart`): A* de 8 vecinos sobre los píxeles; costo = segundos a pie con Tobler × 0.6
+  (fuera de sendero); más de 45° (pendiente 1.0) no se camina; simplifica el zigzag (Douglas–Peucker, ~10 m). Caja de
+  a–b más 40 % de la distancia (mín. 800 m), o 20 % si no cabe.
+- `TrailRouter` con `dem`: las aristas cuestan tiempo de Tobler en cada sentido (subir cuesta más que bajar) en vez de
+  metros; enlaces y conectores, a velocidad de llano. A* con la velocidad máxima de Tobler.
+- Planificador: sendero (Dart) → sendero visible (`map.js`) → **terreno** (tramo `snapped: false`, punteado "sin
+  sendero", con aviso) → línea recta.
+- Medido: Izta por senderos con relieve 11.80 km (sin relieve 11.78: misma ruta, los dos senderos suben parecido);
+  campo traviesa de 2 km en 17 ms.
 
 ### Senderos en Dart (base de la fase E)
 - `lib/src/tiles/mvt.dart`: decodificador mínimo de mosaicos vectoriales (Mapbox Vector Tile, sin comprimir: así los

@@ -261,6 +261,7 @@ class _MapScreenState extends State<MapScreen> {
     final route = _route;
     final planner = RoutePlanner(
       snap: _snapLeg,
+      overland: _services.overland.route,
       elevation: _services.terrain.at,
       // Sin ruta guardada pero con la de ejemplo: se parte de ella para poder ajustarla
       initial:
