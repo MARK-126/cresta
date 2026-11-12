@@ -66,6 +66,15 @@ void main() {
     expect(toggles, 1);
     expect(find.text('REGRESANDO'), findsOneWidget);
     expect(find.textContaining('por tu traza hasta el inicio'), findsOneWidget);
+    // Llegada al inicio con la regla (aún no hay ritmo medido) y la hora del atardecer
+    expect(
+      find.textContaining(
+        RegExp(
+          r'^Llegas al inicio ≈ \d\d:\d\d \(en .+\), según la regla de Naismith',
+        ),
+      ),
+      findsOneWidget,
+    );
     // ~503 m: la prueba avanza 25 m con otra constante de grados de latitud
     expect(
       find.textContaining(

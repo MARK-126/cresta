@@ -19,6 +19,18 @@ Teléfono de pruebas: Samsung Galaxy S23 Ultra (SM-S918B), Android 16, salvo que
 
 ## 2026-11-12
 
+**Llegada en vivo · `feat/llegada-en-vivo`**
+- Pruebas automáticas: Naismith; sin datos (menos de 500 m o 15 min) usa la regla; 2 km/+200 m en 1 h 30 → ritmo 1.5 y
+  4 km/+400 m que faltan → 3 h; más rápido 0.75; muy lento se acota a 2.5; tan lento que no es movimiento → sin ritmo;
+  sin ruta → nada. Panel de regreso: "Llegas al inicio ≈ HH:MM (en …), según la regla de Naismith". 162 en verde.
+  **Falla mía** en una prueba: esperaba ritmo 2.5 con una velocidad que la app ni cuenta como movimiento (el resultado
+  correcto era "sin ritmo").
+- En el S23, expedición de ejemplo con hora límite 16:00 (editando `expeditions.json` con respaldo) y grabando a las
+  14:20 lejos del Izta: "Faltan 12.1 km y 1,701 m de subida", "Llegas al final ≈ 21:38 (en 7 h 17 min), según la regla
+  de Naismith, sin contar paradas" y el aviso "…llegarías al final a las 21:38, después de tu hora límite (16:00)". **OK**.
+  El aviso decía "A este ritmo" aunque aún no hay ritmo: ahora dice "Según la regla de Naismith" o "A tu ritmo".
+  Grabación descartada (`tracks.json` vacío) y `expeditions.json` restaurado idéntico.
+
 **Volver por mi traza · `feat/volver-traza`**
 - En el S23 (reconectado en `192.168.100.3:33071`), quieto bajo techo: "Grabar · Desde aquí" → GRABANDO, GPS ±18 m,
   49 s; sin recorrido aún, el botón "Volver al inicio" no aparece (correcto). Descartado: `tracks.json` vacío.

@@ -95,6 +95,9 @@
 - **Volver por mi traza:** reutiliza la ruta del grabador (avance y aviso de salida) en vez de un modo aparte. El rumbo
   al inicio va en grados y punto cardinal, sin brújula: se usa con el sol o el relieve y se dicta por radio. La brújula
   (sensor) sigue pendiente.
+- **Llegada en vivo:** Naismith (la misma regla que el resto de la app) calibrado con tu ritmo real en movimiento, no
+  Tobler, para que la llegada coincida con la bitácora de la ruta. Sin contar paradas (se dice en el texto). De regreso se
+  compara con el atardecer y no con la hora límite (que es para dar la vuelta, ya pasada).
 - **Grupo en tiempo real descartado** (no hay señal en la montaña).
 
 - **Ahorro de tokens** (pedido del usuario, 28 oct 2026): leer solo README y pendientes al empezar, graphify

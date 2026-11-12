@@ -1,5 +1,12 @@
 import 'dart:math' as math;
 
+/// Regla de Naismith: 4 km/h más 1 h por cada 400 m de subida (más conservadora que los
+/// 600 m clásicos, por la altitud). Redondeada al minuto.
+Duration naismith(double meters, double gain) {
+  final hours = meters / 1000 / 4 + gain / 400;
+  return Duration(minutes: (hours * 60).round());
+}
+
 /// Una ruta de senderismo con su perfil de elevación ya muestreado.
 class TrailRoute {
   TrailRoute({
@@ -69,12 +76,8 @@ class TrailRoute {
   double get minElevation => elevations.reduce(math.min);
   double get endElevation => elevations.last;
 
-  /// Tiempo estimado con la regla de Naismith: 4 km/h más 1 h por cada 400 m de subida
-  /// (más conservadora que los 600 m clásicos, por la altitud).
-  Duration get estimatedTime {
-    final hours = totalMeters / 1000 / 4 + gain / 400;
-    return Duration(minutes: (hours * 60).round());
-  }
+  /// Tiempo estimado con la regla de Naismith (ver [naismith]).
+  Duration get estimatedTime => naismith(totalMeters, gain);
 
   /// Punto y elevación interpolados a [meters] del inicio.
   RoutePoint along(double meters) {

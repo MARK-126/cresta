@@ -1,6 +1,6 @@
 # Estado: qué está hecho
 
-Actualizado: 12 nov 2026 · volver al inicio por la propia traza, con rumbo y distancia al punto de salida.
+Actualizado: 12 nov 2026 · hora de llegada en vivo mientras grabas, contra la hora límite y el atardecer.
 
 ## Fases
 
@@ -30,7 +30,8 @@ Actualizado: 12 nov 2026 · volver al inicio por la propia traza, con rumbo y di
 | Fase E (2) | Ruta a campo traviesa sobre el relieve y senderos por tiempo (Tobler) | `feat/ruta-terreno` | `1fd44ab` |
 | Diseño | Botones tonales sin borde, "Descargar una zona" en Mapas, ícono de ruta unificado | `fix/diseno-revision` | `e69aaff` |
 | Actualizar mapas | Aviso con Wi-Fi para zonas de más de 3 meses y botón por zona; vuelve a bajar solo el topográfico | `feat/actualizar-mapas` | `45ca74a` |
-| Volver por mi traza | Guía de regreso por lo grabado: avance, lo que falta, aviso al salirse, rumbo al inicio | `feat/volver-traza` | (ver `git log`) |
+| Volver por mi traza | Guía de regreso por lo grabado: avance, lo que falta, aviso al salirse, rumbo al inicio | `feat/volver-traza` | `c00e63c` |
+| Llegada en vivo | Hora de llegada a tu ritmo (Naismith calibrado), aviso de hora límite y de atardecer al regresar | `feat/llegada-en-vivo` | (ver `git log`) |
 
 ## Por área
 
@@ -77,6 +78,11 @@ Actualizado: 12 nov 2026 · volver al inicio por la propia traza, con rumbo y di
   precisa" si la precisión es peor que ±50 m.
 - Permiso de notificaciones (Android 13+) por canal propio `cresta/permissions` (`MainActivity.kt`).
 - Estadísticas, desnivel con relieve, hora límite, aviso de salida de ruta, exportar GPX.
+- **Llegada en vivo** (`tracking/live_eta.dart`): con ruta (o regresando), `liveEta` = Naismith de lo que falta
+  (`naismith()` en `trail_route.dart`, la misma regla de la bitácora) × tu ritmo (`paceFactor`: tiempo en movimiento
+  entre Naismith de lo recorrido, desde 15 min y 500 m, acotado 0.5–2.5). El panel dice "Llegas al final ≈ HH:MM (en
+  …), a tu ritmo / según la regla de Naismith, sin contar paradas"; avisa si llegarías después de la hora límite y, de
+  regreso, si llegarías al inicio después del atardecer (`sunTimes` en tu posición).
 - **Volver por mi traza** (`tracking/backtrack.dart`, `TrackRecorder.startBacktrack`/`stopBacktrack`): el recorrido al
   revés (sin puntos a < 5 m del anterior, termina justo en la salida) pasa a ser `recorder.route`, así que sirven el
   avance, "faltan X km y Y m de subida por tu traza" y el aviso al salirse (80 m). La ruta planeada se guarda y vuelve al

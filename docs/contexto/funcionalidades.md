@@ -30,6 +30,8 @@ Detalles técnicos en `estado.md`; qué se probó en `pruebas.md`.
 - Grabar recorridos sin señal, con la pantalla bloqueada, pausa y recuperación si la app se cierra; también sin
   expedición ("recorrido libre", en la Bitácora).
 - Reloj de tiempo total, distancia, altitud, desnivel, velocidad vertical y aviso de GPS débil.
+- Hora de llegada en vivo a tu ritmo, con aviso si llegarías después de tu hora límite o, de regreso, después del
+  atardecer.
 - Aviso al salirse de la ruta planeada.
 - Volver al inicio por la propia traza mientras grabas: lo que falta, aviso si te sales de ella, y distancia y rumbo en
   línea recta al punto de salida.
@@ -55,7 +57,6 @@ Detalles técnicos en `estado.md`; qué se probó en `pruebas.md`.
 ## Por implementar
 
 De la revisión del 12 nov 2026 (detalle en `pendientes.md`):
-- Tiempo restante y hora de llegada en vivo (Tobler) comparados con la hora límite.
 - Modo ahorro de batería (intervalo de GPS, exención de optimización de Android).
 - Aviso al acercarse a un punto de interés (agua, punto de no retorno, peligro).
 - Buscar cumbres y lugares sin señal en los mapas descargados.

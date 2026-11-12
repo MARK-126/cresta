@@ -2,7 +2,9 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../sun/sun_times.dart';
 import '../tracking/backtrack.dart';
+import '../tracking/live_eta.dart';
 import '../tracking/track.dart' show haversine;
 import '../tracking/track_recorder.dart';
 import 'format.dart';
@@ -41,6 +43,19 @@ class RecordingPanel extends StatelessWidget {
     final vs = s.verticalSpeed;
     final gpsWeak =
         recording && (fix == null || fix.accuracy > TrackRecorder.maxAccuracy);
+    final now = DateTime.now();
+    final eta = liveEta(progress: r.progress, stats: s, now: now);
+    // De regreso importa llegar con luz; el atardecer se calcula sin conexión
+    final sunset = r.backtracking && fix != null
+        ? sunTimes(date: now, lat: fix.lat, lng: fix.lng).sunset
+        : null;
+    final lateForTurnaround =
+        eta != null &&
+        !r.backtracking &&
+        r.turnaroundState == TurnaroundState.ok &&
+        eta.arrival.isAfter(r.turnaround!);
+    final afterSunset =
+        eta != null && sunset != null && eta.arrival.isAfter(sunset);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -91,6 +106,20 @@ class RecordingPanel extends StatelessWidget {
             text: r.turnaroundState == TurnaroundState.passed
                 ? 'Pasó tu hora límite (${_hhmm(r.turnaround!)}). Es momento de regresar.'
                 : 'Quedan ${_mins(r.turnaroundLeft!)} para tu hora límite de regreso (${_hhmm(r.turnaround!)}).',
+          ),
+        if (lateForTurnaround)
+          _Banner(
+            color: warnColor,
+            icon: Icons.schedule_rounded,
+            text:
+                '${eta.pace == null ? 'Según la regla de Naismith' : 'A tu ritmo'} llegarías al final a las ${_hhmm(eta.arrival)}, después de tu hora límite (${_hhmm(r.turnaround!)}).',
+          ),
+        if (afterSunset)
+          _Banner(
+            color: warnColor,
+            icon: Icons.wb_twilight_rounded,
+            text:
+                'Llegarías al inicio a las ${_hhmm(eta.arrival)}, después del atardecer (${_hhmm(sunset)}). Ten lista la linterna.',
           ),
         if (r.progress?.isOffRoute == true)
           _Banner(
@@ -171,6 +200,16 @@ class RecordingPanel extends StatelessWidget {
                 ? 'Faltan ${fmtKm(r.progress!.remainingMeters)} km y ${fmtInt(r.progress!.remainingGain)} m de subida por tu traza hasta el inicio.'
                 : 'Faltan ${fmtKm(r.progress!.remainingMeters)} km y ${fmtInt(r.progress!.remainingGain)} m de subida hasta el final de la ruta.',
             style: TextStyle(fontSize: 12.5, color: scheme.onSurfaceVariant),
+          ),
+        if (eta != null)
+          Padding(
+            padding: const EdgeInsets.only(top: 4),
+            child: Text(
+              'Llegas ${r.backtracking ? 'al inicio' : 'al final'} ≈ ${_hhmm(eta.arrival)} (en ${_mins(eta.remaining)}), '
+              '${eta.pace == null ? 'según la regla de Naismith' : 'a tu ritmo'}, sin contar paradas'
+              '${sunset != null && !afterSunset ? '. El sol se pone a las ${_hhmm(sunset)}' : ''}.',
+              style: TextStyle(fontSize: 12.5, color: scheme.onSurfaceVariant),
+            ),
           ),
         if (r.backtracking && fix != null && r.points.isNotEmpty)
           Padding(
