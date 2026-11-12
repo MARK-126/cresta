@@ -102,6 +102,11 @@
   pide la exención al grabar (no al abrir la app) y se puede rechazar. `REQUEST_IGNORE_BATTERY_OPTIMIZATIONS` lo limita
   Google Play a apps cuyo núcleo lo necesita; para una app personal no aplica, pero revisarlo si se publica. El
   intervalo del GPS ya existía (modos Normal y Ahorro).
+- **Búsqueda sin señal con los mosaicos, no con un servicio:** los nombres ya vienen en los mosaicos topográficos
+  descargados; leerlos no pide nada a nadie ni pesa más. Índice armado al primer uso (no al terminar la descarga: así
+  sirve también para las zonas que ya estaban) y guardado. Solo zonas completas, para no rehacerlo a cada rato durante
+  una descarga. La clase se llama `MapPlace` porque `Place` ya es el resultado de la búsqueda en línea (Nominatim) del
+  selector de zonas.
 - **Avisos de puntos de interés:** por distancia en línea recta y una sola vez por recorrido (sin re-armar al alejarse:
   en un ida y vuelta avisaría dos veces lo mismo). Los de seguridad (no retorno, peligro) a 300 m para decidir antes
   de llegar; el resto a 150 m. Mismo canal de notificación que la hora límite.

@@ -11,7 +11,8 @@ Lo que falta **probar** está al inicio de `pruebas.md`. La lista de funciones p
 ## Siguiente (revisión de diseño del 12 nov 2026)
 
 
-Siguiente de la lista: buscar cumbres y lugares sin señal en los mapas descargados.
+Búsqueda sin señal hecha (falta verla en el teléfono). Ideas: usarla de respaldo en el selector de zonas cuando no
+hay conexión, y "Trazar ruta hasta aquí" desde el lugar encontrado.
 
 De la revisión queda: probar al sol si las etiquetas de 10–11 px se leen (el contraste ya es AAA). El botón de
 "Planear ruta" del mapa usa el ícono de "Trazar ruta" del inicio; sigue sin texto (tiene ayuda al mantenerlo).

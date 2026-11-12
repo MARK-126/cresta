@@ -14,6 +14,7 @@ import '../location/location_service.dart';
 import '../map/map_bridge.dart';
 import '../map/map_layers.dart';
 import '../offline/tile_math.dart';
+import '../places/places.dart';
 import '../routes/planned_route.dart';
 import '../routes/route_planner.dart';
 import '../tracking/track.dart';
@@ -26,6 +27,7 @@ import 'format.dart';
 import 'offline_widgets.dart';
 import 'panels.dart';
 import 'planner_panel.dart';
+import 'place_search_sheet.dart';
 import 'recording_panel.dart';
 import 'route_actions.dart';
 import 'sos_screen.dart';
@@ -149,6 +151,9 @@ class _MapScreenState extends State<MapScreen> {
   /// Última posición leída en el mapa (para "Mi ubicación" sin grabar).
   (double, double)? _myPos;
   bool _centerOnFix = false;
+
+  /// Lugar elegido en la búsqueda (marcado en el mapa hasta cerrarlo).
+  MapPlace? _found;
   Timer? _paddingTimer;
   bool _started = false;
 
@@ -689,6 +694,30 @@ class _MapScreenState extends State<MapScreen> {
     }
   }
 
+  /// Busca en los mapas descargados; mide distancias desde tu posición o, si no se
+  /// conoce, desde el centro del mapa. El lugar elegido queda marcado.
+  Future<void> _searchPlaces() async {
+    final fix = _services.recorder.lastFix;
+    final me = _myPos ?? (fix == null ? null : (fix.lng, fix.lat));
+    final from = me ?? await _bridge.center();
+    if (!mounted) return;
+    final p = await showPlaceSearch(
+      context,
+      lng: from?.$1,
+      lat: from?.$2,
+      fromMe: me != null,
+    );
+    if (p == null || !mounted) return;
+    setState(() => _found = p);
+    await _bridge.setFound(p);
+    await _bridge.flyTo(p.lng, p.lat, zoom: 14, pitch: null);
+  }
+
+  void _clearFound() {
+    setState(() => _found = null);
+    _bridge.setFound(null);
+  }
+
   Future<void> _locateMe() async {
     if (_recordingHere) {
       // Mientras se graba, el botón vuelve a centrar y seguir tu posición
@@ -879,53 +908,62 @@ class _MapScreenState extends State<MapScreen> {
                               ),
                             )
                           else
-                            Flexible(
-                              child: Glass(
-                                child: Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 14,
-                                    vertical: 8,
-                                  ),
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Text(
-                                        _planner != null
-                                            ? 'PLANEANDO RUTA'
-                                            : _recordingHere
-                                            ? 'GRABANDO'
-                                            : _comparing
-                                            ? 'COMPARAR'
-                                            : _free
-                                            ? 'EXPLORAR'
-                                            : 'EXPEDICIÓN',
-                                        style: labelStyle(
-                                          context,
-                                          color: _recordingHere
-                                              ? recordColor
-                                              : Andes.gold,
-                                        ).copyWith(fontSize: 9.5),
-                                      ),
-                                      Text(
-                                        _comparing
-                                            ? 'Rutas'
-                                            : _free
-                                            ? (_savedRoute?.name ??
-                                                  'Mapa libre')
-                                            : _expedition.name,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: const TextStyle(
-                                          fontWeight: FontWeight.w800,
-                                          fontSize: 15,
+                            Expanded(
+                              child: Align(
+                                alignment: Alignment.centerLeft,
+                                child: Glass(
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 14,
+                                      vertical: 8,
+                                    ),
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Text(
+                                          _planner != null
+                                              ? 'PLANEANDO RUTA'
+                                              : _recordingHere
+                                              ? 'GRABANDO'
+                                              : _comparing
+                                              ? 'COMPARAR'
+                                              : _free
+                                              ? 'EXPLORAR'
+                                              : 'EXPEDICIÓN',
+                                          style: labelStyle(
+                                            context,
+                                            color: _recordingHere
+                                                ? recordColor
+                                                : Andes.gold,
+                                          ).copyWith(fontSize: 9.5),
                                         ),
-                                      ),
-                                    ],
+                                        Text(
+                                          _comparing
+                                              ? 'Rutas'
+                                              : _free
+                                              ? (_savedRoute?.name ??
+                                                    'Mapa libre')
+                                              : _expedition.name,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.w800,
+                                            fontSize: 15,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
                                   ),
                                 ),
                               ),
                             ),
+                          const SizedBox(width: 8),
+                          _MapButton(
+                            icon: Icons.search_rounded,
+                            tooltip: 'Buscar en tus mapas',
+                            onPressed: _searchPlaces,
+                          ),
                         ],
                       ),
                     ),
@@ -995,6 +1033,26 @@ class _MapScreenState extends State<MapScreen> {
                       ],
                     ),
                   ),
+                  if (_found != null)
+                    Positioned(
+                      left: 8,
+                      right: 76,
+                      top: MediaQuery.paddingOf(context).top + 70,
+                      child: Align(
+                        alignment: Alignment.centerLeft,
+                        child: _FoundCard(
+                          place: _found!,
+                          from: _myPos,
+                          onTap: () => _bridge.flyTo(
+                            _found!.lng,
+                            _found!.lat,
+                            zoom: 14,
+                            pitch: null,
+                          ),
+                          onClose: _clearFound,
+                        ),
+                      ),
+                    ),
                   NotificationListener<DraggableScrollableNotification>(
                     onNotification: _onSheet,
                     child: DraggableScrollableSheet(
@@ -1291,6 +1349,73 @@ class _OfflineSummary extends StatelessWidget {
           ],
         ),
       ],
+    );
+  }
+}
+
+/// Lugar elegido en la búsqueda: nombre, tipo y, si se sabe dónde estás, distancia.
+class _FoundCard extends StatelessWidget {
+  const _FoundCard({
+    required this.place,
+    required this.from,
+    required this.onTap,
+    required this.onClose,
+  });
+  final MapPlace place;
+  final (double, double)? from;
+  final VoidCallback onTap;
+  final VoidCallback onClose;
+
+  @override
+  Widget build(BuildContext context) {
+    final p = place, f = from;
+    final detail = [
+      placeDetail(p),
+      if (f != null)
+        placeDistance(p, haversine(f.$2, f.$1, p.lat, p.lng), f.$2, f.$1),
+    ].join(' · ');
+    return Glass(
+      opacity: .9,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(12, 6, 0, 6),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(placeIcon(p.kind), color: Andes.gold, size: 22),
+              const SizedBox(width: 10),
+              Flexible(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      p.name,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(fontWeight: FontWeight.w800),
+                    ),
+                    Text(
+                      detail,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              IconButton(
+                tooltip: 'Quitar del mapa',
+                icon: const Icon(Icons.close_rounded, size: 20),
+                onPressed: onClose,
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

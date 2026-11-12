@@ -170,6 +170,7 @@
         plan: { type: 'geojson', data: empty },
         'plan-pts': { type: 'geojson', data: empty },
         pois: { type: 'geojson', data: empty },
+        found: { type: 'geojson', data: empty },
         track: { type: 'geojson', data: empty },
         regions: { type: 'geojson', data: empty },
         zones: { type: 'geojson', data: empty },
@@ -274,6 +275,15 @@
           'text-field': ['get', 'name'], 'text-font': font('bold'),
           'text-size': ['match', ['get', 'class'], 'city', 15, 'town', 13, 'village', 12, 11] },
           paint: { 'text-color': C.label, 'text-halo-color': C.halo, 'text-halo-width': 1.6 } },
+        // Lugar encontrado con la búsqueda: encima de todo, con su nombre siempre visible
+        { id: 'found-ring', type: 'circle', source: 'found', paint: {
+          'circle-radius': 15, 'circle-color': 'rgba(240,191,99,0.25)', 'circle-stroke-color': '#f0bf63', 'circle-stroke-width': 2 } },
+        { id: 'found-dot', type: 'circle', source: 'found', paint: {
+          'circle-radius': 6, 'circle-color': '#f0bf63', 'circle-stroke-color': '#0e1416', 'circle-stroke-width': 2.5 } },
+        { id: 'found-label', type: 'symbol', source: 'found', layout: {
+          'text-field': ['get', 'name'], 'text-font': font('bold'), 'text-size': 13, 'text-offset': [0, 1.5], 'text-anchor': 'top',
+          'text-allow-overlap': true, 'text-ignore-placement': true },
+          paint: { 'text-color': '#0e1416', 'text-halo-color': 'rgba(255,255,255,0.95)', 'text-halo-width': 1.6 } },
       ],
       terrain: { source: 'dem', exaggeration: 1.4 },
       sky: { 'sky-color': '#8ec1ea', 'horizon-color': '#e8f1f7', 'fog-color': '#dbe6ec', 'sky-horizon-blend': 0.6, 'horizon-fog-blend': 0.6, 'fog-ground-blend': 0.4 },
@@ -626,6 +636,10 @@
         type: 'FeatureCollection',
         features: (list || []).map((p) => pointFeature(p.at, { kind: p.kind, name: p.name })),
       }));
+    },
+    /// Lugar encontrado: { name, at: [lng, lat] } o null para quitarlo.
+    setFound(p) {
+      whenReady(() => map.getSource('found').setData(p ? { type: 'FeatureCollection', features: [pointFeature(p.at, { name: p.name })] } : empty));
     },
     fitRoute,
     flyRoute,

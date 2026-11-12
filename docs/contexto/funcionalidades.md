@@ -57,11 +57,12 @@ Detalles técnicos en `estado.md`; qué se probó en `pruebas.md`.
 - Expedición de ejemplo con sus mapas incluidos, que no se pueden borrar por error.
 - Modo protección civil (datos de demostración, no oficiales).
 - Diseño "Andes Industrial", solo oscuro; splash e ícono propios.
+- Buscar sin señal en los mapas descargados: cumbres (con altura), refugios, agua, campamentos, pueblos,
+  senderos y ríos, con distancia y dirección desde donde estás; el lugar queda marcado en el mapa.
 
 ## Por implementar
 
 De la revisión del 12 nov 2026 (detalle en `pendientes.md`):
-- Buscar cumbres y lugares sin señal en los mapas descargados.
 - Distancia configurable del aviso de salida de ruta.
 - Plan de salida para un contacto: ruta, hora límite y hora de alarma, enviado antes de salir.
 - Puntos de agua con fecha de comprobación.

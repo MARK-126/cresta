@@ -6,6 +6,9 @@ Teléfono de pruebas: Samsung Galaxy S23 Ultra (SM-S918B), Android 16, salvo que
 
 ## Sin probar todavía (revisar antes de dar por hecho)
 
+- **Buscar sin señal en el teléfono** (12 nov 2026): botón, hoja, tiempo de la primera vez con las 3 zonas, vuelo,
+  marca y tarjeta.
+
 - **Avisos de puntos de interés en una salida** (12 nov 2026): instalado y la app arranca. El canal sigue como
   "Hora límite de regreso" hasta el próximo aviso (Android lo renombra al volver a registrarlo). Falta, con una ruta
   con puntos, recibir la notificación al acercarse y ver "Próximo:" en el panel (la "Ruta de Salto" no tiene puntos).
@@ -22,6 +25,17 @@ Teléfono de pruebas: Samsung Galaxy S23 Ultra (SM-S918B), Android 16, salvo que
 - Descargas de mapas en Android con conexión móvil (opción "solo Wi-Fi").
 
 ## 2026-11-12
+
+**Buscar sin señal · `feat/buscar-lugares`**
+- Con los 210 mosaicos z14 de Vallecitos copiados del teléfono: 100 lugares en 42 ms (31 cumbres, 3 refugios, 11
+  campamentos, 1 agua, 29 tramos de río…). "arenales" → Cerro Arenales (3,460 m, 7.7 km); "cerro adolfo" → Cerro Adolfo
+  Calle (4,227 m) y su sendero de descenso; "refugio" → Mausy, UNCuyo, San Bernardo. Fallas: "arroyo blanco" salía
+  5 veces (un tramo por mosaico) → solo el tramo más cercano; "agua" no encontraba "punto 3" (agua potable) → también
+  coincide por tipo, después de los nombres. **OK**.
+- Pruebas automáticas: 178 en verde (10 nuevas en `places_test.dart`, con 4 mosaicos reales del Cordón del Plata en
+  `test/fixtures/topo/`: tipos y altura, sin repetir un sendero de dos mosaicos, juntar repetidos, orden de la
+  búsqueda, sin acentos, por tipo, tramo más cercano, búsqueda vacía, índice guardado y rehecho al actualizar la zona).
+- En el teléfono: pendiente (se desconectó al instalar).
 
 **Pasar un recorrido libre a una expedición · `feat/recorrido-a-expedicion`** (S23)
 - Recorrido libre de prueba ("Prueba Cerro", 8 dic 2024, 30 puntos) cargado con `run-as`. Detalle: "RECORRIDO LIBRE";

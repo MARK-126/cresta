@@ -210,6 +210,23 @@ Actualizado: 12 nov 2026 · avisos al acercarse a los puntos de interés de la r
   Se corren con `dart tool/dev/spike_ruta.dart CARPETA_CON_topo/ assets/data/arista_del_sol.json`; variables:
   `Z` (zoom), `CLIP`, `MODE` (`ends`, `border`), `TAU`, `LINK`, `DUMP`.
 
+### Buscar sin señal (`lib/src/places/`, `ui/place_search_sheet.dart`)
+- `placesInTile` lee de cada mosaico topográfico (solo las capas `mountain_peak`, `place`, `poi`, `water_name`,
+  `waterway`, `transportation_name`, `park`; `decodeMvt(keep:)` no decodifica las demás) los lugares con nombre:
+  cumbre/volcán/collado (con `ele`), refugio (`alpine_hut`, `shelter`, `wilderness_hut`), agua (`drinking_water`,
+  `spring`), laguna, campamento, mirador, pueblo, paraje, sendero (`path`/`track` con nombre), río o arroyo, parque,
+  policía, salud, estacionamiento. De una línea, su punto de en medio; lo que cae fuera del mosaico se ignora.
+  `mergePlaces`: mismo nombre y tipo a < 300 m (2 km si es línea) es uno solo.
+- `PlaceIndex` (en `AppServices.places`): con las zonas completas, mosaicos del zoom más alto de cada una, en un
+  isolate; se guarda en `places.json` con una clave (versión, id, zoom y `topoDate` de cada zona) y se rehace solo si
+  cambia. Vallecitos (210 mosaicos z14): 100 lugares en ~45 ms en la PC.
+- `searchPlaces`: sin acentos ni mayúsculas, todas las palabras en el nombre; orden: empieza así, alguna palabra
+  empieza así, contiene, coincide por tipo ("agua", "cumbre"); luego distancia (sin posición, el tipo). Sin texto:
+  lo más cercano de cumbres, refugios, agua y campamentos. De ríos y senderos, solo el tramo más cercano.
+- Mapa: botón de lupa arriba a la derecha → hoja "Buscar en tus mapas" (distancia y dirección desde tu posición o el
+  centro del mapa) → vuela al lugar (zoom 14), lo marca (`setFound` en `map.js`, capas `found-*`) y muestra una tarjeta
+  con nombre, tipo, altura y distancia; la ✕ lo quita.
+
 ### Interfaz
 - Botones secundarios (`OutlinedButton`, 23 en la app): tonales `surfaceHighest` sin borde, desde el tema.
 - Pestaña Mapas: "Descargar una zona" abre `AreaPickerScreen()` sin expedición (zona suelta, centrada en la última

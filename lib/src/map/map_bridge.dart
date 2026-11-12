@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/painting.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
+import '../places/places.dart';
 import '../data/trail_route.dart';
 import '../offline/offline_region.dart';
 import '../offline/tile_math.dart';
@@ -171,6 +172,29 @@ class MapBridge {
         {'name': r.name, 'bbox': r.bbox.toJson(), 'complete': r.isComplete},
     ],
   ]);
+
+  /// Marca el lugar encontrado con la búsqueda (null lo quita).
+  Future<void> setFound(MapPlace? p) => _call('setFound', [
+    if (p == null)
+      null
+    else
+      {
+        'name': p.name,
+        'at': [p.lng, p.lat],
+      },
+  ]);
+
+  /// Centro del mapa (lng, lat), o null si el mapa aún no responde.
+  Future<(double, double)?> center() async {
+    try {
+      final v = await _query('getView');
+      if (v is! Map) return null;
+      return ((v['lng'] as num).toDouble(), (v['lat'] as num).toDouble());
+    } catch (_) {
+      return null;
+    }
+  }
+
   Future<void> fitBounds(BBox b) =>
       _call('fitBounds', [b.west, b.south, b.east, b.north]);
   Future<void> fitRoute() => _call('fitRoute');
