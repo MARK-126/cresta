@@ -4,6 +4,7 @@ import 'dart:math' as math;
 import 'package:flutter/foundation.dart';
 
 import '../data/trail_route.dart';
+import '../routes/planned_route.dart' show Poi;
 import 'backtrack.dart';
 import 'route_progress.dart';
 import 'track.dart';
@@ -69,6 +70,9 @@ class TrackRecorder extends ChangeNotifier {
   RecordingMode mode = RecordingMode.normal;
   Track? track;
   TrailRoute? route;
+
+  /// Puntos de interés de la ruta (agua, punto de no retorno…), para avisar al acercarse.
+  List<Poi> pois = const [];
 
   /// Guiando de regreso por la propia traza ([route] es el recorrido al revés).
   bool backtracking = false;
@@ -177,6 +181,7 @@ class TrackRecorder extends ChangeNotifier {
     String? expeditionId,
     required String name,
     TrailRoute? route,
+    List<Poi> pois = const [],
     DateTime? turnaround,
     RecordingMode mode = RecordingMode.normal,
   }) async {
@@ -191,6 +196,7 @@ class TrackRecorder extends ChangeNotifier {
     await store.add(t);
     track = t;
     this.route = route;
+    this.pois = pois;
     backtracking = false;
     _plannedRoute = null;
     this.turnaround = turnaround;
@@ -266,6 +272,7 @@ class TrackRecorder extends ChangeNotifier {
     state = RecorderState.idle;
     track = null;
     route = null;
+    pois = const [];
     backtracking = false;
     _plannedRoute = null;
     turnaround = null;

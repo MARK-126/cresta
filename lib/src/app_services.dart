@@ -22,6 +22,7 @@ import 'routing/terrain_router.dart';
 import 'routing/trail_router.dart';
 import 'storage/json_store.dart';
 import 'tiles/tile_server.dart';
+import 'tracking/poi_alerts.dart';
 import 'tracking/terrain_elevation.dart';
 import 'tracking/track_recorder.dart';
 import 'tracking/turnaround_alerts.dart';
@@ -147,6 +148,7 @@ class AppServices {
       recorder: recorder,
       sink: const SystemAlertSink(),
     ).attach();
+    PoiAlerts(recorder: recorder, sink: const SystemAlertSink()).attach();
     final routes = RouteStore(JsonStore(File('${support.path}/routes.json')));
     await routes.load();
     final profile = ProfileStore(

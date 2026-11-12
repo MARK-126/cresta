@@ -230,6 +230,9 @@ class _MapScreenState extends State<MapScreen> {
     if (_recordingHere) {
       // Recorrido en curso o recuperado tras cerrar la app: vuelve a tener ruta y hora límite
       _recorder.route ??= _route;
+      if (_recorder.pois.isEmpty) {
+        _recorder.pois = _savedRoute?.pois ?? const [];
+      }
       _recorder.turnaround ??= _expedition.turnaroundOn(
         _recorder.track!.startedAt,
       );
@@ -491,6 +494,7 @@ class _MapScreenState extends State<MapScreen> {
       expeditionId: _trackExpeditionId,
       name: 'Recorrido $n · ${fmtDate(now)}',
       route: _route,
+      pois: _savedRoute?.pois ?? const [],
       turnaround: _expedition.turnaroundOn(now),
       mode: mode,
     );

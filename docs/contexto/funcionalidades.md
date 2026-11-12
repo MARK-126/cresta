@@ -34,6 +34,8 @@ Detalles técnicos en `estado.md`; qué se probó en `pruebas.md`.
 - Hora de llegada en vivo a tu ritmo, con aviso si llegarías después de tu hora límite o, de regreso, después del
   atardecer.
 - Aviso al salirse de la ruta planeada.
+- Aviso (notificación) al acercarte a un punto de interés de la ruta: agua, campamento, punto de no retorno, peligro; y
+  el próximo punto con su distancia y tiempo en el panel.
 - Volver al inicio por la propia traza mientras grabas: lo que falta, aviso si te sales de ella, y distancia y rumbo en
   línea recta al punto de salida.
 - Exportar recorridos a GPX.
@@ -58,7 +60,6 @@ Detalles técnicos en `estado.md`; qué se probó en `pruebas.md`.
 ## Por implementar
 
 De la revisión del 12 nov 2026 (detalle en `pendientes.md`):
-- Aviso al acercarse a un punto de interés (agua, punto de no retorno, peligro).
 - Buscar cumbres y lugares sin señal en los mapas descargados.
 - Distancia configurable del aviso de salida de ruta.
 - Plan de salida para un contacto: ruta, hora límite y hora de alarma, enviado antes de salir.
