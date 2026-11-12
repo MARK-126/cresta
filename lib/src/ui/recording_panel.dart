@@ -541,6 +541,15 @@ Future<RecordingMode?> askRecordingMode(BuildContext context) =>
                   color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
               ),
+              const SizedBox(height: 6),
+              // Lo que más gasta en la montaña es buscar señal celular y la pantalla
+              Text(
+                'Para que dure la batería: modo avión (el GPS sigue funcionando) y la pantalla apagada o con poco brillo.',
+                style: TextStyle(
+                  fontSize: 12.5,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ),
               const SizedBox(height: 16),
               for (final m in RecordingMode.values)
                 Padding(

@@ -1,6 +1,6 @@
 # Estado: qué está hecho
 
-Actualizado: 12 nov 2026 · hora de llegada en vivo mientras grabas, contra la hora límite y el atardecer.
+Actualizado: 12 nov 2026 · batería: pedir que Android no optimice la app al grabar, y consejos en el modo.
 
 ## Fases
 
@@ -31,7 +31,8 @@ Actualizado: 12 nov 2026 · hora de llegada en vivo mientras grabas, contra la h
 | Diseño | Botones tonales sin borde, "Descargar una zona" en Mapas, ícono de ruta unificado | `fix/diseno-revision` | `e69aaff` |
 | Actualizar mapas | Aviso con Wi-Fi para zonas de más de 3 meses y botón por zona; vuelve a bajar solo el topográfico | `feat/actualizar-mapas` | `45ca74a` |
 | Volver por mi traza | Guía de regreso por lo grabado: avance, lo que falta, aviso al salirse, rumbo al inicio | `feat/volver-traza` | `c00e63c` |
-| Llegada en vivo | Hora de llegada a tu ritmo (Naismith calibrado), aviso de hora límite y de atardecer al regresar | `feat/llegada-en-vivo` | (ver `git log`) |
+| Llegada en vivo | Hora de llegada a tu ritmo (Naismith calibrado), aviso de hora límite y de atardecer al regresar | `feat/llegada-en-vivo` | `82cca40` |
+| Batería | Exención de la optimización de batería al grabar (canal nativo) y consejo de modo avión | `feat/bateria` | (ver `git log`) |
 
 ## Por área
 
@@ -77,6 +78,10 @@ Actualizado: 12 nov 2026 · hora de llegada en vivo mientras grabas, contra la h
 - Reloj de tiempo activo (sin pausas) que corre desde que se toca Grabar; aviso "Esperando una señal GPS
   precisa" si la precisión es peor que ±50 m.
 - Permiso de notificaciones (Android 13+) por canal propio `cresta/permissions` (`MainActivity.kt`).
+- Batería: el mismo canal tiene `batteryUnrestricted` (`PowerManager.isIgnoringBatteryOptimizations`) y
+  `requestBatteryUnrestricted` (diálogo del sistema `ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS`, permiso
+  `REQUEST_IGNORE_BATTERY_OPTIMIZATIONS`). Al empezar a grabar, si la app no está exenta, se explica y ofrece
+  ("Permitir" / "Ahora no"); la grabación sigue igual si no. El diálogo de modo aconseja modo avión y poco brillo.
 - Estadísticas, desnivel con relieve, hora límite, aviso de salida de ruta, exportar GPX.
 - **Llegada en vivo** (`tracking/live_eta.dart`): con ruta (o regresando), `liveEta` = Naismith de lo que falta
   (`naismith()` en `trail_route.dart`, la misma regla de la bitácora) × tu ritmo (`paceFactor`: tiempo en movimiento

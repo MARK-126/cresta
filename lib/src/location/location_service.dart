@@ -40,6 +40,28 @@ class LocationService {
     }
   }
 
+  /// La app está fuera de la optimización de batería de Android (no corta la grabación con
+  /// la pantalla apagada). En iOS no aplica: siempre true.
+  Future<bool> batteryUnrestricted() async {
+    if (defaultTargetPlatform != TargetPlatform.android) return true;
+    try {
+      return await _permissions.invokeMethod<bool>('batteryUnrestricted') ??
+          true;
+    } on MissingPluginException {
+      return true;
+    }
+  }
+
+  /// Abre el diálogo del sistema para quitar la optimización de batería.
+  Future<void> requestBatteryUnrestricted() async {
+    if (defaultTargetPlatform != TargetPlatform.android) return;
+    try {
+      await _permissions.invokeMethod<void>('requestBatteryUnrestricted');
+    } on MissingPluginException {
+      return;
+    }
+  }
+
   /// Abre el ajuste que destraba [status]: la ubicación del teléfono si está
   /// apagada, o los permisos de la app si los negó.
   Future<void> openSettings(LocationStatus status) =>

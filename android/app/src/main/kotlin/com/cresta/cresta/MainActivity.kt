@@ -6,7 +6,10 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Build
+import android.os.PowerManager
+import android.provider.Settings
 import androidx.core.app.NotificationCompat
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
@@ -20,10 +23,14 @@ class MainActivity : FlutterActivity() {
         super.configureFlutterEngine(flutterEngine)
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "cresta/permissions")
             .setMethodCallHandler { call, result ->
-                if (call.method == "requestNotifications") {
-                    requestNotifications(result)
-                } else {
-                    result.notImplemented()
+                when (call.method) {
+                    "requestNotifications" -> requestNotifications(result)
+                    "batteryUnrestricted" -> result.success(batteryUnrestricted())
+                    "requestBatteryUnrestricted" -> {
+                        requestBatteryUnrestricted()
+                        result.success(null)
+                    }
+                    else -> result.notImplemented()
                 }
             }
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "cresta/notify")
@@ -80,6 +87,24 @@ class MainActivity : FlutterActivity() {
                 .setContentIntent(open)
                 .build(),
         )
+    }
+
+    // La app no está sujeta a la optimización de batería (Samsung la aplica fuerte y puede
+    // detener el servicio de grabación con la pantalla apagada).
+    private fun batteryUnrestricted(): Boolean =
+        getSystemService(PowerManager::class.java).isIgnoringBatteryOptimizations(packageName)
+
+    // Diálogo del sistema "¿Permitir que Cresta siga en segundo plano?". Si no se puede
+    // abrir, la lista de apps de la optimización de batería.
+    private fun requestBatteryUnrestricted() {
+        try {
+            startActivity(
+                Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS)
+                    .setData(Uri.parse("package:$packageName")),
+            )
+        } catch (e: Exception) {
+            startActivity(Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS))
+        }
     }
 
     // Android 13+ exige pedir POST_NOTIFICATIONS en tiempo de ejecución;

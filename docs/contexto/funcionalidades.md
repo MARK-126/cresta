@@ -27,6 +27,7 @@ Detalles técnicos en `estado.md`; qué se probó en `pruebas.md`.
 - Avisos de seguridad de la ruta: tramos sin sendero punteados y con etiqueta, y tramos de más de 40 % de
   pendiente marcados en el perfil y avisados en el detalle.
 - Inicio con cuatro acciones: grabar desde aquí, explorar el mapa, trazar una ruta y planear una expedición.
+- Cuidar la batería al grabar: modo Ahorro (un punto cada 20 m), pedir que Android no detenga la app y consejos.
 - Grabar recorridos sin señal, con la pantalla bloqueada, pausa y recuperación si la app se cierra; también sin
   expedición ("recorrido libre", en la Bitácora).
 - Reloj de tiempo total, distancia, altitud, desnivel, velocidad vertical y aviso de GPS débil.
@@ -57,7 +58,6 @@ Detalles técnicos en `estado.md`; qué se probó en `pruebas.md`.
 ## Por implementar
 
 De la revisión del 12 nov 2026 (detalle en `pendientes.md`):
-- Modo ahorro de batería (intervalo de GPS, exención de optimización de Android).
 - Aviso al acercarse a un punto de interés (agua, punto de no retorno, peligro).
 - Buscar cumbres y lugares sin señal en los mapas descargados.
 - Distancia configurable del aviso de salida de ruta.

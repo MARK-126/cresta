@@ -98,6 +98,10 @@
 - **Llegada en vivo:** Naismith (la misma regla que el resto de la app) calibrado con tu ritmo real en movimiento, no
   Tobler, para que la llegada coincida con la bitácora de la ruta. Sin contar paradas (se dice en el texto). De regreso se
   compara con el atardecer y no con la hora límite (que es para dar la vuelta, ya pasada).
+- **Batería (12 nov 2026):** lo que más corta grabaciones en un Samsung es la optimización de batería, no el GPS: se
+  pide la exención al grabar (no al abrir la app) y se puede rechazar. `REQUEST_IGNORE_BATTERY_OPTIMIZATIONS` lo limita
+  Google Play a apps cuyo núcleo lo necesita; para una app personal no aplica, pero revisarlo si se publica. El
+  intervalo del GPS ya existía (modos Normal y Ahorro).
 - **Grupo en tiempo real descartado** (no hay señal en la montaña).
 
 - **Ahorro de tokens** (pedido del usuario, 28 oct 2026): leer solo README y pendientes al empezar, graphify

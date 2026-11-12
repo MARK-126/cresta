@@ -467,6 +467,18 @@ class _MapScreenState extends State<MapScreen> {
       );
     }
     if (!mounted) return;
+    // Samsung "optimiza" la batería de las apps y puede cortar la grabación a media montaña
+    if (!await _location.batteryUnrestricted() && mounted) {
+      final ok = await confirmDialog(
+        context,
+        title: 'Que Android no detenga la grabación',
+        body: 'Con la optimización de batería, Android puede cortar la grabación con la pantalla apagada. Permite que Cresta siga en segundo plano: solo gasta batería mientras grabas.',
+        action: 'Permitir',
+        cancel: 'Ahora no',
+      );
+      if (ok) await _location.requestBatteryUnrestricted();
+    }
+    if (!mounted) return;
     final now = DateTime.now();
     final n =
         _services.tracks.all

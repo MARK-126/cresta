@@ -261,6 +261,7 @@ Future<bool> confirmDialog(
   required String title,
   required String body,
   required String action,
+  String cancel = 'Cancelar',
 }) async {
   final ok = await showDialog<bool>(
     context: context,
@@ -270,7 +271,7 @@ Future<bool> confirmDialog(
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context, false),
-          child: const Text('Cancelar'),
+          child: Text(cancel),
         ),
         FilledButton(
           onPressed: () => Navigator.pop(context, true),

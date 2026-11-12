@@ -19,6 +19,14 @@ Teléfono de pruebas: Samsung Galaxy S23 Ultra (SM-S918B), Android 16, salvo que
 
 ## 2026-11-12
 
+**Batería · `feat/bateria`** (cambio nativo: compilación completa)
+- En el S23 (la app no estaba exenta: `dumpsys deviceidle whitelist` sin cresta): "Grabar · Desde aquí" → el diálogo de
+  modo muestra el consejo de modo avión → Normal → "Que Android no detenga la grabación · Ahora no / Permitir" →
+  Permitir abrió el diálogo del sistema "¿Dejar de optimizar el uso de la batería?" (`RequestIgnoreBatteryOptimizations`).
+  Se tocó **Cancelar** para no cambiar la configuración del usuario; la grabación siguió (GRABANDO). Descartada:
+  `tracks.json` vacío; la app sigue sin exención. **OK**. 162 pruebas en verde.
+- Sin probar: aceptar la exención y que el aviso ya no salga (lo hace el usuario al grabar de verdad).
+
 **Llegada en vivo · `feat/llegada-en-vivo`**
 - Pruebas automáticas: Naismith; sin datos (menos de 500 m o 15 min) usa la regla; 2 km/+200 m en 1 h 30 → ritmo 1.5 y
   4 km/+400 m que faltan → 3 h; más rápido 0.75; muy lento se acota a 2.5; tan lento que no es movimiento → sin ritmo;
