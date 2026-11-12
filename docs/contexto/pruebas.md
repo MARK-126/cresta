@@ -15,6 +15,18 @@ Teléfono de pruebas: Samsung Galaxy S23 Ultra (SM-S918B), Android 16, salvo que
 
 ## 2026-11-12
 
+**Ruta por senderos (fase E, parte 1) · `feat/ruta-senderos`**
+- Pruebas automáticas con los mosaicos del paquete del Izta (78 de z14): Paso de Cortés → cumbre por senderos (10.5–14 km,
+  la mitad de abajo a < 60 m de la ruta real en > 80 % de los puntos), tramo corto sobre el mismo sendero (±15 %), sin
+  mapas o mosaicos rotos → null, y tope de mosaicos. 142 en verde. **Falla mía** primero: el final quedaba a 12 cm del
+  punto marcado (se pegaba al sendero); ahora termina justo en él.
+- Medición: 11.78 km (igual que el experimento) en 125 ms; tramo 100–300 de la ruta real: 4.56 km contra 4.55, 8 ms.
+- En el S23, "Trazar ruta" y dos toques simulados (`CrestaBridge.postMessage` con `mapTap`) a zoom 11.6: ruta
+  continua de 11.8 km, +1,624 m, 7 h 00, dibujada por la arista. Con los mismos puntos, el ajuste viejo de `map.js`
+  (`snapLeg`) dio null: habría sido línea recta. **OK**.
+- Dentro del cráter del Popo (sin senderos): línea recta con el aviso "No encontré un sendero… en tus mapas
+  descargados ni en lo que se ve". **OK**. Se salió sin guardar (`routes.json` igual: solo "Ruta de Salto").
+
 **Pendiente del terreno y zonas planas · `feat/pendientes`** (S23, ejemplo del Izta)
 - Capa "Pendiente del terreno" a z12.5 en 3D: colores por grados sobre todo el macizo, sin errores en el log. **OK**.
 - Valores (`slopeAt`): Paso de Cortés 2.3° (collado plano), borde del cráter del Popo 30.5°, una ladera del Izta 19.6°.

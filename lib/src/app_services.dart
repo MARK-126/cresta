@@ -18,6 +18,7 @@ import 'offline/tile_store.dart';
 import 'profile/emergency_profile.dart';
 import 'references/references.dart';
 import 'routes/route_store.dart';
+import 'routing/trail_router.dart';
 import 'storage/json_store.dart';
 import 'tiles/tile_server.dart';
 import 'tracking/terrain_elevation.dart';
@@ -55,6 +56,7 @@ class AppServices {
     this.weather,
     this.gear,
     this.references,
+    this.trails,
   );
 
   final TileServer server;
@@ -84,6 +86,9 @@ class AppServices {
 
   /// Mosaicos vistos con conexión (no cuentan como descargados; se pueden borrar).
   final TileStore cache;
+
+  /// Camino por senderos entre dos puntos con los mapas guardados (sin conexión).
+  final TrailRouter trails;
 
   static Future<AppServices> start() async {
     final support = await getApplicationSupportDirectory();
@@ -178,6 +183,7 @@ class AppServices {
       weather,
       gear,
       references,
+      TrailRouter.fromStores([offline, cache]),
     );
   }
 }

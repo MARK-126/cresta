@@ -72,6 +72,8 @@ Cuidado:
   Tras reinstalar o reabrir la app el pid cambia: `adb forward --remove tcp:9333` y volver a enlazar. Varias
   consultas seguidas: envolver en `(()=>{ ... })()` (un `const` repetido falla). `window.cresta.cameraInfo()` da la
   cámara y la posición en pantalla de tu punto. Los errores del estilo salen en `adb logcat` como `flutter: Mapa: ...`.
+- Simular un toque en el mapa en coordenadas exactas (p. ej. en el planificador):
+  `cdp.py "window.CrestaBridge.postMessage(JSON.stringify({type:'mapTap', lng:-98.646, lat:19.088}))"`.
 - `uiautomator` (y `ui.sh`) a veces no alcanza a leer un SnackBar: si no aparece, confirmar con captura.
 - En scripts `bash -s <<'EOF'`, cada `adb shell` necesita `</dev/null` o se come el resto del script.
 - No hay `node` en WSL; Python 3 sí (con Pillow).

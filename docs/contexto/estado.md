@@ -1,6 +1,6 @@
 # Estado: qué está hecho
 
-Actualizado: 12 nov 2026 · capas de pendiente del terreno y zonas planas, sin conexión.
+Actualizado: 12 nov 2026 · fase E (1): ruta por senderos con los mapas guardados, en Dart.
 
 ## Fases
 
@@ -25,7 +25,8 @@ Actualizado: 12 nov 2026 · capas de pendiente del terreno y zonas planas, sin c
 | Experimento | Leer senderos de los mosaicos en Dart (base de la fase E) | `spike/senderos-dart` | `7c099ba` |
 | Fix mapa libre | Centrar en cada toque, nombres de calles/colonias/estados, tope de 3,000 mosaicos del topo, "Abrir ajustes" | `fix/mapa-libre` | `eefee29` |
 | Inicio | Inicio con cuatro acciones (grabar, explorar, trazar ruta, planear) y recorridos libres sin expedición | `feat/inicio` | `1ee1c41` |
-| Pendientes | Capas "Pendiente del terreno" y "Zonas planas" calculadas del relieve en el teléfono | `feat/pendientes` | (ver `git log`) |
+| Pendientes | Capas "Pendiente del terreno" y "Zonas planas" calculadas del relieve en el teléfono | `feat/pendientes` | `73fa366` |
+| Fase E (1) | Ruta A → B por senderos y calles con los mosaicos guardados (`TrailRouter`) | `feat/ruta-senderos` | (ver `git log`) |
 
 ## Por área
 
@@ -140,7 +141,18 @@ Actualizado: 12 nov 2026 · capas de pendiente del terreno y zonas planas, sin c
   (`descentMargin`; atardecer menos 2 h, bajado a múltiplo de 5 min), con botón "Usar HH:MM como hora límite", y
   avisa si la hora límite fijada deja menos.
 
-### Senderos en Dart (base de la fase E, aún sin usar en la app)
+### Ruta por senderos (fase E, parte 1: `lib/src/routing/trail_router.dart`)
+- `TrailRouter.route(a, b)`: lee los mosaicos topo de zoom 14 de la caja de a–b más un margen (½ de la distancia,
+  mín. 1.5 km; tope 600 mosaicos) de las zonas y la caché (`fromStores([offline, cache])`); si falta un z14 usa su z13.
+  En otro isolate (`findTrailPath`): recorta cada línea a su mosaico, une nodos a ~1 m, une los extremos sueltos a la
+  línea más cercana a ≤ 15 m, pega a y b a la línea más cercana a ≤ 150 m y busca con A*. Clases caminables de
+  OpenMapTiles; carreteras grandes cuestan el doble. Devuelve [a, …, b] o null.
+- El planificador (`MapScreen._snapLeg`) lo usa primero y, si da null, el ajuste a lo visible de `map.js`; si tampoco,
+  línea recta con aviso.
+- Medido: Paso de Cortés → cumbre del Izta 11.78 km en 125 ms (incluye el isolate); un tramo de la ruta real 4.56 km
+  contra 4.55.
+
+### Senderos en Dart (base de la fase E)
 - `lib/src/tiles/mvt.dart`: decodificador mínimo de mosaicos vectoriales (Mapbox Vector Tile, sin comprimir: así los
   guarda `TileStore`) y `tilePointToLngLat`. `lib/src/tiles/tile_clip.dart`: recorta cada línea al cuadro del mosaico.
 - `tool/dev/spike_senderos.dart`, `spike_ruta.dart` y `spike_zona.dart` reproducen las mediciones (ver `pruebas.md`).

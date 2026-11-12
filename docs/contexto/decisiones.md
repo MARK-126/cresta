@@ -76,6 +76,11 @@
   avalancha): bandas de 10° para leer el terreno, y una capa aparte de zonas planas (< 10°) para acampar. Se calcula
   en el WebView con `addProtocol` (como las curvas), no en Dart: no cruza el puente y ya existe el relieve ahí. Grados
   y no %, como se usa en mapas de pendiente; los avisos de la ruta siguen en % (40 % ≈ 22°).
+- **Ruta por senderos (fase E, parte 1):** en Dart y en un isolate, con los mosaicos guardados (no los que ve el
+  WebView): así encuentra caminos fuera de la pantalla y a cualquier zoom. Si no hay, se cae al ajuste de `map.js`.
+  Distancia pura con carreteras grandes ×2 (para caminar, mejor brecha que autopista); el desnivel entra en la parte 2.
+  Pegar el punto marcado a ≤ 150 m: con el dedo a zoom 12 se falla por cientos de metros, pero ese conector cuenta
+  como "con sendero", así que no conviene más.
 - **Grupo en tiempo real descartado** (no hay señal en la montaña).
 
 - **Ahorro de tokens** (pedido del usuario, 28 oct 2026): leer solo README y pendientes al empezar, graphify

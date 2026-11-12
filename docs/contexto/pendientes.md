@@ -10,7 +10,8 @@ Lo que falta **probar** está al inicio de `pruebas.md`. La lista de funciones p
 
 ## Siguiente (revisión de diseño del 12 nov 2026)
 
-1. **Fase E:** ruta A → B por senderos (grafo ya probado) y, sin sendero, por el terreno con costo de Tobler.
+1. **Fase E, parte 2:** sin sendero, por el terreno con costo de Tobler y la pendiente (ya calculada en `map.js`;
+   hay que llevarla a Dart o hacer la búsqueda allá). También: que la ruta por senderos pese el desnivel.
 2. Actualizar mapas con Wi-Fi: guardar fecha por zona y ofrecer "Actualizar" a los ~3 meses (solo el topo).
 
 Recorridos libres: falta poder pasarlos a una expedición desde su detalle. "Trazar ruta" hoy es el planificador
@@ -21,6 +22,9 @@ de mapas", "Agregar referencia") contra la regla del diseño; textos grises pequ
 descargar una zona desde la pestaña Mapas; etiqueta en el botón de "Planear ruta".
 
 ## Técnicos
+
+- Ruta por senderos: el conector del punto marcado al sendero (hasta 150 m) se marca como "con sendero"; habría que
+  separar ese pedazo como tramo recto. Con zonas Básicas (sin z14) casi no hay senderos: se cae al ajuste visible.
 
 - Pendiente/zonas planas: en el borde de cada mosaico la pendiente usa diferencias de un solo lado (no pide los
   vecinos); puede verse una costura leve. El relieve de ~30 m no ve rellanos pequeños: las "zonas planas" son
@@ -34,8 +38,6 @@ descargar una zona desde la pestaña Mapas; etiqueta en el botón de "Planear ru
 - La notificación de la hora límite solo funciona grabando y en Android; la hora no se puede fijar con la
   app cerrada.
 - En la lista de recorridos, nombres antiguos pueden repetir la fecha.
-- El ajuste a senderos solo usa lo visible y solo distancia (no desnivel). La fase E lo pasa a Dart con los mosaicos
-  de zoom 14 de toda la zona (base ya hecha: `lib/src/tiles/`).
 - Descargas de mapas: solo con la app abierta.
 
 ## Herramientas

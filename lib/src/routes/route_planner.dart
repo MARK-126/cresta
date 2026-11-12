@@ -4,7 +4,7 @@ import '../data/trail_route.dart';
 import 'planned_route.dart';
 import 'route_profile.dart';
 
-/// Busca un camino por senderos entre dos puntos, o null si no lo hay en el mapa visible.
+/// Busca un camino por senderos entre dos puntos, o null si no lo encuentra.
 typedef SnapLeg = Future<List<LngLat>?> Function(LngLat from, LngLat to);
 
 enum _Step { point, poi }
@@ -80,7 +80,7 @@ class RoutePlanner extends ChangeNotifier {
     if (snapToTrails) {
       path = await snap(from, p);
       if (path == null) {
-        notice = 'No encontré un sendero entre esos puntos en lo que se ve del mapa: el tramo va en línea recta.';
+        notice = 'No encontré un sendero entre esos puntos en tus mapas descargados ni en lo que se ve: el tramo va en línea recta.';
       }
     }
     waypoints.add(p);

@@ -249,13 +249,18 @@ class _MapScreenState extends State<MapScreen> {
 
   // ------------------------------------------------------------ Planificar ruta
 
+  /// Tramo por senderos: primero con los mapas guardados (fase E, todo el camino aunque no
+  /// se vea); si ahí no hay, con lo que muestra el mapa en pantalla.
+  Future<List<LngLat>?> _snapLeg(LngLat from, LngLat to) async =>
+      await _services.trails.route(from, to) ?? await _bridge.snapLeg(from, to);
+
   void _startPlanning() {
     if (_recordingHere) return;
     _bridge.stopFly();
     final saved = _savedRoute;
     final route = _route;
     final planner = RoutePlanner(
-      snap: _bridge.snapLeg,
+      snap: _snapLeg,
       elevation: _services.terrain.at,
       // Sin ruta guardada pero con la de ejemplo: se parte de ella para poder ajustarla
       initial:

@@ -31,7 +31,8 @@ Detalles técnicos en `estado.md`; qué se probó en `pruebas.md`.
 - Aviso al salirse de la ruta planeada.
 - Exportar recorridos a GPX.
 - Bitácora de todos los recorridos y resumen personal (semana, mes, altitud máxima, desnivel por semana).
-- Planificar rutas tocando el mapa, ajustadas a los senderos (donde OpenStreetMap los tiene).
+- Planificar rutas tocando el mapa, ajustadas a los senderos (donde OpenStreetMap los tiene): con los mapas
+  descargados busca el camino completo por senderos y calles entre dos puntos, aunque no se vea en pantalla.
 - Puntos de interés en la ruta: agua, campamento, refugio, cumbre, punto de no retorno, peligro.
 - Detalle de la ruta: cifras, perfil de elevación y hora estimada de llegada a cada punto.
 - Importar rutas GPX y KML; exportar rutas a GPX.
@@ -48,7 +49,7 @@ Detalles técnicos en `estado.md`; qué se probó en `pruebas.md`.
 ## Por implementar
 
 De la revisión del 12 nov 2026 (detalle en `pendientes.md`):
-- Ruta A → B: por senderos y calles; sin sendero, por el terreno buscando lo más llano.
+- Ruta A → B sin sendero: por el terreno buscando lo más llano (parte 2 de la fase E).
 - Actualizar mapas descargados al haber Wi-Fi.
 - Volver por mi traza (guía de regreso por el recorrido grabado).
 - Tiempo restante y hora de llegada en vivo (Tobler) comparados con la hora límite.
