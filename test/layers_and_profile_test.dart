@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:cresta/src/data/trail_route.dart';
 import 'package:cresta/src/map/map_layers.dart';
 import 'package:cresta/src/ui/elevation_profile.dart';
@@ -14,6 +16,18 @@ void main() {
     expect(c['zones'], isTrue);
     expect(c['route'], isFalse);
     expect(m.keys.toSet(), mapLayers.map((l) => l.id).toSet());
+    // Pendiente y zonas planas: apagadas al entrar (tapan el mapa base)
+    expect(m['slope'], isFalse);
+    expect(m['flat'], isFalse);
+  });
+
+  test('cada capa de la lista existe en map.js', () {
+    final js = File('assets/web/map.js').readAsStringSync();
+    final start = js.indexOf('const LAYER_MAP');
+    final block = js.substring(start, js.indexOf('};', start));
+    for (final l in mapLayers) {
+      expect(block, contains('${l.id}: {'), reason: l.id);
+    }
   });
 
   test('formatos', () {

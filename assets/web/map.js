@@ -57,6 +57,83 @@
     elevationKey: 'ele', levelKey: 'level', contourLayer: 'contours',
   });
 
+  // --- Pendiente del terreno calculada en el teléfono a partir del relieve (sin conexión, en cualquier zona
+  // descargada). slope://<modo>/z/x/y: "slope" colorea por grados; "flat" solo marca lo casi plano.
+  // El relieve es de ~30 m por píxel: suaviza escalones cortos y no ve rellanos de pocos metros.
+  const SLOPE_CLASSES = {
+    slope: [[10, [76, 175, 80, 90]], [20, [240, 200, 60, 115]], [30, [245, 140, 50, 130]], [40, [220, 60, 50, 140]], [91, [120, 50, 140, 150]]],
+    flat: [[5, [70, 234, 229, 150]], [10, [70, 234, 229, 80]], [91, [0, 0, 0, 0]]],
+  };
+  const demUrl = (z, x, y) => `${ORIGIN}/tiles/dem/${z}/${x}/${y}`;
+  const slopeCache = new Map(); // grados por píxel de los mosaicos de relieve ya leídos
+
+  /// Grados de pendiente de cada píxel de un mosaico de relieve (null si no está descargado).
+  async function slopeGrid(z, x, y, signal) {
+    const key = `${z}/${x}/${y}`;
+    if (slopeCache.has(key)) return slopeCache.get(key);
+    const res = await fetch(demUrl(z, x, y), { signal });
+    if (!res.ok || res.status === 204) return null;
+    const bmp = await createImageBitmap(await res.blob());
+    const n = bmp.width;
+    const ctx = new OffscreenCanvas(n, n).getContext('2d', { willReadFrequently: true });
+    ctx.drawImage(bmp, 0, 0);
+    const px = ctx.getImageData(0, 0, n, n).data;
+    const ele = new Float32Array(n * n);
+    for (let i = 0; i < n * n; i++) ele[i] = px[i * 4] * 256 + px[i * 4 + 1] + px[i * 4 + 2] / 256 - 32768;
+    // Metros por píxel a la latitud del centro del mosaico (Web Mercator)
+    const lat = Math.atan(Math.sinh(Math.PI * (1 - 2 * (y + 0.5) / 2 ** z)));
+    const m = 40075016.686 * Math.cos(lat) / (n * 2 ** z);
+    const deg = new Float32Array(n * n);
+    for (let r = 0; r < n; r++) {
+      for (let c = 0; c < n; c++) {
+        // Diferencias centrales; en el borde, de un solo lado (no se piden los mosaicos vecinos)
+        const c0 = Math.max(0, c - 1), c1 = Math.min(n - 1, c + 1), r0 = Math.max(0, r - 1), r1 = Math.min(n - 1, r + 1);
+        const dx = (ele[r * n + c1] - ele[r * n + c0]) / ((c1 - c0) * m);
+        const dy = (ele[r1 * n + c] - ele[r0 * n + c]) / ((r1 - r0) * m);
+        deg[r * n + c] = Math.atan(Math.hypot(dx, dy)) * 180 / Math.PI;
+      }
+    }
+    const grid = { n, deg };
+    if (slopeCache.size > 64) slopeCache.delete(slopeCache.keys().next().value);
+    slopeCache.set(key, grid);
+    return grid;
+  }
+
+  /// El mosaico pedido o, si no está (p. ej. zona Básica sin z12), el ancestro más cercano y qué parte usar.
+  async function slopeSource(z, x, y, signal) {
+    for (let k = 0; z - k >= 8; k++) {
+      const grid = await slopeGrid(z - k, x >> k, y >> k, signal);
+      if (grid) {
+        const size = grid.n >> k;
+        return { grid, sx: (x - ((x >> k) << k)) * size, sy: (y - ((y >> k) << k)) * size, size: Math.max(1, size) };
+      }
+    }
+    return null;
+  }
+
+  maplibregl.addProtocol('slope', async (params, abort) => {
+    const [, mode, z, x, y] = params.url.match(/^slope:\/\/(\w+)\/(\d+)\/(\d+)\/(\d+)/).map((v, i) => (i > 1 ? +v : v));
+    const src = await slopeSource(z, x, y, abort.signal);
+    if (!src) throw new Error('sin relieve');
+    const { grid, sx, sy, size } = src;
+    const classes = SLOPE_CLASSES[mode];
+    const img = new ImageData(size, size);
+    for (let r = 0; r < size; r++) {
+      for (let c = 0; c < size; c++) {
+        const d = grid.deg[(sy + r) * grid.n + sx + c];
+        const rgba = classes.find(([max]) => d < max)[1];
+        img.data.set(rgba, (r * size + c) * 4);
+      }
+    }
+    const small = new OffscreenCanvas(size, size);
+    small.getContext('2d').putImageData(img, 0, 0);
+    const out = new OffscreenCanvas(256, 256);
+    const octx = out.getContext('2d');
+    octx.imageSmoothingEnabled = false; // clases nítidas al ampliar un mosaico padre
+    octx.drawImage(small, 0, 0, 256, 256);
+    return { data: await (await out.convertToBlob({ type: 'image/png' })).arrayBuffer() };
+  });
+
   // --- Estilo. Capas base (cambian con el mapa base) y capas superpuestas (las enciende el usuario).
   const C = {
     land: '#f2efe6', wood: '#cfe1bd', grass: '#e3ebcb', rock: '#e2ddd5', ice: '#fbfdff', sand: '#efe5c6', wetland: '#d3e6df',
@@ -86,6 +163,8 @@
         hs: { type: 'raster-dem', tiles: [`${ORIGIN}/tiles/dem/{z}/{x}/{y}`], tileSize: 256, maxzoom: 12, encoding: 'terrarium' },
         topo: { type: 'vector', tiles: [`${ORIGIN}/tiles/topo/{z}/{x}/{y}`], maxzoom: 14, attribution: '© OpenMapTiles © colaboradores de OpenStreetMap' },
         contours: { type: 'vector', tiles: [contourTiles], maxzoom: 15 },
+        slope: { type: 'raster', tiles: ['slope://slope/{z}/{x}/{y}'], tileSize: 256, minzoom: 8, maxzoom: 12 },
+        flat: { type: 'raster', tiles: ['slope://flat/{z}/{x}/{y}'], tileSize: 256, minzoom: 8, maxzoom: 12 },
         route: { type: 'geojson', data: empty },
         compare: { type: 'geojson', data: empty },
         plan: { type: 'geojson', data: empty },
@@ -114,6 +193,8 @@
         { id: 'waterway', type: 'line', source: 'topo', 'source-layer': 'waterway', paint: { 'line-color': C.waterway, 'line-width': ['interpolate', ['linear'], ['zoom'], 10, 0.5, 15, 2] } },
         { id: 'buildings', type: 'fill', source: 'topo', 'source-layer': 'building', minzoom: 13, paint: { 'fill-color': '#d6cdbf' } },
         // Superpuestas
+        { id: 'slope', type: 'raster', source: 'slope', layout: { visibility: 'none' }, paint: { 'raster-fade-duration': 0 } },
+        { id: 'flat', type: 'raster', source: 'flat', layout: { visibility: 'none' }, paint: { 'raster-fade-duration': 0 } },
         { id: 'zones-fill', type: 'fill', source: 'zones', layout: { visibility: 'none' }, paint: { 'fill-color': ['get', 'color'], 'fill-opacity': 0.24 } },
         { id: 'zones-line', type: 'line', source: 'zones', layout: { visibility: 'none' }, paint: { 'line-color': ['get', 'color'], 'line-width': 2 } },
         { id: 'ash', type: 'fill', source: 'ash', layout: { visibility: 'none' }, paint: { 'fill-color': '#6d7378', 'fill-opacity': 0.35, 'fill-outline-color': '#3e4347' } },
@@ -212,6 +293,8 @@
     contours: { layers: ['contours', 'contour-labels'] },
     labels: { layers: ['peaks', 'peaks-dot', 'places', 'places-minor', 'places-region', 'road-names', 'water-names', 'boundaries'] },
     hillshade: { layers: ['hillshade'] },
+    slope: { layers: ['slope'] },
+    flat: { layers: ['flat'] },
     regions: { layers: ['regions-line'] },
     zones: { layers: ['zones-fill', 'zones-line'] },
     ash: { layers: ['ash'] },
@@ -554,6 +637,13 @@
       map.flyTo({ essential: true, center: [lng, lat], zoom, padding, pitch: is3d ? (pitch ?? map.getPitch()) : 0, ...(bearingDeg == null ? {} : { bearing: bearingDeg }), duration: ms(1600) });
     },
     jumpTo(lng, lat, zoom) { map.jumpTo({ center: [lng, lat], zoom }); },
+    // Para pruebas: grados de pendiente del relieve en un punto (null si no hay relieve)
+    async slopeAt(lng, lat, z = 12) {
+      const n = 2 ** z, xf = (lng + 180) / 360 * n;
+      const yf = (1 - Math.log(Math.tan(lat * Math.PI / 180) + 1 / Math.cos(lat * Math.PI / 180)) / Math.PI) / 2 * n;
+      const g = await slopeGrid(z, Math.floor(xf), Math.floor(yf));
+      return g && Math.round(g.deg[Math.floor((yf % 1) * g.n) * g.n + Math.floor((xf % 1) * g.n)] * 10) / 10;
+    },
     // Para pruebas (tool/dev/cdp.py): dónde está la cámara y dónde se dibuja tu posición
     cameraInfo() {
       const c = map.getCenter(), m = me && map.project(me.getLngLat());
@@ -622,6 +712,6 @@
   map.on('error', (e) => {
     const message = String(e.error && e.error.message);
     // Los mosaicos que faltan sin conexión son normales; solo se reportan los demás errores
-    if (!/tiles\/|204|Failed to fetch|AJAXError/.test(message)) emit('error', { message });
+    if (!/tiles\/|204|Failed to fetch|AJAXError|sin relieve/.test(message)) emit('error', { message });
   });
 })();

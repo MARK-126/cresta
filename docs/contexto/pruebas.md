@@ -15,6 +15,15 @@ Teléfono de pruebas: Samsung Galaxy S23 Ultra (SM-S918B), Android 16, salvo que
 
 ## 2026-11-12
 
+**Pendiente del terreno y zonas planas · `feat/pendientes`** (S23, ejemplo del Izta)
+- Capa "Pendiente del terreno" a z12.5 en 3D: colores por grados sobre todo el macizo, sin errores en el log. **OK**.
+- Valores (`slopeAt`): Paso de Cortés 2.3° (collado plano), borde del cráter del Popo 30.5°, una ladera del Izta 19.6°.
+  El mismo píxel calculado aparte en Python con el mosaico sacado del teléfono (`run-as`, 36.1 m/píxel): 19.6°. **OK**.
+- "Zonas planas" desde la lista de capas: la leyenda (menos de 5° · 5–10°) sale al encenderla; en el mapa marca valles,
+  llanos y la parte alta del Izta. **OK**.
+- Pruebas automáticas: 138 en verde (nueva: cada capa de Dart existe en `LAYER_MAP` de `map.js`; pendiente y planas
+  apagadas al entrar).
+
 **Inicio nuevo y recorridos libres · `feat/inicio`** (S23, puerto inalámbrico nuevo `192.168.100.3:45425`)
 - Inicio: "¿Qué quieres hacer?" con las cuatro tarjetas en 2 × 2 y "TUS EXPEDICIONES · 3 · 3 listas sin conexión". **OK**.
 - "Grabar · Desde aquí": abrió el mapa libre con el selector de modo; con Normal empezó a grabar ("GRABANDO", GPS ±15 m,

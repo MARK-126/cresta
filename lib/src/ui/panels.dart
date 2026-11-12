@@ -481,7 +481,19 @@ class LayerList extends StatelessWidget {
               value: states[l.id] ?? false,
               onChanged: (v) => onChanged(l.id, v ?? false),
               title: Text(l.name),
-              subtitle: l.note == null ? null : Text(l.note!),
+              subtitle: l.note == null && l.legend.isEmpty
+                  ? null
+                  : Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        if (l.note != null) Text(l.note!),
+                        if (l.legend.isNotEmpty && (states[l.id] ?? false))
+                          Padding(
+                            padding: const EdgeInsets.only(top: 6),
+                            child: _Legend(l.legend),
+                          ),
+                      ],
+                    ),
               secondary: Container(
                 width: 22,
                 height: 10,
@@ -495,6 +507,36 @@ class LayerList extends StatelessWidget {
       ],
     );
   }
+}
+
+/// Muestras de color con su significado (leyenda de una capa).
+class _Legend extends StatelessWidget {
+  const _Legend(this.items);
+  final List<(Color, String)> items;
+
+  @override
+  Widget build(BuildContext context) => Wrap(
+    spacing: 10,
+    runSpacing: 4,
+    children: [
+      for (final (color, label) in items)
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 12,
+              height: 12,
+              decoration: BoxDecoration(
+                color: color,
+                borderRadius: BorderRadius.circular(3),
+              ),
+            ),
+            const SizedBox(width: 4),
+            Text(label, style: const TextStyle(fontSize: 12)),
+          ],
+        ),
+    ],
+  );
 }
 
 Color hexColor(String hex) =>

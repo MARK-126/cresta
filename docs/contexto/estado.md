@@ -1,6 +1,6 @@
 # Estado: qué está hecho
 
-Actualizado: 12 nov 2026 · inicio con cuatro acciones y recorridos libres (sin expedición).
+Actualizado: 12 nov 2026 · capas de pendiente del terreno y zonas planas, sin conexión.
 
 ## Fases
 
@@ -24,7 +24,8 @@ Actualizado: 12 nov 2026 · inicio con cuatro acciones y recorridos libres (sin 
 | Fase 5 · hora límite | Botón para quitarla (con Deshacer) y selector solo de reloj | `feat/quitar-hora-limite` | `18a5a46` |
 | Experimento | Leer senderos de los mosaicos en Dart (base de la fase E) | `spike/senderos-dart` | `7c099ba` |
 | Fix mapa libre | Centrar en cada toque, nombres de calles/colonias/estados, tope de 3,000 mosaicos del topo, "Abrir ajustes" | `fix/mapa-libre` | `eefee29` |
-| Inicio | Inicio con cuatro acciones (grabar, explorar, trazar ruta, planear) y recorridos libres sin expedición | `feat/inicio` | (ver `git log`) |
+| Inicio | Inicio con cuatro acciones (grabar, explorar, trazar ruta, planear) y recorridos libres sin expedición | `feat/inicio` | `1ee1c41` |
+| Pendientes | Capas "Pendiente del terreno" y "Zonas planas" calculadas del relieve en el teléfono | `feat/pendientes` | (ver `git log`) |
 
 ## Por área
 
@@ -41,6 +42,12 @@ Actualizado: 12 nov 2026 · inicio con cuatro acciones y recorridos libres (sin 
 - **Mi ubicación** (`_locateMe` en `map_screen.dart`): centra en cada toque (última lectura, o la última conocida del
   teléfono mientras llega una nueva) sin cambiar la inclinación. El margen inferior sigue la altura del panel
   (`_onSheet` → `setPadding`). En el mapa libre el panel abre al 26 % (en expediciones, 38 %).
+- **Pendiente y zonas planas** (`map.js`, protocolo `slope://<modo>/z/x/y`): lee el mosaico de relieve del servidor
+  local, calcula los grados de cada píxel (diferencias centrales, metros por píxel a la latitud del mosaico) y lo
+  colorea (`SLOPE_CLASSES`): pendiente < 10° verde, 10–20 amarillo, 20–30 naranja, 30–40 rojo, > 40 morado; planas
+  < 5° cian fuerte y 5–10° cian suave. Fuentes raster z8–12; si falta el z12 (zona Básica) usa el ancestro ampliado.
+  Caché de 64 mosaicos. Capas `slope` y `flat` en `map_layers.dart`, apagadas al entrar, con leyenda (`MapLayer.legend`).
+  `window.cresta.slopeAt(lng, lat, z)` da los grados en un punto (pruebas).
 - `window.cresta.cameraInfo()` (para `cdp.py`): centro, zoom, inclinación, margen y dónde se dibuja tu posición.
 
 ### Expediciones (`lib/src/expeditions/`, `ui/expedition_screen.dart`)

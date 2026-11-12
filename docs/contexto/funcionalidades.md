@@ -6,6 +6,7 @@ Detalles técnicos en `estado.md`; qué se probó en `pruebas.md`.
 ## Ya funcionan
 
 - Mapa 2D y 3D con relieve, curvas de nivel, satélite, topográfico y relieve sombreado.
+- Pendiente del terreno por colores (cada 10°) y zonas planas (< 10°) para acampar, sin conexión.
 - Descargar mapas de cualquier zona del mundo para usarlos sin señal; gestor de mapas descargados.
 - Buscador de lugares (cumbres, parques, pueblos).
 - Nombres en el mapa según el zoom: calles, caminos y senderos; colonias y parajes; pueblos; estados y países.
@@ -47,7 +48,6 @@ Detalles técnicos en `estado.md`; qué se probó en `pruebas.md`.
 ## Por implementar
 
 De la revisión del 12 nov 2026 (detalle en `pendientes.md`):
-- Capa de pendientes por ángulo (avalanchas) y de zonas planas (acampar, descansar).
 - Ruta A → B: por senderos y calles; sin sendero, por el terreno buscando lo más llano.
 - Actualizar mapas descargados al haber Wi-Fi.
 - Volver por mi traza (guía de regreso por el recorrido grabado).

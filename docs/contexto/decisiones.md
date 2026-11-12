@@ -72,6 +72,10 @@
 - **Inicio (12 nov 2026):** primero qué hacer (de lo inmediato a lo planeado: grabar, explorar, trazar, planear) y
   luego las expediciones; antes solo invitaba a planear. **Recorridos libres** como las rutas sueltas (fase A):
   `expeditionId` opcional en vez de una expedición automática, para no llenar la lista de expediciones vacías.
+- **Pendiente sin franja de avalanchas** (pedido del usuario, 12 nov 2026: en Argentina casi no hay riesgo de
+  avalancha): bandas de 10° para leer el terreno, y una capa aparte de zonas planas (< 10°) para acampar. Se calcula
+  en el WebView con `addProtocol` (como las curvas), no en Dart: no cruza el puente y ya existe el relieve ahí. Grados
+  y no %, como se usa en mapas de pendiente; los avisos de la ruta siguen en % (40 % ≈ 22°).
 - **Grupo en tiempo real descartado** (no hay señal en la montaña).
 
 - **Ahorro de tokens** (pedido del usuario, 28 oct 2026): leer solo README y pendientes al empezar, graphify

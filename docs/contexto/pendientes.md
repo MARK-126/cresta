@@ -10,9 +10,8 @@ Lo que falta **probar** está al inicio de `pruebas.md`. La lista de funciones p
 
 ## Siguiente (revisión de diseño del 12 nov 2026)
 
-1. **Capa de pendientes y zonas planas** calculada del relieve (franjas < 10°, 10–20, 20–30, 30–45 de avalancha, > 45).
-2. **Fase E:** ruta A → B por senderos (grafo ya probado) y, sin sendero, por el terreno con costo de Tobler.
-3. Actualizar mapas con Wi-Fi: guardar fecha por zona y ofrecer "Actualizar" a los ~3 meses (solo el topo).
+1. **Fase E:** ruta A → B por senderos (grafo ya probado) y, sin sendero, por el terreno con costo de Tobler.
+2. Actualizar mapas con Wi-Fi: guardar fecha por zona y ofrecer "Actualizar" a los ~3 meses (solo el topo).
 
 Recorridos libres: falta poder pasarlos a una expedición desde su detalle. "Trazar ruta" hoy es el planificador
 de siempre (ajuste a lo visible); la fase E lo vuelve una búsqueda completa.
@@ -22,6 +21,10 @@ de mapas", "Agregar referencia") contra la regla del diseño; textos grises pequ
 descargar una zona desde la pestaña Mapas; etiqueta en el botón de "Planear ruta".
 
 ## Técnicos
+
+- Pendiente/zonas planas: en el borde de cada mosaico la pendiente usa diferencias de un solo lado (no pide los
+  vecinos); puede verse una costura leve. El relieve de ~30 m no ve rellanos pequeños: las "zonas planas" son
+  candidatas, no garantía.
 
 - En ciudades la capa de senderos dibuja banquetas y andadores (`path`) en rojo punteado: mucho ruido. Quizá ocultar
   `footway`/`sidewalk` o mostrar senderos urbanos solo de cerca.

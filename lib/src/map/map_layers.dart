@@ -22,6 +22,7 @@ class MapLayer {
     this.color, {
     this.note,
     this.needsRoute = false,
+    this.legend = const [],
   });
 
   final String id;
@@ -32,6 +33,9 @@ class MapLayer {
 
   /// Solo tiene sentido si la expedición tiene ruta.
   final bool needsRoute;
+
+  /// Colores y su significado, que se muestran con la capa encendida.
+  final List<(Color, String)> legend;
 }
 
 const mapLayers = <MapLayer>[
@@ -61,6 +65,29 @@ const mapLayers = <MapLayer>[
     'Curvas de nivel',
     Color(0xFFA9825A),
     note: 'calculadas del relieve',
+  ),
+  // Calculadas en el teléfono del relieve (mismos colores que SLOPE_CLASSES de map.js)
+  MapLayer(
+    'slope',
+    LayerGroup.mountain,
+    'Pendiente del terreno',
+    Color(0xFFF58C32),
+    note: 'calculada del relieve (~30 m por píxel)',
+    legend: [
+      (Color(0xFF4CAF50), '< 10°'),
+      (Color(0xFFF0C83C), '10–20°'),
+      (Color(0xFFF58C32), '20–30°'),
+      (Color(0xFFDC3C32), '30–40°'),
+      (Color(0xFF78328C), '> 40°'),
+    ],
+  ),
+  MapLayer(
+    'flat',
+    LayerGroup.mountain,
+    'Zonas planas',
+    Color(0xFF46EAE5),
+    note: 'para acampar o descansar; revísalas en el lugar',
+    legend: [(Color(0xFF46EAE5), 'menos de 5°'), (Color(0xFF2A8C89), '5–10°')],
   ),
   MapLayer(
     'labels',
