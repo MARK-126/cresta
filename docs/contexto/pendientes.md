@@ -15,9 +15,8 @@ Lo que falta **probar** está al inicio de `pruebas.md`. La lista de funciones p
 Recorridos libres: falta poder pasarlos a una expedición desde su detalle. "Trazar ruta" hoy es el planificador
 de siempre (ajuste a lo visible); la fase E lo vuelve una búsqueda completa.
 
-Otros de la revisión: botones con borde de 1 px en la expedición ("Armar lista de equipo", "Actualizar", "Agregar zona
-de mapas", "Agregar referencia") contra la regla del diseño; textos grises pequeños con poco contraste para el sol;
-descargar una zona desde la pestaña Mapas; etiqueta en el botón de "Planear ruta".
+De la revisión queda: probar al sol si las etiquetas de 10–11 px se leen (el contraste ya es AAA). El botón de
+"Planear ruta" del mapa usa el ícono de "Trazar ruta" del inicio; sigue sin texto (tiene ayuda al mantenerlo).
 
 ## Técnicos
 

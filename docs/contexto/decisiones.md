@@ -100,7 +100,8 @@
   exportación está en el escritorio del usuario: `stitch_live_geolocation_tracking.zip`).
 - **Solo oscuro.** Pizarra `#0E1416`; Cian Cumbre `#46EAE5` = acción, rastreo, listo; Oro Inca `#F0BF63` =
   importante, pendiente; Terracota `#FFA089` = alertas, grabación, SOS. Tokens en `Andes` (`theme.dart`).
-- Sin bordes de 1 px ni sombras: bloques por tono (`TonalCard` con barra de acento). Cifras con `Figure` /
+- Sin bordes de 1 px ni sombras: bloques por tono (desde el 12 nov 2026 también los botones secundarios: el "borde
+  fantasma" al 35 % se quitó) (`TonalCard` con barra de acento). Cifras con `Figure` /
   `dataStyle` (Inter, números tabulares). Botón principal `GlowButton`. Sobre el mapa, `Glass`; el panel
   inferior del mapa es **opaco**.
 - Inter incluida en la app (OFL). Mapa base claro (topográfico) a propósito, por legibilidad del relieve.
@@ -110,6 +111,10 @@
 - Ícono generado con `tool/make_icon.py`; adaptativo y monocromático en Android 8+/13.
 
 ## Errores resueltos (síntoma → causa → solución)
+
+- **"Textos grises con poco contraste" (revisión del 12 nov 2026)** → no era cierto: medido, `onSurfaceVariant`
+  da 7.3–10.9:1 sobre los fondos (AAA) y `outline` 3.9–5.9:1; la impresión venía de capturas a la mitad → no se
+  cambió. Si con sol cuesta leer, lo que pesa es el tamaño (etiquetas de 10–11 px), no el color.
 
 - **"Mi ubicación" solo centraba la primera vez** → `_locating` nunca volvía a `false` y el vuelo solo iba en la
   primera lectura → centra en cada toque con la última lectura (o `getLastKnownPosition` mientras llega una).

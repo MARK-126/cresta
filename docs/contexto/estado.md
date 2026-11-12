@@ -1,6 +1,6 @@
 # Estado: qué está hecho
 
-Actualizado: 12 nov 2026 · fase E (2): ruta a campo traviesa por el relieve y senderos con desnivel (Tobler).
+Actualizado: 12 nov 2026 · ajustes de la revisión de diseño: botones tonales, descargar zona desde Mapas.
 
 ## Fases
 
@@ -27,7 +27,8 @@ Actualizado: 12 nov 2026 · fase E (2): ruta a campo traviesa por el relieve y s
 | Inicio | Inicio con cuatro acciones (grabar, explorar, trazar ruta, planear) y recorridos libres sin expedición | `feat/inicio` | `1ee1c41` |
 | Pendientes | Capas "Pendiente del terreno" y "Zonas planas" calculadas del relieve en el teléfono | `feat/pendientes` | `73fa366` |
 | Fase E (1) | Ruta A → B por senderos y calles con los mosaicos guardados (`TrailRouter`) | `feat/ruta-senderos` | `0cb231b` |
-| Fase E (2) | Ruta a campo traviesa sobre el relieve y senderos por tiempo (Tobler) | `feat/ruta-terreno` | (ver `git log`) |
+| Fase E (2) | Ruta a campo traviesa sobre el relieve y senderos por tiempo (Tobler) | `feat/ruta-terreno` | `1fd44ab` |
+| Diseño | Botones tonales sin borde, "Descargar una zona" en Mapas, ícono de ruta unificado | `fix/diseno-revision` | (ver `git log`) |
 
 ## Por área
 
@@ -174,6 +175,9 @@ Actualizado: 12 nov 2026 · fase E (2): ruta a campo traviesa por el relieve y s
   `Z` (zoom), `CLIP`, `MODE` (`ends`, `border`), `TAU`, `LINK`, `DUMP`.
 
 ### Interfaz
+- Botones secundarios (`OutlinedButton`, 23 en la app): tonales `surfaceHighest` sin borde, desde el tema.
+- Pestaña Mapas: "Descargar una zona" abre `AreaPickerScreen()` sin expedición (zona suelta, centrada en la última
+  descargada); la lista escucha también a `maps`.
 - Pestañas: Expediciones · Bitácora · Resumen · Mapas (`ui/home_shell.dart`).
 - Inicio (`ui/expeditions_screen.dart`): "¿Qué quieres hacer?" con cuatro tarjetas (`_Actions`, `_ActionTile`):
   Grabar · Desde aquí (terracota), Explorar · Mapa libre (cian), Trazar ruta · De A a B (oro, abre el mapa libre en

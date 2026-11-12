@@ -7,7 +7,8 @@ Detalles técnicos en `estado.md`; qué se probó en `pruebas.md`.
 
 - Mapa 2D y 3D con relieve, curvas de nivel, satélite, topográfico y relieve sombreado.
 - Pendiente del terreno por colores (cada 10°) y zonas planas (< 10°) para acampar, sin conexión.
-- Descargar mapas de cualquier zona del mundo para usarlos sin señal; gestor de mapas descargados.
+- Descargar mapas de cualquier zona del mundo para usarlos sin señal, desde una expedición o directo en la pestaña
+  Mapas; gestor de mapas descargados.
 - Buscador de lugares (cumbres, parques, pueblos).
 - Nombres en el mapa según el zoom: calles, caminos y senderos; colonias y parajes; pueblos; estados y países.
 - "Mi ubicación" centra en cada toque, en la parte del mapa que no tapa el panel; si la ubicación está apagada, el

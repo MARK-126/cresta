@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../app_services.dart';
 import '../offline/offline_region.dart';
+import 'area_picker_screen.dart';
 import 'format.dart';
 import 'offline_widgets.dart';
 import 'panels.dart';
@@ -34,7 +35,8 @@ class _DownloadsScreenState extends State<DownloadsScreen> {
     final services = AppScope.of(context);
     final maps = services.maps;
     return ListenableBuilder(
-      listenable: services.expeditions,
+      // También los mapas: una zona nueva sin expedición no avisa por las expediciones
+      listenable: Listenable.merge([services.expeditions, maps]),
       builder: (context, _) {
         final regions = maps.regions;
         final total = regions.fold(0, (s, r) => s + r.bytes);
@@ -98,9 +100,21 @@ class _DownloadsScreenState extends State<DownloadsScreen> {
                   ),
                 ),
                 const SectionTitle('Zonas'),
+                // Zona suelta: sirve en el mapa libre y en las rutas sin crear una expedición
+                FilledButton.tonalIcon(
+                  onPressed: () => Navigator.push(
+                    context,
+                    MaterialPageRoute<void>(
+                      builder: (_) => const AreaPickerScreen(),
+                    ),
+                  ),
+                  icon: const Icon(Icons.download_for_offline_outlined),
+                  label: const Text('Descargar una zona'),
+                ),
+                const SizedBox(height: 12),
                 if (regions.isEmpty)
                   Text(
-                    'No hay zonas descargadas. Agrégalas desde una expedición.',
+                    'No hay zonas descargadas. Elige una aquí o desde una expedición.',
                     style: TextStyle(color: muted),
                   ),
                 for (final r in regions)

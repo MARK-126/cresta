@@ -948,7 +948,8 @@ class _MapScreenState extends State<MapScreen> {
                             !_comparing) ...[
                           const SizedBox(height: 8),
                           _MapButton(
-                            icon: Icons.edit_road_rounded,
+                            // Mismo ícono que "Trazar ruta" del inicio
+                            icon: Icons.route_rounded,
                             color: Andes.gold,
                             tooltip: _route == null
                                 ? 'Planear ruta'

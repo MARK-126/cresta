@@ -138,8 +138,10 @@ ThemeData crestaTheme({bool civil = false}) {
         shape: rounded12,
         foregroundColor: Andes.onSurface,
         textStyle: buttonText,
-        // "Borde fantasma": se siente, no se ve
-        side: BorderSide(color: Andes.outline.withValues(alpha: .35)),
+        // Tonal, sin borde (regla "Andes Industrial": bloques por tono, nada de 1 px)
+        backgroundColor: Andes.surfaceHighest,
+        disabledBackgroundColor: Andes.surfaceHigh,
+        side: BorderSide.none,
       ),
     ),
     textButtonTheme: TextButtonThemeData(

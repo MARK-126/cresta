@@ -16,8 +16,11 @@ import 'theme.dart';
 
 /// Elegir una zona en el mapa y descargarla: lo que queda dentro del recuadro es lo que se baja.
 class AreaPickerScreen extends StatefulWidget {
-  const AreaPickerScreen({super.key, required this.expeditionId});
-  final String expeditionId;
+  const AreaPickerScreen({super.key, this.expeditionId});
+
+  /// Expedición a la que se suma la zona; null desde la pestaña Mapas (zona suelta,
+  /// que igual sirve en el mapa libre y en las rutas).
+  final String? expeditionId;
 
   @override
   State<AreaPickerScreen> createState() => _AreaPickerScreenState();
@@ -72,8 +75,9 @@ class _AreaPickerScreenState extends State<AreaPickerScreen> {
       });
       await _bridge.setRegions(services.maps.regions);
       final e = services.expeditions.byId(widget.expeditionId);
+      // Sin expedición: donde quedó la última zona descargada
       final existing = e == null
-          ? null
+          ? services.maps.regions.lastOrNull?.bbox
           : services.expeditions.statusOf(e).bounds;
       if (existing != null) {
         await _bridge.fitBounds(existing.expandKm(3));

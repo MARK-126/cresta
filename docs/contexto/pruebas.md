@@ -15,6 +15,14 @@ Teléfono de pruebas: Samsung Galaxy S23 Ultra (SM-S918B), Android 16, salvo que
 
 ## 2026-11-12
 
+**Ajustes de diseño · `fix/diseno-revision`**
+- Expedición de ejemplo: "Armar lista de equipo", "Actualizar", "Agregar zona de mapas" y "Agregar referencia" ya son
+  bloques tonales sin borde. **OK**.
+- Mapas: "Descargar una zona" arriba de la lista; abre "NUEVA ZONA" centrada en la última zona (el salto), 10 × 11 km,
+  138 mosaicos. Salí sin descargar. **OK**.
+- Contraste medido (WCAG): `onSurfaceVariant` 7.3–10.9:1, `outline` 3.9–5.9:1, oro 7.2–10.9:1. No se cambió.
+- 151 pruebas en verde.
+
 **Ruta a campo traviesa y senderos con desnivel (fase E, parte 2) · `feat/ruta-terreno`**
 - Pruebas automáticas: Tobler; ida y vuelta píxel ↔ coordenadas; en lo plano va recto (±2 %); rodea un cono de 500 m
   (no pasa de 3,200 m); cruza una pared de 300 m solo por su hueco; sin paso o sin relieve → null; relieve real del
