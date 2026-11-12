@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 
 import '../app_services.dart';
@@ -104,12 +106,17 @@ class ExpeditionsScreen extends StatelessWidget {
 }
 
 /// Pide nombre y fecha y crea la expedición; null si el usuario cancela.
-Future<Expedition?> askNewExpedition(BuildContext context) async {
+/// [name] y [date] llenan el formulario de antemano (p. ej. con los de un recorrido).
+Future<Expedition?> askNewExpedition(
+  BuildContext context, {
+  String? name,
+  DateTime? date,
+}) async {
   final result = await showModalBottomSheet<(String, DateTime?)>(
     context: context,
     isScrollControlled: true,
     showDragHandle: true,
-    builder: (_) => const ExpeditionForm(),
+    builder: (_) => ExpeditionForm(initialName: name, initialDate: date),
   );
   if (result == null || !context.mounted) return null;
   return AppScope.of(context).expeditions
@@ -482,9 +489,17 @@ class _Empty extends StatelessWidget {
 
 /// Formulario para crear o editar el nombre y la fecha de una expedición.
 class ExpeditionForm extends StatefulWidget {
-  const ExpeditionForm({super.key, this.initialName, this.initialDate});
+  const ExpeditionForm({
+    super.key,
+    this.initialName,
+    this.initialDate,
+    this.editing = false,
+  });
   final String? initialName;
   final DateTime? initialDate;
+
+  /// Edita una expedición que ya existe (no solo llena el formulario de antemano).
+  final bool editing;
 
   @override
   State<ExpeditionForm> createState() => _ExpeditionFormState();
@@ -508,7 +523,7 @@ class _ExpeditionFormState extends State<ExpeditionForm> {
 
   @override
   Widget build(BuildContext context) {
-    final editing = widget.initialName != null;
+    final editing = widget.editing;
     return Padding(
       padding: EdgeInsets.fromLTRB(
         20,
@@ -546,7 +561,10 @@ class _ExpeditionFormState extends State<ExpeditionForm> {
               final picked = await showDatePicker(
                 context: context,
                 initialDate: _date ?? now,
-                firstDate: DateTime(now.year - 1),
+                // Un recorrido viejo pasado a una expedición trae su propia fecha
+                firstDate: DateTime(
+                  math.min(now.year - 1, _date?.year ?? now.year),
+                ),
                 lastDate: DateTime(now.year + 3),
               );
               if (picked != null) setState(() => _date = picked);

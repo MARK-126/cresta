@@ -15,6 +15,43 @@ class RouteDestination {
 Future<RouteDestination?> askRouteDestination(
   BuildContext context, {
   String? current,
+}) => askExpeditionDestination(
+  context,
+  current: current,
+  title: '¿Dónde guardar la ruta?',
+  body: 'Sola queda en tus rutas guardadas; en una expedición se junta con su mapa, clima y equipo.',
+  aloneTitle: 'Solo la ruta',
+  aloneIcon: Icons.route_rounded,
+);
+
+/// Pregunta a qué expedición pasar un recorrido grabado: a una que ya existe, a una
+/// nueva (con el nombre y la fecha del recorrido) o dejarlo libre.
+Future<RouteDestination?> askTrackDestination(
+  BuildContext context, {
+  String? current,
+  required String name,
+  required DateTime date,
+}) => askExpeditionDestination(
+  context,
+  current: current,
+  title: '¿A qué expedición pasarlo?',
+  body: 'En una expedición, el recorrido aparece con su mapa, su ruta y sus otras salidas.',
+  aloneTitle: 'Recorrido libre',
+  aloneIcon: Icons.fiber_manual_record_outlined,
+  newName: name,
+  newDate: date,
+);
+
+/// Hoja para elegir expedición: sin ninguna, una nueva o una que ya existe.
+Future<RouteDestination?> askExpeditionDestination(
+  BuildContext context, {
+  String? current,
+  required String title,
+  required String body,
+  required String aloneTitle,
+  required IconData aloneIcon,
+  String? newName,
+  DateTime? newDate,
 }) async {
   final services = AppScope.of(context);
   final choice = await showModalBottomSheet<(String, String?)>(
@@ -33,16 +70,16 @@ Future<RouteDestination?> askRouteDestination(
             shrinkWrap: true,
             padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
             children: [
-              Text('¿Dónde guardar la ruta?', style: signage(sheet, size: 24)),
+              Text(title, style: signage(sheet, size: 24)),
               const SizedBox(height: 4),
               Text(
-                'Sola queda en tus rutas guardadas; en una expedición se junta con su mapa, clima y equipo.',
+                body,
                 style: TextStyle(color: muted, fontSize: 13, height: 1.35),
               ),
               const SizedBox(height: 12),
               ListTile(
-                leading: const Icon(Icons.route_rounded),
-                title: const Text('Solo la ruta'),
+                leading: Icon(aloneIcon),
+                title: Text(aloneTitle),
                 subtitle: const Text('Sin expedición'),
                 selected: current == null,
                 onTap: () => Navigator.pop(sheet, ('alone', null)),
@@ -78,7 +115,7 @@ Future<RouteDestination?> askRouteDestination(
     case 'alone':
       return const RouteDestination(null);
     case 'new':
-      final e = await askNewExpedition(context);
+      final e = await askNewExpedition(context, name: newName, date: newDate);
       return e == null ? null : RouteDestination(e.id);
     default:
       return RouteDestination(choice.$2);

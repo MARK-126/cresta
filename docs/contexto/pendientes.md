@@ -11,8 +11,7 @@ Lo que falta **probar** está al inicio de `pruebas.md`. La lista de funciones p
 ## Siguiente (revisión de diseño del 12 nov 2026)
 
 
-Recorridos libres: falta poder pasarlos a una expedición desde su detalle. "Trazar ruta" hoy es el planificador
-de siempre (ajuste a lo visible); la fase E lo vuelve una búsqueda completa.
+Siguiente de la lista: buscar cumbres y lugares sin señal en los mapas descargados.
 
 De la revisión queda: probar al sol si las etiquetas de 10–11 px se leen (el contraste ya es AAA). El botón de
 "Planear ruta" del mapa usa el ícono de "Trazar ruta" del inicio; sigue sin texto (tiene ayuda al mantenerlo).

@@ -79,8 +79,8 @@ class Track {
   final String id;
 
   /// Expedición a la que pertenece; null si se grabó desde el mapa libre
-  /// ("Grabar desde aquí"), sin preparar nada.
-  final String? expeditionId;
+  /// ("Grabar desde aquí"), sin preparar nada. Se puede pasar a otra después.
+  String? expeditionId;
   String name;
   final DateTime startedAt;
   DateTime? endedAt;

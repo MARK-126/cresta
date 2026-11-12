@@ -105,6 +105,10 @@
 - **Avisos de puntos de interés:** por distancia en línea recta y una sola vez por recorrido (sin re-armar al alejarse:
   en un ida y vuelta avisaría dos veces lo mismo). Los de seguridad (no retorno, peligro) a 300 m para decidir antes
   de llegar; el resto a 150 m. Mismo canal de notificación que la hora límite.
+- **Pasar recorridos a una expedición:** solo cambia `expeditionId` (los puntos y el resumen no se tocan) y se
+  puede deshacer. Se reusa el selector de destino de las rutas, con sus propios textos. `ExpeditionForm` tiene
+  `editing` aparte: antes "Editar" se deducía de traer nombre, y el formulario lleno de antemano decía "Editar
+  expedición". El calendario acepta años anteriores si la fecha lo es (un recorrido de 2024 lo rompía).
 - **Grupo en tiempo real descartado** (no hay señal en la montaña).
 
 - **Ahorro de tokens** (pedido del usuario, 28 oct 2026): leer solo README y pendientes al empezar, graphify

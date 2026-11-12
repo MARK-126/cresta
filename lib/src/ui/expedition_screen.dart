@@ -279,7 +279,11 @@ class ExpeditionScreen extends StatelessWidget {
       context: context,
       isScrollControlled: true,
       showDragHandle: true,
-      builder: (_) => ExpeditionForm(initialName: e.name, initialDate: e.date),
+      builder: (_) => ExpeditionForm(
+        initialName: e.name,
+        initialDate: e.date,
+        editing: true,
+      ),
     );
     if (result == null) return;
     await store.update(

@@ -14,6 +14,7 @@ import 'map_screen.dart';
 import 'offline_widgets.dart';
 import 'panels.dart';
 import 'recording_panel.dart';
+import 'route_destination.dart';
 import 'theme.dart';
 
 /// Detalle de un recorrido grabado: cifras, perfil de elevación, ver en el mapa y exportar GPX.
@@ -47,15 +48,34 @@ class _TrackScreenState extends State<TrackScreen> {
     final s = t.summary;
     final profile = _points == null ? null : profileOf(_points!);
     final muted = Theme.of(context).colorScheme.onSurfaceVariant;
+    final expedition = services.expeditions.byId(t.expeditionId);
 
     return Scaffold(
       appBar: AppBar(
         actions: [
           PopupMenuButton<String>(
-            onSelected: (v) => v == 'rename' ? _rename(t) : _delete(t),
-            itemBuilder: (_) => const [
-              PopupMenuItem(value: 'rename', child: Text('Cambiar nombre')),
-              PopupMenuItem(value: 'delete', child: Text('Borrar recorrido')),
+            onSelected: (v) => switch (v) {
+              'rename' => _rename(t),
+              'move' => _move(t),
+              _ => _delete(t),
+            },
+            itemBuilder: (_) => [
+              const PopupMenuItem(
+                value: 'rename',
+                child: Text('Cambiar nombre'),
+              ),
+              PopupMenuItem(
+                value: 'move',
+                child: Text(
+                  expedition == null
+                      ? 'Pasar a una expedición'
+                      : 'Cambiar de expedición',
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'delete',
+                child: Text('Borrar recorrido'),
+              ),
             ],
           ),
         ],
@@ -64,7 +84,9 @@ class _TrackScreenState extends State<TrackScreen> {
         padding: const EdgeInsets.fromLTRB(20, 0, 20, 32),
         children: [
           Text(
-            'RECORRIDO GRABADO',
+            expedition == null
+                ? 'RECORRIDO LIBRE'
+                : 'RECORRIDO · ${expedition.name.toUpperCase()}',
             style: labelStyle(context, color: Andes.gold),
           ),
           const SizedBox(height: 6),
@@ -190,6 +212,31 @@ class _TrackScreenState extends State<TrackScreen> {
     t.name = name;
     await AppScope.of(context).tracks.save();
     setState(() {});
+  }
+
+  Future<void> _move(Track t) async {
+    final services = AppScope.of(context);
+    final messenger = ScaffoldMessenger.of(context);
+    final dest = await askTrackDestination(
+      context,
+      current: t.expeditionId,
+      name: t.name,
+      // Solo el día, como las demás expediciones
+      date: DateUtils.dateOnly(t.startedAt.toLocal()),
+    );
+    if (dest == null || dest.expeditionId == t.expeditionId) return;
+    await services.tracks.moveTo(t.id, dest.expeditionId);
+    final e = services.expeditions.byId(dest.expeditionId);
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text(
+          e == null
+              ? 'Ahora es un recorrido libre.'
+              : 'Ahora está en la expedición "${e.name}".',
+        ),
+      ),
+    );
+    if (mounted) setState(() {});
   }
 
   Future<void> _delete(Track t) async {

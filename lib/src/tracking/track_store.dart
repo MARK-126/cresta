@@ -51,6 +51,14 @@ class TrackStore extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Pasa un recorrido a otra expedición, o lo deja libre con null.
+  Future<void> moveTo(String id, String? expeditionId) async {
+    final t = byId(id);
+    if (t == null || t.expeditionId == expeditionId) return;
+    t.expeditionId = expeditionId;
+    await save();
+  }
+
   Future<void> appendPoints(String id, List<TrackPoint> points) async {
     if (points.isEmpty) return;
     final f = _pointsFile(id);
