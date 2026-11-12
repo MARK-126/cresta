@@ -29,7 +29,8 @@ class ExpeditionStore extends ChangeNotifier {
       return a.date!.compareTo(b.date!);
     });
 
-  Expedition? byId(String id) => _items.where((e) => e.id == id).firstOrNull;
+  Expedition? byId(String? id) =>
+      id == null ? null : _items.where((e) => e.id == id).firstOrNull;
 
   ExpeditionStatus statusOf(Expedition e) =>
       ExpeditionStatus([for (final id in e.regionIds) ?maps.byId(id)]);

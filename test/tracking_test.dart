@@ -229,6 +229,23 @@ void main() {
       },
     );
 
+    test('recorrido libre: sin expedición, se guarda y se lee igual', () async {
+      await rec.start(name: 'Desde aquí');
+      await feed(_walk(5));
+      final t = await rec.stop();
+      expect(t.expeditionId, isNull);
+
+      final again = TrackStore(store.dir);
+      await again.load();
+      final read = again.byId(t.id)!;
+      expect(read.expeditionId, isNull);
+      expect(read.summary.meters, greaterThan(0));
+      // No se cuela en ninguna expedición ni se borra con ellas
+      expect(again.forExpedition('e'), isEmpty);
+      await again.deleteForExpedition('e');
+      expect(again.byId(t.id), isNotNull);
+    });
+
     test('pausar y reanudar empieza un tramo nuevo', () async {
       await rec.start(expeditionId: 'e', name: 'x');
       await feed(_walk(3));

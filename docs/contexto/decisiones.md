@@ -69,6 +69,9 @@
   horarias; es la misma con la que la app guarda la hora límite. Margen de bajada: 2 h (decisión mía, ajustable).
 - **Comparar:** máximo 3 rutas (un color cada una: cian, oro, terracota); "mejor" = menor valor, y las cifras
   de relieve no se comparan con rutas sin relieve para que los ceros no ganen.
+- **Inicio (12 nov 2026):** primero qué hacer (de lo inmediato a lo planeado: grabar, explorar, trazar, planear) y
+  luego las expediciones; antes solo invitaba a planear. **Recorridos libres** como las rutas sueltas (fase A):
+  `expeditionId` opcional en vez de una expedición automática, para no llenar la lista de expediciones vacías.
 - **Grupo en tiempo real descartado** (no hay señal en la montaña).
 
 - **Ahorro de tokens** (pedido del usuario, 28 oct 2026): leer solo README y pendientes al empezar, graphify

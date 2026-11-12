@@ -13,7 +13,7 @@ import 'recording_panel.dart';
 import 'sos_screen.dart';
 import 'theme.dart';
 
-/// Inicio: la lista de expediciones.
+/// Inicio: qué hacer (grabar, explorar, trazar, planear) y las expediciones.
 class ExpeditionsScreen extends StatelessWidget {
   const ExpeditionsScreen({super.key});
 
@@ -56,39 +56,34 @@ class ExpeditionsScreen extends StatelessWidget {
               children: [
                 Text('BITÁCORA DE MONTAÑA', style: labelStyle(context)),
                 const SizedBox(height: 6),
-                Text(
-                  items.isEmpty ? 'Tu primera cumbre' : 'Expediciones',
-                  style: signage(context, size: 34),
-                ),
-                if (items.isNotEmpty) ...[
-                  const SizedBox(height: 4),
-                  Text(
-                    '${items.length} en total · $ready ${ready == 1 ? 'lista' : 'listas'} sin conexión',
-                    style: dataStyle(
-                      context,
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      weight: FontWeight.w500,
-                    ),
-                  ),
-                ],
+                Text('¿Qué quieres hacer?', style: signage(context, size: 30)),
                 const SizedBox(height: 20),
                 if (services.recorder.isActive) ...[
                   _RecordingBanner(services: services),
                   const SizedBox(height: 12),
                 ],
-                _NewExpeditionCard(onTap: () => startNewExpedition(context)),
-                const SizedBox(height: 10),
-                _ExploreMapCard(
-                  onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute<void>(builder: (_) => const MapScreen()),
-                  ),
-                ),
+                _Actions(services: services),
                 const SizedBox(height: 28),
                 if (items.isEmpty)
                   const _Empty()
                 else ...[
-                  Text('TUS EXPEDICIONES', style: labelStyle(context)),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.baseline,
+                    textBaseline: TextBaseline.alphabetic,
+                    children: [
+                      Text('TUS EXPEDICIONES', style: labelStyle(context)),
+                      const Spacer(),
+                      Text(
+                        '${items.length} · $ready ${ready == 1 ? 'lista' : 'listas'} sin conexión',
+                        style: dataStyle(
+                          context,
+                          size: 12,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          weight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
                   const SizedBox(height: 12),
                   for (final e in items) ...[
                     _ExpeditionCard(expedition: e),
@@ -268,120 +263,152 @@ class _Telemetry extends StatelessWidget {
 
 /// La acción principal del inicio, como la tarjeta "Start new route" del diseño.
 /// Abre el mapa sin expedición, para navegarlo y verlo en 2D o 3D.
-class _ExploreMapCard extends StatelessWidget {
-  const _ExploreMapCard({required this.onTap});
-  final VoidCallback onTap;
+/// Las cuatro cosas que se pueden hacer desde el inicio, de lo inmediato a lo planeado.
+class _Actions extends StatelessWidget {
+  const _Actions({required this.services});
+  final AppServices services;
+
+  void _openMap(BuildContext context, MapScreen screen) =>
+      Navigator.push(context, MaterialPageRoute<void>(builder: (_) => screen));
 
   @override
   Widget build(BuildContext context) {
-    final muted = Theme.of(context).colorScheme.onSurfaceVariant;
-    return Material(
-      borderRadius: BorderRadius.circular(16),
-      clipBehavior: Clip.antiAlias,
-      color: Andes.surfaceContainer,
-      child: InkWell(
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 16, 18, 16),
-          child: Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'EXPLORAR MAPA',
-                      style: labelStyle(context, color: Andes.cyan),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Navega el mapa en 2D o 3D sin crear una expedición.',
-                      style: TextStyle(
-                        color: muted,
-                        fontSize: 13,
-                        height: 1.35,
-                      ),
-                    ),
-                  ],
-                ),
+    final recording = services.recorder.isActive;
+    return Column(
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: _ActionTile(
+                icon: Icons.fiber_manual_record_rounded,
+                color: recordColor,
+                onColor: Andes.onTerracotta,
+                label: 'Grabar',
+                title: 'Desde aquí',
+                body: 'Graba tu recorrido ya, sin preparar nada.',
+                // Con uno en curso, el banner de arriba lleva a él
+                onTap: recording
+                    ? null
+                    : () => _openMap(context, const MapScreen(record: true)),
               ),
-              const SizedBox(width: 16),
-              const Icon(Icons.map_rounded, color: Andes.cyan, size: 28),
-            ],
-          ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: _ActionTile(
+                icon: Icons.map_rounded,
+                color: Andes.cyan,
+                onColor: Andes.onCyan,
+                label: 'Explorar',
+                title: 'Mapa libre',
+                body: 'Navega en 2D o 3D y mira tus mapas descargados.',
+                onTap: () => _openMap(context, const MapScreen()),
+              ),
+            ),
+          ],
         ),
-      ),
+        const SizedBox(height: 10),
+        Row(
+          children: [
+            Expanded(
+              child: _ActionTile(
+                icon: Icons.route_rounded,
+                color: Andes.gold,
+                onColor: Andes.onGold,
+                label: 'Trazar ruta',
+                title: 'De A a B',
+                body: 'Marca puntos en el mapa; se ajusta a los senderos.',
+                onTap: recording
+                    ? null
+                    : () => _openMap(context, const MapScreen(plan: true)),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: _ActionTile(
+                icon: Icons.add_location_alt_rounded,
+                color: Andes.cyanContainer,
+                onColor: Andes.onCyan,
+                label: 'Planear',
+                title: 'Expedición',
+                body: 'Zona, mapas sin señal, clima, equipo y hora límite.',
+                onTap: () => startNewExpedition(context),
+              ),
+            ),
+          ],
+        ),
+      ],
     );
   }
 }
 
-class _NewExpeditionCard extends StatelessWidget {
-  const _NewExpeditionCard({required this.onTap});
-  final VoidCallback onTap;
+class _ActionTile extends StatelessWidget {
+  const _ActionTile({
+    required this.icon,
+    required this.color,
+    required this.onColor,
+    required this.label,
+    required this.title,
+    required this.body,
+    required this.onTap,
+  });
+  final IconData icon;
+  final Color color;
+  final Color onColor;
+  final String label;
+  final String title;
+  final String body;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     final muted = Theme.of(context).colorScheme.onSurfaceVariant;
-    return Material(
-      borderRadius: BorderRadius.circular(16),
-      clipBehavior: Clip.antiAlias,
-      color: Andes.surfaceContainer,
-      child: InkWell(
-        onTap: onTap,
-        child: Ink(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [Color(0xFF203A3C), Andes.surfaceContainer],
+    final enabled = onTap != null;
+    return Opacity(
+      opacity: enabled ? 1 : .45,
+      child: Material(
+        borderRadius: BorderRadius.circular(16),
+        clipBehavior: Clip.antiAlias,
+        color: Andes.surfaceContainer,
+        child: InkWell(
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 14, 16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: color,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(icon, color: onColor, size: 22),
+                ),
+                const SizedBox(height: 14),
+                Text(
+                  label.toUpperCase(),
+                  style: labelStyle(context, color: color),
+                ),
+                const SizedBox(height: 2),
+                Text(title, style: signage(context, size: 19)),
+                const SizedBox(height: 6),
+                SizedBox(
+                  // Misma altura en las cuatro aunque el texto ocupe 2 o 3 líneas
+                  height: 52,
+                  child: Text(
+                    body,
+                    maxLines: 3,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: muted,
+                      fontSize: 12.5,
+                      height: 1.35,
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ),
-          padding: const EdgeInsets.fromLTRB(20, 20, 18, 22),
-          child: Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'PLANEA TU SALIDA',
-                      style: labelStyle(context, color: Andes.gold),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'NUEVA\nEXPEDICIÓN',
-                      style: signage(
-                        context,
-                        size: 28,
-                      ).copyWith(fontWeight: FontWeight.w900, height: 1.0),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Elige la zona y descarga sus mapas con Wi-Fi para usarlos sin señal.',
-                      style: TextStyle(
-                        color: muted,
-                        fontSize: 13,
-                        height: 1.35,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 16),
-              Container(
-                width: 56,
-                height: 56,
-                decoration: BoxDecoration(
-                  color: Andes.gold,
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: const Icon(
-                  Icons.add_location_alt_rounded,
-                  color: Andes.onGold,
-                  size: 28,
-                ),
-              ),
-            ],
           ),
         ),
       ),
@@ -550,14 +577,13 @@ class _RecordingBanner extends StatelessWidget {
       accent: recordColor,
       color: recordColor.withValues(alpha: .1),
       padding: const EdgeInsets.fromLTRB(16, 14, 10, 14),
-      onTap: e == null
-          ? null
-          : () => Navigator.push(
-              context,
-              MaterialPageRoute<void>(
-                builder: (_) => MapScreen(expeditionId: e.id),
-              ),
-            ),
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute<void>(
+          // Sin expedición: el recorrido libre se sigue en el mapa libre
+          builder: (_) => MapScreen(expeditionId: e?.id),
+        ),
+      ),
       child: Row(
         children: [
           Icon(
@@ -578,7 +604,7 @@ class _RecordingBanner extends StatelessWidget {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  '${e?.name ?? 'Una expedición'} · ${fmtKm(r.stats.meters)} km',
+                  '${e?.name ?? 'Recorrido libre'} · ${fmtKm(r.stats.meters)} km',
                   style: const TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w700,

@@ -15,6 +15,18 @@ Teléfono de pruebas: Samsung Galaxy S23 Ultra (SM-S918B), Android 16, salvo que
 
 ## 2026-11-12
 
+**Inicio nuevo y recorridos libres · `feat/inicio`** (S23, puerto inalámbrico nuevo `192.168.100.3:45425`)
+- Inicio: "¿Qué quieres hacer?" con las cuatro tarjetas en 2 × 2 y "TUS EXPEDICIONES · 3 · 3 listas sin conexión". **OK**.
+- "Grabar · Desde aquí": abrió el mapa libre con el selector de modo; con Normal empezó a grabar ("GRABANDO", GPS ±15 m,
+  reloj corriendo) siguiendo la posición. En el inicio: aviso "GRABANDO · Recorrido libre · 0.0 km" y Grabar y Trazar
+  apagadas; el aviso volvió al mapa grabando. Terminar → Guardar abrió el detalle; en la Bitácora: "TERMINADO ·
+  RECORRIDO LIBRE". **OK**. El recorrido de prueba se borró (Bitácora vacía, como estaba).
+- "Trazar ruta": abrió el mapa libre en "PLANEANDO RUTA"; atrás volvió al inicio sin guardar nada. **OK**.
+- El texto vacío de la Bitácora decía "Abre el mapa de una expedición…": cambiado a "Toca «Grabar · Desde aquí»…".
+- Pruebas automáticas: 137 en verde (1 nueva: recorrido libre se guarda, se lee y no se borra con una expedición).
+- Nota: el detalle de un recorrido de 1 min sin moverse dice "0 h 00 · TIEMPO TOTAL" (el diálogo decía 0:01:01); ya
+  pasaba antes, no se tocó.
+
 **Revisión de diseño y mapa libre · `fix/mapa-libre`** (S23, Wi-Fi, ubicación encendida por el usuario)
 - Revisión (skill design-critique) con capturas de inicio, mapa libre, expedición, SOS y Mapas; hallazgos en
   `pendientes.md`. Con la ubicación apagada, "Mi ubicación" solo daba un aviso sin acción y el SOS solo "Reintentar".

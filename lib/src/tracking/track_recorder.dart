@@ -140,7 +140,7 @@ class TrackRecorder extends ChangeNotifier {
   }
 
   Future<Track> start({
-    required String expeditionId,
+    String? expeditionId,
     required String name,
     TrailRoute? route,
     DateTime? turnaround,

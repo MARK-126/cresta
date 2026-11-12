@@ -1,6 +1,6 @@
 # Estado: qué está hecho
 
-Actualizado: 12 nov 2026 · mapa libre: centrar, nombres de calles y regiones, tope de OpenFreeMap y botones a Ajustes.
+Actualizado: 12 nov 2026 · inicio con cuatro acciones y recorridos libres (sin expedición).
 
 ## Fases
 
@@ -23,7 +23,8 @@ Actualizado: 12 nov 2026 · mapa libre: centrar, nombres de calles y regiones, t
 | Fase 5 · sol | Amanecer, atardecer y hora límite sugerida, sin conexión | `feat/luz-del-dia` | `323ebff` |
 | Fase 5 · hora límite | Botón para quitarla (con Deshacer) y selector solo de reloj | `feat/quitar-hora-limite` | `18a5a46` |
 | Experimento | Leer senderos de los mosaicos en Dart (base de la fase E) | `spike/senderos-dart` | `7c099ba` |
-| Fix mapa libre | Centrar en cada toque, nombres de calles/colonias/estados, tope de 3,000 mosaicos del topo, "Abrir ajustes" | `fix/mapa-libre` | (ver `git log`) |
+| Fix mapa libre | Centrar en cada toque, nombres de calles/colonias/estados, tope de 3,000 mosaicos del topo, "Abrir ajustes" | `fix/mapa-libre` | `eefee29` |
+| Inicio | Inicio con cuatro acciones (grabar, explorar, trazar ruta, planear) y recorridos libres sin expedición | `feat/inicio` | (ver `git log`) |
 
 ## Por área
 
@@ -48,6 +49,9 @@ Actualizado: 12 nov 2026 · mapa libre: centrar, nombres de calles y regiones, t
 - Borrar una expedición borra su ruta, clima, equipo, referencias, recorridos y mapas propios.
 
 ### Grabación (`lib/src/tracking/`, `ui/recording_panel.dart`)
+- **Recorridos libres:** `Track.expeditionId` es opcional. Desde el mapa libre (o "Grabar · Desde aquí", que abre
+  `MapScreen(record: true)`) se graba sin expedición: sin ruta ni hora límite. Salen en la Bitácora como "Recorrido
+  libre", cuentan en el Resumen y no se borran con ninguna expedición. `ExpeditionStore.byId` acepta null.
 - Segundo plano (Android: servicio en primer plano; iOS: indicador azul), puntos cada 10 s, recuperación
   en pausa si la app se cierra.
 - Reloj de tiempo activo (sin pausas) que corre desde que se toca Grabar; aviso "Esperando una señal GPS
@@ -138,6 +142,10 @@ Actualizado: 12 nov 2026 · mapa libre: centrar, nombres de calles y regiones, t
 
 ### Interfaz
 - Pestañas: Expediciones · Bitácora · Resumen · Mapas (`ui/home_shell.dart`).
+- Inicio (`ui/expeditions_screen.dart`): "¿Qué quieres hacer?" con cuatro tarjetas (`_Actions`, `_ActionTile`):
+  Grabar · Desde aquí (terracota), Explorar · Mapa libre (cian), Trazar ruta · De A a B (oro, abre el mapa libre en
+  modo planear) y Planear · Expedición. Con un recorrido en curso, Grabar y Trazar se apagan y el aviso de arriba
+  lleva al recorrido. Debajo, "Tus expediciones" con su cuenta y las rutas guardadas.
 - Splash de Android 12+ y splash cinematográfico de Flutter (mín. 2 s, "BY FRUTAL"); ícono propio.
 
 ## Estructura

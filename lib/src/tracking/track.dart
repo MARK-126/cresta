@@ -54,7 +54,7 @@ enum TrackStatus { recording, paused, finished }
 class Track {
   Track({
     required this.id,
-    required this.expeditionId,
+    this.expeditionId,
     required this.name,
     required this.startedAt,
     this.endedAt,
@@ -65,7 +65,7 @@ class Track {
 
   factory Track.fromJson(Map<String, dynamic> j) => Track(
     id: j['id'] as String,
-    expeditionId: j['expeditionId'] as String,
+    expeditionId: j['expeditionId'] as String?,
     name: j['name'] as String,
     startedAt: DateTime.parse(j['startedAt'] as String),
     endedAt: DateTime.tryParse('${j['endedAt']}'),
@@ -77,7 +77,10 @@ class Track {
   );
 
   final String id;
-  final String expeditionId;
+
+  /// Expedición a la que pertenece; null si se grabó desde el mapa libre
+  /// ("Grabar desde aquí"), sin preparar nada.
+  final String? expeditionId;
   String name;
   final DateTime startedAt;
   DateTime? endedAt;

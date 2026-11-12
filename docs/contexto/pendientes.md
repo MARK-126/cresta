@@ -10,11 +10,12 @@ Lo que falta **probar** está al inicio de `pruebas.md`. La lista de funciones p
 
 ## Siguiente (revisión de diseño del 12 nov 2026)
 
-1. **Inicio nuevo** con cuatro acciones: grabar desde aquí, explorar, ruta A → B y planear expedición; y **grabar sin
-   expedición** (los recorridos hoy necesitan una, como las rutas antes de la fase A).
-2. **Capa de pendientes y zonas planas** calculada del relieve (franjas < 10°, 10–20, 20–30, 30–45 de avalancha, > 45).
-3. **Fase E:** ruta A → B por senderos (grafo ya probado) y, sin sendero, por el terreno con costo de Tobler.
-4. Actualizar mapas con Wi-Fi: guardar fecha por zona y ofrecer "Actualizar" a los ~3 meses (solo el topo).
+1. **Capa de pendientes y zonas planas** calculada del relieve (franjas < 10°, 10–20, 20–30, 30–45 de avalancha, > 45).
+2. **Fase E:** ruta A → B por senderos (grafo ya probado) y, sin sendero, por el terreno con costo de Tobler.
+3. Actualizar mapas con Wi-Fi: guardar fecha por zona y ofrecer "Actualizar" a los ~3 meses (solo el topo).
+
+Recorridos libres: falta poder pasarlos a una expedición desde su detalle. "Trazar ruta" hoy es el planificador
+de siempre (ajuste a lo visible); la fase E lo vuelve una búsqueda completa.
 
 Otros de la revisión: botones con borde de 1 px en la expedición ("Armar lista de equipo", "Actualizar", "Agregar zona
 de mapas", "Agregar referencia") contra la regla del diseño; textos grises pequeños con poco contraste para el sol;

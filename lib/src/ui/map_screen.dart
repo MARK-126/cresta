@@ -33,8 +33,8 @@ import 'theme.dart';
 import 'track_screen.dart';
 
 /// El mapa de una expedición, en 2D o 3D, con lo descargado y (si hay red) lo demás.
-/// Sin [expeditionId] es el mapa libre: se explora sin expedición; grabar y planear rutas
-/// piden crear una.
+/// Sin [expeditionId] es el mapa libre: se explora, se trazan rutas y se graba sin expedición
+/// (el recorrido queda libre, en la Bitácora).
 class MapScreen extends StatefulWidget {
   const MapScreen({
     super.key,
@@ -43,6 +43,7 @@ class MapScreen extends StatefulWidget {
     this.compareRouteIds,
     this.showTrackId,
     this.plan = false,
+    this.record = false,
   });
   final String? expeditionId;
 
@@ -54,6 +55,9 @@ class MapScreen extends StatefulWidget {
 
   /// Abrir directo en modo planificar ruta.
   final bool plan;
+
+  /// Abrir y empezar a grabar ("Grabar desde aquí" del inicio).
+  final bool record;
 
   /// Recorrido ya grabado que se muestra al abrir (desde su detalle).
   final String? showTrackId;
@@ -240,6 +244,7 @@ class _MapScreenState extends State<MapScreen> {
       if (points.length > 1) await _bridge.fitBounds(_boundsOf(points));
     }
     if (widget.plan && mounted) _startPlanning();
+    if (widget.record && mounted && !_recordingHere) await _startRecording();
   }
 
   // ------------------------------------------------------------ Planificar ruta
@@ -393,23 +398,14 @@ class _MapScreenState extends State<MapScreen> {
   static String _hhmm(DateTime t) =>
       '${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}';
 
-  /// En el mapa libre, lo que se guarda en una expedición (ruta, recorrido…) manda a crear una.
-  Future<void> _needExpedition(String what) async {
-    final ok = await confirmDialog(
-      context,
-      title: 'Necesitas una expedición',
-      body:
-          'Para $what crea una expedición: ahí se guardan tu ruta, tus recorridos, el clima y tus mapas.',
-      action: 'Nueva expedición',
-    );
-    if (ok && mounted) await startNewExpedition(context, replace: true);
-  }
-
   // ------------------------------------------------------------ Grabación
 
-  /// Hay un recorrido en curso de esta expedición.
+  /// Expedición de los recorridos que se graban aquí (null en el mapa libre).
+  String? get _trackExpeditionId => _free ? null : _expedition.id;
+
+  /// Hay un recorrido en curso de esta expedición (o libre, en el mapa libre).
   bool get _recordingHere =>
-      _recorder.isActive && _recorder.track?.expeditionId == _expedition.id;
+      _recorder.isActive && _recorder.track?.expeditionId == _trackExpeditionId;
 
   void _onRecorder() {
     if (!mounted) return;
@@ -432,14 +428,15 @@ class _MapScreenState extends State<MapScreen> {
   }
 
   Future<void> _startRecording() async {
-    if (_free) return _needExpedition('grabar un recorrido');
     final messenger = ScaffoldMessenger.of(context);
     if (_recorder.isActive) {
       final other = _services.expeditions.byId(_recorder.track!.expeditionId);
       messenger.showSnackBar(
         SnackBar(
           content: Text(
-            'Ya hay un recorrido en curso en "${other?.name ?? 'otra expedición'}". Termínalo primero.',
+            other == null
+                ? 'Ya hay un recorrido libre en curso (en el mapa libre). Termínalo primero.'
+                : 'Ya hay un recorrido en curso en "${other.name}". Termínalo primero.',
           ),
         ),
       );
@@ -465,11 +462,15 @@ class _MapScreenState extends State<MapScreen> {
     }
     if (!mounted) return;
     final now = DateTime.now();
-    final n = _services.tracks.forExpedition(_expedition.id).length + 1;
+    final n =
+        _services.tracks.all
+            .where((t) => t.expeditionId == _trackExpeditionId)
+            .length +
+        1;
     _following = true;
     _centeredOnFirstFix = false;
     await _recorder.start(
-      expeditionId: _expedition.id,
+      expeditionId: _trackExpeditionId,
       name: 'Recorrido $n · ${fmtDate(now)}',
       route: _route,
       turnaround: _expedition.turnaroundOn(now),
@@ -1195,7 +1196,7 @@ class _FreeMapCard extends StatelessWidget {
       children: [
         const SectionTitle('Mapa libre'),
         Text(
-          'Las líneas punteadas son tus mapas descargados. Para grabar o preparar la salida (clima, equipo) crea una expedición.',
+          'Las líneas punteadas son tus mapas descargados. Lo que grabes aquí queda en la Bitácora. Para preparar la salida (clima, equipo, hora límite) crea una expedición.',
           style: TextStyle(color: muted, fontSize: 13, height: 1.35),
         ),
         const SizedBox(height: 10),

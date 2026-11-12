@@ -23,7 +23,9 @@ Detalles técnicos en `estado.md`; qué se probó en `pruebas.md`.
   que deja 2 h de luz para bajar.
 - Avisos de seguridad de la ruta: tramos sin sendero punteados y con etiqueta, y tramos de más de 40 % de
   pendiente marcados en el perfil y avisados en el detalle.
-- Grabar recorridos sin señal, con la pantalla bloqueada, pausa y recuperación si la app se cierra.
+- Inicio con cuatro acciones: grabar desde aquí, explorar el mapa, trazar una ruta y planear una expedición.
+- Grabar recorridos sin señal, con la pantalla bloqueada, pausa y recuperación si la app se cierra; también sin
+  expedición ("recorrido libre", en la Bitácora).
 - Reloj de tiempo total, distancia, altitud, desnivel, velocidad vertical y aviso de GPS débil.
 - Aviso al salirse de la ruta planeada.
 - Exportar recorridos a GPX.
@@ -45,7 +47,6 @@ Detalles técnicos en `estado.md`; qué se probó en `pruebas.md`.
 ## Por implementar
 
 De la revisión del 12 nov 2026 (detalle en `pendientes.md`):
-- Inicio con cuatro acciones (grabar desde aquí, explorar, ruta A → B, planear) y grabar sin expedición.
 - Capa de pendientes por ángulo (avalanchas) y de zonas planas (acampar, descansar).
 - Ruta A → B: por senderos y calles; sin sendero, por el terreno buscando lo más llano.
 - Actualizar mapas descargados al haber Wi-Fi.

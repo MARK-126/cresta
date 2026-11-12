@@ -75,7 +75,7 @@ class LogScreen extends StatelessWidget {
                       const SizedBox(width: 14),
                       Expanded(
                         child: Text(
-                          'Abre el mapa de una expedición y toca el botón de grabar. Funciona sin señal.',
+                          'Toca «Grabar · Desde aquí» en el inicio, o el botón de grabar en cualquier mapa. Funciona sin señal.',
                           style: TextStyle(
                             color: Andes.onSurfaceVariant,
                             fontSize: 13,
@@ -149,14 +149,13 @@ class LogEntry extends StatelessWidget {
                 status.toUpperCase(),
                 style: labelStyle(context, color: color).copyWith(fontSize: 10),
               ),
-              if (expedition != null)
-                Expanded(
-                  child: Text(
-                    '  ·  ${expedition.name.toUpperCase()}',
-                    overflow: TextOverflow.ellipsis,
-                    style: labelStyle(context).copyWith(fontSize: 10),
-                  ),
+              Expanded(
+                child: Text(
+                  '  ·  ${expedition?.name.toUpperCase() ?? 'RECORRIDO LIBRE'}',
+                  overflow: TextOverflow.ellipsis,
+                  style: labelStyle(context).copyWith(fontSize: 10),
                 ),
+              ),
             ],
           ),
           const SizedBox(height: 10),
