@@ -15,6 +15,18 @@ Teléfono de pruebas: Samsung Galaxy S23 Ultra (SM-S918B), Android 16, salvo que
 
 ## 2026-11-12
 
+**Actualizar mapas con Wi-Fi · `feat/actualizar-mapas`**
+- Pruebas automáticas: al actualizar el descargador solo pide topo viejo (relieve y satélite no) y es reanudable;
+  ciclo completo (zona → vieja a los 120 días → `refreshStale` → al día, sigue `isComplete` mientras, conserva su
+  tamaño, se guarda en disco); sin topo o pasando el tope no se ofrece. 154 en verde. **Falla mía:** la reanudación
+  volvía a pedir 3 mosaicos escritos en el mismo segundo del corte (fecha de archivo al segundo): corte 2 s antes.
+- En el S23 (solo la zona del ejemplo, fechada en julio editando `regions.json` con respaldo): al abrir con Wi-Fi salió
+  "'Iztaccíhuatl–Popocatépetl' tiene senderos y calles hace 4 meses · Ahora no · Actualizar". Actualizar: en ~2 s
+  bajó 121 mosaicos topo (relieve y satélite intactos, salvo uno de cada uno que faltaba en el paquete) y la zona
+  dijo "Senderos y calles del jue 12 nov 2026". **Falla mía:** el tamaño bajó de 9.4 a 4.5 MB (la cuenta del
+  descargador no incluye el z14 extra del ejemplo): ahora no se recalcula al actualizar; repetido, quedó en 9.4 MB y el
+  aviso se fue. Vallecitos y Salto quedaron idénticos al respaldo.
+
 **Ajustes de diseño · `fix/diseno-revision`**
 - Expedición de ejemplo: "Armar lista de equipo", "Actualizar", "Agregar zona de mapas" y "Agregar referencia" ya son
   bloques tonales sin borde. **OK**.

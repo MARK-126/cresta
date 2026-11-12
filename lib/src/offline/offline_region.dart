@@ -31,6 +31,8 @@ class OfflineRegion {
     this.bundled = false,
     DateTime? createdAt,
     DateTime? updatedAt,
+    this.topoAt,
+    this.refreshAfter,
   }) : totalTiles = totalTiles ?? estimate(bbox, detail, sources).tiles,
        createdAt = createdAt ?? DateTime.now(),
        updatedAt = updatedAt ?? DateTime.now();
@@ -55,6 +57,8 @@ class OfflineRegion {
     bundled: j['bundled'] as bool? ?? false,
     createdAt: DateTime.tryParse('${j['createdAt']}'),
     updatedAt: DateTime.tryParse('${j['updatedAt']}'),
+    topoAt: DateTime.tryParse('${j['topoAt']}'),
+    refreshAfter: DateTime.tryParse('${j['refreshAfter']}'),
   );
 
   final String id;
@@ -75,9 +79,50 @@ class OfflineRegion {
   final DateTime createdAt;
   DateTime updatedAt;
 
+  /// Cuándo terminó de bajarse su mapa topográfico (senderos, calles, nombres).
+  DateTime? topoAt;
+
+  /// Actualizando: los mosaicos topo guardados antes de esta fecha se vuelven a pedir
+  /// (así se puede pausar y reanudar). Null si no se está actualizando.
+  DateTime? refreshAfter;
+
+  /// Pasado este tiempo se ofrece actualizar el topográfico: OpenStreetMap se corrige
+  /// seguido, pero los senderos de montaña cambian despacio (OpenFreeMap se rehace cada semana).
+  static const staleAfter = Duration(days: 90);
+
   double get progress =>
       totalTiles == 0 ? 1 : (doneTiles / totalTiles).clamp(0, 1);
-  bool get isComplete => status == RegionStatus.complete;
+
+  /// Todos sus mosaicos están en el teléfono. También mientras se actualiza: los
+  /// viejos siguen sirviendo hasta que llegan los nuevos.
+  bool get isComplete => status == RegionStatus.complete || isRefreshing;
+  bool get isRefreshing => refreshAfter != null;
+
+  /// Marca la zona para actualizar su topográfico. El corte va 2 s antes: algunos sistemas
+  /// guardan la fecha de los archivos al segundo, y un mosaico recién escrito parecería viejo.
+  void startRefresh([DateTime? now]) => refreshAfter = (now ?? DateTime.now())
+      .subtract(const Duration(seconds: 2));
+
+  /// Fecha de su topográfico (las zonas anteriores a este campo usan la última descarga).
+  DateTime get topoDate => topoAt ?? updatedAt;
+
+  /// Se puede actualizar: terminada, con topográfico y dentro del tope de OpenFreeMap.
+  bool get canRefresh {
+    if (status != RegionStatus.complete || !sources.contains(MapSource.topo)) {
+      return false;
+    }
+    final cap = MapSource.topo.maxTilesPerDownload;
+    final n = countTiles(
+      bbox,
+      MapSource.topo.minZoom,
+      maxZoomFor(MapSource.topo),
+    );
+    return cap == null || n <= cap;
+  }
+
+  /// Su topográfico tiene más de [staleAfter].
+  bool isStale(DateTime now) =>
+      canRefresh && now.difference(topoDate) > staleAfter;
   bool get isActive =>
       status == RegionStatus.downloading || status == RegionStatus.queued;
 
@@ -119,6 +164,8 @@ class OfflineRegion {
     'bundled': bundled,
     'createdAt': createdAt.toIso8601String(),
     'updatedAt': updatedAt.toIso8601String(),
+    'topoAt': topoAt?.toIso8601String(),
+    'refreshAfter': refreshAfter?.toIso8601String(),
   };
 
   static RegionEstimate estimate(

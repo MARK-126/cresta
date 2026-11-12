@@ -79,7 +79,14 @@ class RegionDownloader {
         final job = jobs.current;
 
         final existing = store.file(job.source, job.z, job.x, job.y);
-        if (await existing.exists()) {
+        // Al actualizar, el topográfico guardado antes de pedirlo se vuelve a bajar
+        final refresh = region.refreshAfter;
+        final outdated =
+            refresh != null &&
+            job.source == MapSource.topo &&
+            await existing.exists() &&
+            (await existing.lastModified()).isBefore(refresh);
+        if (!outdated && await existing.exists()) {
           bytes += await existing.length();
         } else {
           final r = await _fetch(

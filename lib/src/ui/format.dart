@@ -25,6 +25,15 @@ String fmtAgo(int minutes) => minutes < 60
     ? 'hace $minutes min'
     : 'hace ${minutes ~/ 60} h ${(minutes % 60).toString().padLeft(2, '0')}';
 
+/// Antigüedad en días o meses: "de hoy", "hace 12 días", "hace 1 mes", "hace 4 meses".
+String fmtAge(Duration d) {
+  final days = d.inDays;
+  if (days < 1) return 'de hoy';
+  if (days < 31) return days == 1 ? 'hace 1 día' : 'hace $days días';
+  final months = days ~/ 30;
+  return months == 1 ? 'hace 1 mes' : 'hace $months meses';
+}
+
 String fmtBytes(int bytes) {
   if (bytes < 1024 * 1024) return '${(bytes / 1024).ceil()} KB';
   if (bytes < 1024 * 1024 * 1024) {

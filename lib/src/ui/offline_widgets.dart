@@ -95,6 +95,8 @@ class RegionTile extends StatelessWidget {
       RegionStatus.complete when r.bundled =>
         'Incluida en la app · ${fmtBytes(r.bytes)}',
       RegionStatus.complete => 'Descargada · ${fmtBytes(r.bytes)}',
+      RegionStatus.downloading when r.isRefreshing =>
+        'Actualizando senderos y calles ${(r.progress * 100).floor()} %',
       RegionStatus.downloading =>
         'Descargando ${(r.progress * 100).floor()} % · ${fmtBytes(r.bytes)}',
       RegionStatus.queued => r.message ?? 'En espera',
@@ -102,7 +104,10 @@ class RegionTile extends StatelessWidget {
         '${r.message ?? 'En pausa'} · ${(r.progress * 100).floor()} %',
       RegionStatus.failed => r.message ?? 'Falló la descarga',
     };
-    final accent = r.isComplete
+    final now = DateTime.now();
+    final stale = r.isStale(now);
+    final done = r.status == RegionStatus.complete;
+    final accent = done && !stale
         ? okColor
         : (r.status == RegionStatus.failed ? scheme.error : warnColor);
     return Padding(
@@ -114,7 +119,7 @@ class RegionTile extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Icon(
-              r.isComplete ? Icons.check_circle_rounded : Icons.map_outlined,
+              done ? Icons.check_circle_rounded : Icons.map_outlined,
               color: accent,
             ),
             const SizedBox(width: 12),
@@ -144,8 +149,19 @@ class RegionTile extends StatelessWidget {
                         color: scheme.onSurfaceVariant,
                       ),
                     ),
+                  if (r.canRefresh)
+                    Text(
+                      stale
+                          ? 'Senderos y calles ${fmtAge(now.difference(r.topoDate))}: actualízalos con Wi-Fi'
+                          : 'Senderos y calles del ${fmtDate(r.topoDate)}',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: stale ? FontWeight.w600 : null,
+                        color: stale ? warnColor : scheme.onSurfaceVariant,
+                      ),
+                    ),
                   const SizedBox(height: 6),
-                  if (!r.isComplete) ...[
+                  if (!done) ...[
                     LinearProgressIndicator(
                       value: r.progress,
                       minHeight: 4,
@@ -171,11 +187,17 @@ class RegionTile extends StatelessWidget {
                 icon: const Icon(Icons.pause_rounded),
                 onPressed: () => maps.pause(r.id),
               )
-            else if (!r.isComplete)
+            else if (!done)
               IconButton(
                 tooltip: 'Reanudar',
                 icon: const Icon(Icons.play_arrow_rounded),
                 onPressed: () => maps.resume(r.id),
+              )
+            else if (r.canRefresh)
+              IconButton(
+                tooltip: 'Actualizar senderos y calles',
+                icon: Icon(Icons.sync_rounded, color: stale ? warnColor : null),
+                onPressed: () => maps.refresh(r.id),
               ),
             // Los mapas incluidos viven en la app: borrarlos casi no libera
             // espacio y dejaría al ejemplo sin mapas.
@@ -258,6 +280,67 @@ Future<bool> confirmDialog(
     ),
   );
   return ok ?? false;
+}
+
+/// Con Wi-Fi y zonas de mapas viejas, ofrece actualizarlas (se revisa al abrir la app y
+/// cada vez que vuelve el Wi-Fi). "Ahora no" lo oculta hasta que se vuelva a abrir.
+class StaleMapsBanner extends StatefulWidget {
+  const StaleMapsBanner({super.key, required this.maps});
+  final OfflineMaps maps;
+
+  @override
+  State<StaleMapsBanner> createState() => _StaleMapsBannerState();
+}
+
+class _StaleMapsBannerState extends State<StaleMapsBanner> {
+  static var _dismissed = false; // por sesión, en todas las pantallas
+
+  @override
+  Widget build(BuildContext context) => ListenableBuilder(
+    listenable: widget.maps,
+    builder: (context, _) {
+      final maps = widget.maps;
+      final stale = maps.stale();
+      if (_dismissed || maps.network != NetworkKind.wifi || stale.isEmpty) {
+        return const SizedBox.shrink();
+      }
+      final oldest = stale
+          .map((r) => r.topoDate)
+          .reduce((a, b) => a.isBefore(b) ? a : b);
+      return Material(
+        color: warnColor.withValues(alpha: .1),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 8, 8, 8),
+          child: Row(
+            children: [
+              const Icon(Icons.sync_rounded, size: 18, color: warnColor),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  stale.length == 1
+                      ? '"${stale.single.name}" tiene senderos y calles ${fmtAge(DateTime.now().difference(oldest))}.'
+                      : '${stale.length} zonas tienen senderos y calles de hace más de 3 meses.',
+                  style: const TextStyle(
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w600,
+                    color: warnColor,
+                  ),
+                ),
+              ),
+              TextButton(
+                onPressed: () => setState(() => _dismissed = true),
+                child: const Text('Ahora no'),
+              ),
+              TextButton(
+                onPressed: maps.refreshStale,
+                child: const Text('Actualizar'),
+              ),
+            ],
+          ),
+        ),
+      );
+    },
+  );
 }
 
 /// Avisos arriba del contenido (sin conexión, grabando…). Van en el cuerpo y no en la barra

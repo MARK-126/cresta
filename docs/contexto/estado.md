@@ -1,6 +1,6 @@
 # Estado: qué está hecho
 
-Actualizado: 12 nov 2026 · ajustes de la revisión de diseño: botones tonales, descargar zona desde Mapas.
+Actualizado: 12 nov 2026 · actualizar los mapas descargados con Wi-Fi (solo el topográfico).
 
 ## Fases
 
@@ -28,7 +28,8 @@ Actualizado: 12 nov 2026 · ajustes de la revisión de diseño: botones tonales,
 | Pendientes | Capas "Pendiente del terreno" y "Zonas planas" calculadas del relieve en el teléfono | `feat/pendientes` | `73fa366` |
 | Fase E (1) | Ruta A → B por senderos y calles con los mosaicos guardados (`TrailRouter`) | `feat/ruta-senderos` | `0cb231b` |
 | Fase E (2) | Ruta a campo traviesa sobre el relieve y senderos por tiempo (Tobler) | `feat/ruta-terreno` | `1fd44ab` |
-| Diseño | Botones tonales sin borde, "Descargar una zona" en Mapas, ícono de ruta unificado | `fix/diseno-revision` | (ver `git log`) |
+| Diseño | Botones tonales sin borde, "Descargar una zona" en Mapas, ícono de ruta unificado | `fix/diseno-revision` | `e69aaff` |
+| Actualizar mapas | Aviso con Wi-Fi para zonas de más de 3 meses y botón por zona; vuelve a bajar solo el topográfico | `feat/actualizar-mapas` | (ver `git log`) |
 
 ## Por área
 
@@ -45,6 +46,13 @@ Actualizado: 12 nov 2026 · ajustes de la revisión de diseño: botones tonales,
 - **Mi ubicación** (`_locateMe` en `map_screen.dart`): centra en cada toque (última lectura, o la última conocida del
   teléfono mientras llega una nueva) sin cambiar la inclinación. El margen inferior sigue la altura del panel
   (`_onSheet` → `setPadding`). En el mapa libre el panel abre al 26 % (en expediciones, 38 %).
+- **Actualizar mapas** (`OfflineRegion.topoAt`, `refreshAfter`, `canRefresh`, `isStale`; `OfflineMaps.refresh`,
+  `stale`, `refreshStale`): una zona guarda cuándo terminó su topográfico (las viejas usan `updatedAt`). Al actualizar,
+  `startRefresh()` fija un corte (2 s antes de ahora) y el descargador vuelve a pedir solo los mosaicos topo con fecha
+  de archivo anterior (reanudable); relieve y satélite no se tocan. Mientras, la zona sigue `isComplete` (los mosaicos
+  viejos sirven) y conserva su tamaño. Solo zonas con topo dentro del tope de 3,000. A los 90 días (`staleAfter`),
+  `StaleMapsBanner` (inicio y Mapas, solo con Wi-Fi; "Ahora no" por sesión) ofrece actualizar todas; cada zona en
+  Mapas dice "Senderos y calles del …" y tiene su botón ⟳.
 - **Pendiente y zonas planas** (`map.js`, protocolo `slope://<modo>/z/x/y`): lee el mosaico de relieve del servidor
   local, calcula los grados de cada píxel (diferencias centrales, metros por píxel a la latitud del mosaico) y lo
   colorea (`SLOPE_CLASSES`): pendiente < 10° verde, 10–20 amarillo, 20–30 naranja, 30–40 rojo, > 40 morado; planas

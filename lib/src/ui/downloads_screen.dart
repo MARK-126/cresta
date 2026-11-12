@@ -44,7 +44,10 @@ class _DownloadsScreenState extends State<DownloadsScreen> {
         return Scaffold(
           appBar: AppBar(),
           body: WithBanners(
-            banners: [NetworkBanner(maps: maps)],
+            banners: [
+              NetworkBanner(maps: maps),
+              StaleMapsBanner(maps: maps),
+            ],
             child: ListView(
               padding: const EdgeInsets.fromLTRB(20, 0, 20, 32),
               children: [

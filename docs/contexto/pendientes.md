@@ -10,7 +10,6 @@ Lo que falta **probar** está al inicio de `pruebas.md`. La lista de funciones p
 
 ## Siguiente (revisión de diseño del 12 nov 2026)
 
-1. Actualizar mapas con Wi-Fi: guardar fecha por zona y ofrecer "Actualizar" a los ~3 meses (solo el topo).
 
 Recorridos libres: falta poder pasarlos a una expedición desde su detalle. "Trazar ruta" hoy es el planificador
 de siempre (ajuste a lo visible); la fase E lo vuelve una búsqueda completa.

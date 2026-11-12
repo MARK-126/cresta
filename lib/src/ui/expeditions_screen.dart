@@ -50,7 +50,10 @@ class ExpeditionsScreen extends StatelessWidget {
             ],
           ),
           body: WithBanners(
-            banners: [NetworkBanner(maps: services.maps)],
+            banners: [
+              NetworkBanner(maps: services.maps),
+              StaleMapsBanner(maps: services.maps),
+            ],
             child: ListView(
               padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
               children: [

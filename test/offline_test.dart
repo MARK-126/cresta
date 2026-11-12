@@ -205,6 +205,36 @@ void main() {
       );
     });
 
+    test('al actualizar solo vuelve a pedir el topográfico viejo', () async {
+      final asked = <String>[];
+      final client = MockClient((req) async {
+        asked.add(req.url.host);
+        return http.Response.bytes(List.filled(10, 1), 200);
+      });
+      final r = _region(
+        sources: const {MapSource.dem, MapSource.sat, MapSource.topo},
+      );
+      await downloader(client).run(r, token: CancelToken());
+      final firstCalls = asked.length;
+      expect(firstCalls, r.totalTiles);
+      // Todo lo guardado queda "viejo": se fecha en el pasado
+      final old = DateTime.now().subtract(const Duration(days: 120));
+      for (final f in store.root.listSync(recursive: true).whereType<File>()) {
+        f.setLastModifiedSync(old);
+      }
+      asked.clear();
+      r.startRefresh();
+      final again = await downloader(client).run(r, token: CancelToken());
+      expect(again.outcome, DownloadOutcome.complete);
+      final topoTiles = r.jobs.where((j) => j.source == MapSource.topo).length;
+      expect(asked.length, topoTiles, reason: 'relieve y satélite no cambian');
+      expect(asked.toSet(), {'topo'});
+      // Reanudable: lo ya actualizado no se vuelve a pedir
+      asked.clear();
+      await downloader(client).run(r, token: CancelToken());
+      expect(asked, isEmpty);
+    });
+
     test('un 404 no es error (mosaico sin datos)', () async {
       final client = MockClient((_) async => http.Response('', 404));
       final result = await downloader(client)
@@ -301,6 +331,73 @@ void main() {
       expect(r.status, RegionStatus.complete);
       expect(expeditions.statusOf(e).readiness, Readiness.ready);
       expect(expeditions.statusOf(e).bounds, _bbox);
+    });
+
+    test('una zona vieja se ofrece para actualizar y queda al día', () async {
+      final r = await maps.add(
+        name: 'Izta',
+        bbox: _bbox,
+        detail: DetailLevel.basic,
+        sources: {MapSource.topo},
+      );
+      await settle();
+      expect(r.status, RegionStatus.complete);
+      expect(r.topoAt, isNotNull);
+      expect(maps.stale(), isEmpty);
+      // Cuatro meses después
+      final later = DateTime.now().add(const Duration(days: 120));
+      expect(maps.stale(later), [r]);
+      expect(r.isStale(later), isTrue);
+
+      // Se fecha todo en el pasado y se actualiza
+      r.topoAt = DateTime.now().subtract(const Duration(days: 120));
+      final old = DateTime.now().subtract(const Duration(days: 120));
+      for (final f in store.root.listSync(recursive: true).whereType<File>()) {
+        f.setLastModifiedSync(old);
+      }
+      expect(maps.stale(), [r]);
+      r.bytes = 12345; // lo que ya ocupaba: al actualizar no se recalcula
+      await maps.refreshStale();
+      expect(
+        r.isComplete,
+        isTrue,
+        reason: 'los mosaicos viejos siguen sirviendo',
+      );
+      await settle();
+      expect(r.status, RegionStatus.complete);
+      expect(r.isRefreshing, isFalse);
+      expect(maps.stale(), isEmpty);
+      expect(DateTime.now().difference(r.topoDate).inMinutes, lessThan(1));
+      expect(r.bytes, 12345);
+
+      // Se guarda en disco
+      final again = OfflineMaps(
+        store: store,
+        downloader: RegionDownloader(
+          store: store,
+          client: MockClient((_) async => http.Response('', 500)),
+          topoTemplate: () async => null,
+        ),
+        regionsFile: JsonStore(File('${tmp.path}/regions.json')),
+        settingsFile: JsonStore(File('${tmp.path}/settings.json')),
+      );
+      await again.load();
+      expect(again.byId(r.id)!.topoAt, isNotNull);
+      again.dispose();
+    });
+
+    test('sin topográfico o pasando el tope no se ofrece actualizar', () {
+      final noTopo = _region()..status = RegionStatus.complete;
+      expect(noTopo.canRefresh, isFalse);
+      final big = OfflineRegion(
+        id: 'b',
+        name: 'Grande',
+        bbox: const BBox(-99.4, 18.4, -98.0, 19.8),
+        detail: DetailLevel.detailed,
+        sources: {MapSource.topo},
+        status: RegionStatus.complete,
+      );
+      expect(big.canRefresh, isFalse, reason: 'más de 3,000 mosaicos topo');
     });
 
     test('con datos móviles y "solo Wi-Fi" la descarga espera', () async {

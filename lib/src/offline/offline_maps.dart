@@ -115,13 +115,42 @@ class OfflineMaps extends ChangeNotifier {
 
   void resume(String id) {
     final r = byId(id);
-    if (r == null || r.isComplete) return;
+    // Una actualización en pausa cuenta como completa (tiene los mosaicos viejos), pero se reanuda
+    if (r == null || r.status == RegionStatus.complete) return;
     r
       ..status = RegionStatus.queued
       ..message = null;
     _save();
     notifyListeners();
     _pump();
+  }
+
+  /// Vuelve a bajar el topográfico de la zona (senderos, calles y nombres al día). El
+  /// relieve y el satélite no cambian y no se piden otra vez.
+  Future<void> refresh(String id) async {
+    final r = byId(id);
+    if (r == null || !r.canRefresh) return;
+    r
+      ..startRefresh()
+      ..status = RegionStatus.queued
+      ..doneTiles = 0
+      ..message = null;
+    await _save();
+    notifyListeners();
+    unawaited(_pump());
+  }
+
+  /// Zonas con el topográfico viejo (ver [OfflineRegion.staleAfter]).
+  List<OfflineRegion> stale([DateTime? now]) => [
+    for (final r in _regions)
+      if (r.isStale(now ?? DateTime.now())) r,
+  ];
+
+  /// Actualiza todas las zonas viejas (se encolan y bajan una tras otra).
+  Future<void> refreshStale() async {
+    for (final r in stale()) {
+      await refresh(r.id);
+    }
   }
 
   Future<void> rename(String id, String name) async {
@@ -213,8 +242,10 @@ class OfflineMaps extends ChangeNotifier {
       onProgress: (p) {
         next
           ..doneTiles = p.done
-          ..bytes = p.bytes
           ..updatedAt = DateTime.now();
+        // Al actualizar se reemplazan mosaicos: el tamaño casi no cambia, y la cuenta del
+        // descargador no incluye lo que la zona trae de más (p. ej. el z14 del ejemplo)
+        if (!next.isRefreshing) next.bytes = p.bytes;
         notifyListeners();
         if (DateTime.now().difference(_lastSave) > const Duration(seconds: 3)) {
           _save();
@@ -228,7 +259,9 @@ class OfflineMaps extends ChangeNotifier {
           next
             ..status = RegionStatus.complete
             ..doneTiles = next.totalTiles
-            ..message = null;
+            ..message = null
+            ..topoAt = DateTime.now()
+            ..refreshAfter = null;
         case DownloadOutcome.cancelled:
           if (next.status == RegionStatus.downloading) {
             next.status = RegionStatus.paused;

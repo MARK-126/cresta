@@ -8,7 +8,8 @@ Detalles técnicos en `estado.md`; qué se probó en `pruebas.md`.
 - Mapa 2D y 3D con relieve, curvas de nivel, satélite, topográfico y relieve sombreado.
 - Pendiente del terreno por colores (cada 10°) y zonas planas (< 10°) para acampar, sin conexión.
 - Descargar mapas de cualquier zona del mundo para usarlos sin señal, desde una expedición o directo en la pestaña
-  Mapas; gestor de mapas descargados.
+  Mapas; gestor de mapas descargados. Con Wi-Fi avisa si los senderos y calles de una zona tienen más de 3 meses
+  y los actualiza con un toque (sin volver a bajar relieve ni satélite).
 - Buscador de lugares (cumbres, parques, pueblos).
 - Nombres en el mapa según el zoom: calles, caminos y senderos; colonias y parajes; pueblos; estados y países.
 - "Mi ubicación" centra en cada toque, en la parte del mapa que no tapa el panel; si la ubicación está apagada, el
@@ -52,7 +53,6 @@ Detalles técnicos en `estado.md`; qué se probó en `pruebas.md`.
 ## Por implementar
 
 De la revisión del 12 nov 2026 (detalle en `pendientes.md`):
-- Actualizar mapas descargados al haber Wi-Fi.
 - Volver por mi traza (guía de regreso por el recorrido grabado).
 - Tiempo restante y hora de llegada en vivo (Tobler) comparados con la hora límite.
 - Modo ahorro de batería (intervalo de GPS, exención de optimización de Android).

@@ -72,6 +72,8 @@ Cuidado:
   Tras reinstalar o reabrir la app el pid cambia: `adb forward --remove tcp:9333` y volver a enlazar. Varias
   consultas seguidas: envolver en `(()=>{ ... })()` (un `const` repetido falla). `window.cresta.cameraInfo()` da la
   cámara y la posición en pantalla de tu punto. Los errores del estilo salen en `adb logcat` como `flutter: Mapa: ...`.
+- Escribir un archivo de la app (con la app detenida): `cat local.json | adb shell "run-as com.cresta.cresta sh -c
+  'cat > /data/data/com.cresta.cresta/files/regions.json'"` (con ruta relativa, `sh -c` falla). Respaldar antes.
 - Simular un toque en el mapa en coordenadas exactas (p. ej. en el planificador):
   `cdp.py "window.CrestaBridge.postMessage(JSON.stringify({type:'mapTap', lng:-98.646, lat:19.088}))"`.
 - `uiautomator` (y `ui.sh`) a veces no alcanza a leer un SnackBar: si no aparece, confirmar con captura.

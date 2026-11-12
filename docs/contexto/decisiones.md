@@ -88,6 +88,10 @@
   vegetación ni cercas.
 - **Senderos por tiempo, no por distancia:** con el relieve, cada arista cuesta lo que tarda a pie (Tobler, distinto
   subiendo y bajando). En el Izta no cambió la ruta, pero evita rodeos que suben de más.
+- **Actualizar mapas (12 nov 2026):** pedido del usuario ("al abrir con Wi-Fi revisar si hay actualización"). Se
+  revisa por antigüedad (90 días), no por la versión semanal de OpenFreeMap: los senderos de montaña cambian despacio
+  y avisar cada semana sería ruido. Se ofrece, no se descarga solo (la descarga necesita la app abierta). Solo el
+  topográfico; cada actualización respeta el tope de 3,000 mosaicos.
 - **Grupo en tiempo real descartado** (no hay señal en la montaña).
 
 - **Ahorro de tokens** (pedido del usuario, 28 oct 2026): leer solo README y pendientes al empezar, graphify
