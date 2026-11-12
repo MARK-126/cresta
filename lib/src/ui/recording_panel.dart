@@ -2,9 +2,12 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../data/trail_route.dart' show naismith;
+import '../routes/planned_route.dart' show PoiKind;
 import '../sun/sun_times.dart';
 import '../tracking/backtrack.dart';
 import '../tracking/live_eta.dart';
+import '../tracking/poi_alerts.dart';
 import '../tracking/track.dart' show haversine;
 import '../tracking/track_recorder.dart';
 import 'format.dart';
@@ -56,6 +59,10 @@ class RecordingPanel extends StatelessWidget {
         eta.arrival.isAfter(r.turnaround!);
     final afterSunset =
         eta != null && sunset != null && eta.arrival.isAfter(sunset);
+    final near = fix == null ? null : nearPoi(r.pois, fix.lat, fix.lng);
+    final ahead = r.route == null || r.progress == null
+        ? null
+        : nextPoiAhead(r.route!, r.pois, r.progress!.metersAlong);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -120,6 +127,18 @@ class RecordingPanel extends StatelessWidget {
             icon: Icons.wb_twilight_rounded,
             text:
                 'Llegarías al inicio a las ${_hhmm(eta.arrival)}, después del atardecer (${_hhmm(sunset)}). Ten lista la linterna.',
+          ),
+        if (near != null)
+          _Banner(
+            color: switch (near.$1.kind) {
+              PoiKind.danger || PoiKind.noReturn => recordColor,
+              _ => okColor,
+            },
+            icon: Icons.place_rounded,
+            text: () {
+              final (title, body) = poiAlertText(near.$1, near.$2);
+              return '$title. $body';
+            }(),
           ),
         if (r.progress?.isOffRoute == true)
           _Banner(
@@ -200,6 +219,15 @@ class RecordingPanel extends StatelessWidget {
                 ? 'Faltan ${fmtKm(r.progress!.remainingMeters)} km y ${fmtInt(r.progress!.remainingGain)} m de subida por tu traza hasta el inicio.'
                 : 'Faltan ${fmtKm(r.progress!.remainingMeters)} km y ${fmtInt(r.progress!.remainingGain)} m de subida hasta el final de la ruta.',
             style: TextStyle(fontSize: 12.5, color: scheme.onSurfaceVariant),
+          ),
+        if (ahead != null && near?.$1 != ahead.poi)
+          Padding(
+            padding: const EdgeInsets.only(top: 4),
+            child: Text(
+              'Próximo: ${ahead.poi.name} en ${ahead.meters < 1000 ? '${fmtInt(ahead.meters)} m' : '${fmtKm(ahead.meters)} km'}'
+              ' (≈ ${_mins(Duration(seconds: (naismith(ahead.meters, 0).inSeconds * (eta?.pace ?? 1)).round()))}).',
+              style: TextStyle(fontSize: 12.5, color: scheme.onSurfaceVariant),
+            ),
           ),
         if (eta != null)
           Padding(

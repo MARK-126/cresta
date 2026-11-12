@@ -1,6 +1,6 @@
 # Estado: qué está hecho
 
-Actualizado: 12 nov 2026 · batería: pedir que Android no optimice la app al grabar, y consejos en el modo.
+Actualizado: 12 nov 2026 · avisos al acercarse a los puntos de interés de la ruta y "Próximo" en el panel.
 
 ## Fases
 
@@ -32,7 +32,8 @@ Actualizado: 12 nov 2026 · batería: pedir que Android no optimice la app al gr
 | Actualizar mapas | Aviso con Wi-Fi para zonas de más de 3 meses y botón por zona; vuelve a bajar solo el topográfico | `feat/actualizar-mapas` | `45ca74a` |
 | Volver por mi traza | Guía de regreso por lo grabado: avance, lo que falta, aviso al salirse, rumbo al inicio | `feat/volver-traza` | `c00e63c` |
 | Llegada en vivo | Hora de llegada a tu ritmo (Naismith calibrado), aviso de hora límite y de atardecer al regresar | `feat/llegada-en-vivo` | `82cca40` |
-| Batería | Exención de la optimización de batería al grabar (canal nativo) y consejo de modo avión | `feat/bateria` | (ver `git log`) |
+| Batería | Exención de la optimización de batería al grabar (canal nativo) y consejo de modo avión | `feat/bateria` | `b08010d` |
+| Avisos de puntos | Notificación al acercarse a agua, no retorno, peligro…; próximo punto en el panel | `feat/aviso-puntos` | (ver `git log`) |
 
 ## Por área
 
@@ -83,6 +84,11 @@ Actualizado: 12 nov 2026 · batería: pedir que Android no optimice la app al gr
   `REQUEST_IGNORE_BATTERY_OPTIMIZATIONS`). Al empezar a grabar, si la app no está exenta, se explica y ofrece
   ("Permitir" / "Ahora no"); la grabación sigue igual si no. El diálogo de modo aconseja modo avión y poco brillo.
 - Estadísticas, desnivel con relieve, hora límite, aviso de salida de ruta, exportar GPX.
+- **Puntos de interés al grabar** (`tracking/poi_alerts.dart`): `recorder.pois` (los de la ruta guardada, también al
+  recuperar). `PoiAlerts` (en `AppServices`, como `TurnaroundAlerts`) notifica una vez por punto y recorrido al estar a
+  ≤ 150 m (no retorno y peligro: ≤ 300 m), ids 7200+i, canal `cresta_alerts` (renombrado "Avisos del recorrido"). El
+  panel muestra el aviso mientras estás cerca y "Próximo: Arroyo en 400 m (≈ 6 min)" (`nextPoiAhead`: proyectado sobre
+  la ruta, ignora los que quedan a > 300 m de ella).
 - **Llegada en vivo** (`tracking/live_eta.dart`): con ruta (o regresando), `liveEta` = Naismith de lo que falta
   (`naismith()` en `trail_route.dart`, la misma regla de la bitácora) × tu ritmo (`paceFactor`: tiempo en movimiento
   entre Naismith de lo recorrido, desde 15 min y 500 m, acotado 0.5–2.5). El panel dice "Llegas al final ≈ HH:MM (en

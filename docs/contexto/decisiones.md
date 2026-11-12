@@ -102,6 +102,9 @@
   pide la exención al grabar (no al abrir la app) y se puede rechazar. `REQUEST_IGNORE_BATTERY_OPTIMIZATIONS` lo limita
   Google Play a apps cuyo núcleo lo necesita; para una app personal no aplica, pero revisarlo si se publica. El
   intervalo del GPS ya existía (modos Normal y Ahorro).
+- **Avisos de puntos de interés:** por distancia en línea recta y una sola vez por recorrido (sin re-armar al alejarse:
+  en un ida y vuelta avisaría dos veces lo mismo). Los de seguridad (no retorno, peligro) a 300 m para decidir antes
+  de llegar; el resto a 150 m. Mismo canal de notificación que la hora límite.
 - **Grupo en tiempo real descartado** (no hay señal en la montaña).
 
 - **Ahorro de tokens** (pedido del usuario, 28 oct 2026): leer solo README y pendientes al empezar, graphify

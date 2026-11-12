@@ -54,7 +54,7 @@ class MainActivity : FlutterActivity() {
             }
     }
 
-    // Aviso de la hora límite de regreso: canal de importancia alta (suena y sale encima de
+    // Avisos mientras se graba (hora límite, puntos de interés): canal de importancia alta (suena y sale encima de
     // otras apps); al tocarlo vuelve a la app.
     private fun showAlert(id: Int, title: String, body: String) {
         val manager = getSystemService(NotificationManager::class.java)
@@ -62,9 +62,10 @@ class MainActivity : FlutterActivity() {
             manager.createNotificationChannel(
                 NotificationChannel(
                     ALERT_CHANNEL,
-                    "Hora límite de regreso",
+                    // Mismo canal, nombre más amplio: también avisa de los puntos de interés
+                    "Avisos del recorrido",
                     NotificationManager.IMPORTANCE_HIGH,
-                ).apply { description = "Avisos de tu hora límite mientras grabas un recorrido" },
+                ).apply { description = "Hora límite y puntos de interés de tu ruta mientras grabas" },
             )
         }
         val open = PendingIntent.getActivity(

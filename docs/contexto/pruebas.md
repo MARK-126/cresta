@@ -6,6 +6,10 @@ Teléfono de pruebas: Samsung Galaxy S23 Ultra (SM-S918B), Android 16, salvo que
 
 ## Sin probar todavía (revisar antes de dar por hecho)
 
+- **Avisos de puntos de interés en el teléfono** (12 nov 2026): el teléfono se desconectó tras compilar. Falta instalar,
+  ver que el canal se llame "Avisos del recorrido" y, en una salida con ruta y puntos, recibir la notificación al
+  acercarse y ver "Próximo:" en el panel.
+
 - **Volver por mi traza caminando** (12 nov 2026): falta grabar unos cientos de metros, tocar "Volver al inicio por mi
   traza", ver "REGRESANDO", lo que falta y el rumbo, y salirse > 80 m para ver el aviso. En el teléfono quieto solo se
   comprobó que el panel graba igual. Cubierto por pruebas automáticas (abajo).
@@ -18,6 +22,14 @@ Teléfono de pruebas: Samsung Galaxy S23 Ultra (SM-S918B), Android 16, salvo que
 - Descargas de mapas en Android con conexión móvil (opción "solo Wi-Fi").
 
 ## 2026-11-12
+
+**Avisos de puntos de interés · `feat/aviso-puntos`** (solo pruebas automáticas; el teléfono se desconectó)
+- Distancias de aviso; próximo punto por delante (400 m, luego 800 m; uno a 1 km de la ruta no cuenta; al final, nada);
+  cerca según el tipo (agua 150 m, no retorno 300 m); textos ("A 120 m del agua…", "Llegaste al agua.", "Estás en el
+  punto de no retorno."); grabador simulado caminando 2 km: dos notificaciones (agua a 150 m, no retorno a 300 m), sin
+  repetir y sin la del campamento lejano. 167 en verde. Compila (cambio nativo del nombre del canal).
+- **Falla mía** (vista antes de probar): a menos de 20 m el texto decía "Llegaste del agua"; ahora cada tipo tiene su
+  frase.
 
 **Batería · `feat/bateria`** (cambio nativo: compilación completa)
 - En el S23 (la app no estaba exenta: `dumpsys deviceidle whitelist` sin cresta): "Grabar · Desde aquí" → el diálogo de
