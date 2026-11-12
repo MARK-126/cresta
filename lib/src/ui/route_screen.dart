@@ -357,7 +357,7 @@ class _MapCoverage extends StatelessWidget {
         );
       case RouteMapState.tooLarge:
         return Text(
-          'La zona de esta ruta es demasiado grande para una sola descarga (${plan.estimate!.tiles} mosaicos; el máximo es $maxTilesPerRegion). Elige zonas más pequeñas en la pestaña Mapas.',
+          'La zona de esta ruta es demasiado grande para una sola descarga. Elige zonas más pequeñas en la pestaña Mapas.',
           style: TextStyle(color: muted, fontSize: 13, height: 1.35),
         );
       case RouteMapState.none:

@@ -127,6 +127,7 @@ class OfflineRegion {
     Set<MapSource> sources,
   ) {
     var tiles = 0, bytes = 0;
+    MapSource? over;
     for (final s in sources) {
       final max = detail == DetailLevel.basic
           ? s.maxZoomBasic
@@ -134,17 +135,22 @@ class OfflineRegion {
       final n = countTiles(bbox, s.minZoom, max);
       tiles += n;
       bytes += n * s.avgBytes;
+      final cap = s.maxTilesPerDownload;
+      if (cap != null && n > cap) over ??= s;
     }
-    return RegionEstimate(tiles, bytes);
+    return RegionEstimate(tiles, bytes, overSource: over);
   }
 }
 
 class RegionEstimate {
-  const RegionEstimate(this.tiles, this.bytes);
+  const RegionEstimate(this.tiles, this.bytes, {this.overSource});
   final int tiles;
   final int bytes;
 
-  bool get tooBig => tiles > maxTilesPerRegion;
+  /// Fuente que pasa su propio tope por descarga (p. ej. el topográfico).
+  final MapSource? overSource;
+
+  bool get tooBig => tiles > maxTilesPerRegion || overSource != null;
 }
 
 class TileJob {

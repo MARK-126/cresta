@@ -129,6 +129,34 @@ void main() {
       );
     });
 
+    test('el topográfico respeta el tope de OpenFreeMap por descarga', () {
+      // ~150 × 150 km: el topo detallado pasa de 3,000 mosaicos, el total no de 40,000
+      const big = BBox(-99.4, 18.4, -98.0, 19.8);
+      final detailed = OfflineRegion.estimate(big, DetailLevel.detailed, {
+        MapSource.topo,
+      });
+      expect(detailed.tiles, greaterThan(MapSource.topo.maxTilesPerDownload!));
+      expect(detailed.tiles, lessThan(maxTilesPerRegion));
+      expect(detailed.overSource, MapSource.topo);
+      expect(detailed.tooBig, isTrue);
+      // El satélite no tiene ese tope: la misma zona sola no se pasa
+      final sat = OfflineRegion.estimate(big, DetailLevel.detailed, {
+        MapSource.sat,
+      });
+      expect(sat.overSource, isNull);
+      expect(sat.tooBig, isFalse);
+      // Una zona de montaña normal (~40 × 40 km) cabe con todo
+      const zone = BBox(-98.8, 18.95, -98.4, 19.3);
+      expect(
+        OfflineRegion.estimate(zone, DetailLevel.detailed, {
+          MapSource.topo,
+          MapSource.sat,
+          MapSource.dem,
+        }).tooBig,
+        isFalse,
+      );
+    });
+
     test('JSON de ida y vuelta; una descarga en curso vuelve como pausada', () {
       final r = _region()
         ..status = RegionStatus.downloading

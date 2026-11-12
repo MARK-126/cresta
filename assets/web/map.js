@@ -130,6 +130,17 @@
           paint: { 'line-color': C.track, 'line-width': ['interpolate', ['linear'], ['zoom'], 11, 0.8, 15, 2.2], 'line-dasharray': [3, 1.5] } },
         { id: 'trails', type: 'line', source: 'topo', 'source-layer': 'transportation', filter: roadClass('path'), layout: { 'line-join': 'round' },
           paint: { 'line-color': C.path, 'line-width': ['interpolate', ['linear'], ['zoom'], 11, 1, 15, 2.4], 'line-dasharray': [2, 1.2] } },
+        // Límites de países y estados
+        { id: 'boundaries', type: 'line', source: 'topo', 'source-layer': 'boundary', filter: ['all', ['<=', ['get', 'admin_level'], 4], ['!=', ['get', 'maritime'], 1]],
+          layout: { 'line-join': 'round' }, paint: {
+          'line-color': '#7d6f8c', 'line-opacity': 0.75, 'line-dasharray': [4, 2, 1, 2],
+          'line-width': ['interpolate', ['linear'], ['zoom'], 3, ['match', ['get', 'admin_level'], 2, 1, 0.5], 10, ['match', ['get', 'admin_level'], 2, 2.2, 1.4]] } },
+        // Nombres de calles, caminos y senderos (a lo largo de la línea). Las grandes desde zoom 12, el resto desde 14
+        { id: 'road-names', type: 'symbol', source: 'topo', 'source-layer': 'transportation_name', minzoom: 12,
+          filter: ['any', ['match', ['get', 'class'], ['motorway', 'trunk', 'primary', 'secondary'], true, false], ['>=', ['zoom'], 14]],
+          layout: { 'symbol-placement': 'line', 'symbol-spacing': 320, 'text-field': ['get', 'name'], 'text-font': font(),
+            'text-size': ['interpolate', ['linear'], ['zoom'], 12, 9.5, 16, 12.5], 'text-max-angle': 30, 'text-padding': 4 },
+          paint: { 'text-color': ['match', ['get', 'class'], 'path', '#8f2a24', 'track', '#6b4a2b', '#4a4540'], 'text-halo-color': C.halo, 'text-halo-width': 1.4 } },
         { id: 'regions-line', type: 'line', source: 'regions', paint: { 'line-color': ['case', ['get', 'complete'], '#00a8a3', '#c99630'], 'line-width': 2, 'line-dasharray': [4, 2] } },
         { id: 'route-casing', type: 'line', source: 'route', layout: { 'line-join': 'round', 'line-cap': 'round' }, paint: { 'line-color': '#0e1416', 'line-width': 7, 'line-opacity': 0.75 } },
         { id: 'route', type: 'line', source: 'route', filter: ['!=', ['get', 'snapped'], false], layout: { 'line-join': 'round', 'line-cap': 'round' }, paint: { 'line-color': '#f0bf63', 'line-width': 4 } },
@@ -169,6 +180,15 @@
           'text-field': ['format', ['get', 'name'], { 'text-font': ['literal', font('bold')] }, ['case', ['has', 'ele'], ['concat', '\n', ['number-format', ['get', 'ele'], {}], ' m'], ''], {}],
           'text-font': font(), 'text-size': 11, 'text-anchor': 'top', 'text-offset': [0, 0.6], 'text-optional': true },
           paint: { 'text-color': C.label, 'text-halo-color': C.halo, 'text-halo-width': 1.4 } },
+        // Colonias, barrios y parajes: solo de cerca, en versales grises para no competir con los pueblos
+        { id: 'places-minor', type: 'symbol', source: 'topo', 'source-layer': 'place', minzoom: 12, filter: roadClass('suburb', 'quarter', 'neighbourhood', 'isolated_dwelling', 'locality'), layout: {
+          'text-field': ['get', 'name'], 'text-font': font(), 'text-size': 10.5, 'text-transform': 'uppercase', 'text-letter-spacing': 0.08, 'text-max-width': 8 },
+          paint: { 'text-color': '#5f5850', 'text-halo-color': C.halo, 'text-halo-width': 1.4 } },
+        // Países y estados (en español si el mapa lo trae): de lejos, hasta que aparecen los pueblos
+        { id: 'places-region', type: 'symbol', source: 'topo', 'source-layer': 'place', maxzoom: 10, filter: roadClass('country', 'state', 'province'), layout: {
+          'text-field': ['coalesce', ['get', 'name:es'], ['get', 'name']], 'text-font': font('bold'), 'text-transform': 'uppercase',
+          'text-size': ['match', ['get', 'class'], 'country', 14, 11.5], 'text-letter-spacing': 0.12, 'text-max-width': 7 },
+          paint: { 'text-color': '#5b4f6b', 'text-halo-color': C.halo, 'text-halo-width': 1.6 } },
         { id: 'places', type: 'symbol', source: 'topo', 'source-layer': 'place', filter: roadClass('city', 'town', 'village', 'hamlet'), layout: {
           'text-field': ['get', 'name'], 'text-font': font('bold'),
           'text-size': ['match', ['get', 'class'], 'city', 15, 'town', 13, 'village', 12, 11] },
@@ -190,7 +210,7 @@
     track: { layers: ['track', 'track-casing'] },
     trails: { layers: ['trails', 'tracks'] },
     contours: { layers: ['contours', 'contour-labels'] },
-    labels: { layers: ['peaks', 'peaks-dot', 'places', 'water-names'] },
+    labels: { layers: ['peaks', 'peaks-dot', 'places', 'places-minor', 'places-region', 'road-names', 'water-names', 'boundaries'] },
     hillshade: { layers: ['hillshade'] },
     regions: { layers: ['regions-line'] },
     zones: { layers: ['zones-fill', 'zones-line'] },
@@ -529,10 +549,17 @@
     stopFly,
     flyTo(lng, lat, zoom = 13.5, pitch = 55, bearingDeg) {
       stopFly();
-      // Con padding el punto queda al centro de la parte visible (no tapada por paneles)
-      map.flyTo({ center: [lng, lat], zoom, padding, pitch: is3d ? pitch : 0, ...(bearingDeg == null ? {} : { bearing: bearingDeg }), duration: ms(1600) });
+      // Con padding el punto queda al centro de la parte visible (no tapada por paneles).
+      // essential: con animaciones reducidas, MapLibre cambia flyTo por un salto que descarta el padding
+      map.flyTo({ essential: true, center: [lng, lat], zoom, padding, pitch: is3d ? (pitch ?? map.getPitch()) : 0, ...(bearingDeg == null ? {} : { bearing: bearingDeg }), duration: ms(1600) });
     },
     jumpTo(lng, lat, zoom) { map.jumpTo({ center: [lng, lat], zoom }); },
+    // Para pruebas (tool/dev/cdp.py): dónde está la cámara y dónde se dibuja tu posición
+    cameraInfo() {
+      const c = map.getCenter(), m = me && map.project(me.getLngLat());
+      return { center: [c.lng, c.lat], zoom: map.getZoom(), pitch: map.getPitch(), padding: map.getPadding(), padVar: padding,
+        me: m && [Math.round(m.x), Math.round(m.y)], meLngLat: me && me.getLngLat().toArray(), size: [innerWidth, innerHeight], terrain: !!map.getTerrain() };
+    },
     showCursorAtMeters(m) { if (route) showCursorAt(along(m).pt); },
     hideCursor() { cursor.remove(); },
     setMembers(list) {
@@ -558,11 +585,11 @@
         me = mk(el, [lng, lat], 'center').addTo(map);
       }
       me.setLngLat([lng, lat]);
-      if (following && !flying) map.easeTo({ center: [lng, lat], padding, duration: ms(600) });
+      if (following && !flying) map.easeTo({ essential: true, center: [lng, lat], padding, duration: ms(600) });
     },
     setFollow(on, zoom) {
       following = on;
-      if (on && me) map.easeTo({ center: me.getLngLat(), padding, ...(zoom ? { zoom } : {}), duration: ms(800) });
+      if (on && me) map.easeTo({ essential: true, center: me.getLngLat(), padding, ...(zoom ? { zoom } : {}), duration: ms(800) });
     },
     pulseReport(id) {
       const el = document.querySelector(`.report[data-id="${id}"]`);
@@ -576,6 +603,21 @@
     // Créditos plegados al inicio (botón ⓘ) para no tapar los controles
     document.querySelector('.maplibregl-ctrl-attrib')?.classList.remove('maplibregl-compact-show');
     emit('ready');
+  });
+  // Con relieve, MapLibre toma la altura del destino al empezar un vuelo. Si su relieve aún no había
+  // cargado (otro lugar, o recién encendido el 3D), la cámara queda a la altura del sitio anterior y
+  // lo que está "al centro" se dibuja fuera de la pantalla. Al terminar de cargar, se corrige la
+  // altura sin mover el centro.
+  map.on('moveend', () => {
+    if (!map.terrain) return;
+    map.once('idle', () => {
+      if (!map.terrain || map.isMoving()) return;
+      const c = map.getCenter();
+      const elevation = map.terrain.getElevationForLngLatZoom(c, map.transform.tileZoom);
+      if (Math.abs(elevation - map.transform.elevation) < 5) return;
+      map.transform.elevation = elevation;
+      map.jumpTo({ center: c }); // redibuja y vuelve a colocar los marcadores
+    });
   });
   map.on('error', (e) => {
     const message = String(e.error && e.error.message);

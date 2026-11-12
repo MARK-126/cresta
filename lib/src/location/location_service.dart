@@ -40,6 +40,23 @@ class LocationService {
     }
   }
 
+  /// Abre el ajuste que destraba [status]: la ubicación del teléfono si está
+  /// apagada, o los permisos de la app si los negó.
+  Future<void> openSettings(LocationStatus status) =>
+      status == LocationStatus.serviceOff
+      ? Geolocator.openLocationSettings()
+      : Geolocator.openAppSettings();
+
+  /// Última posición que el teléfono ya conoce, para centrar al instante
+  /// mientras llega una lectura nueva del GPS (que en frío tarda).
+  Future<Position?> lastKnown() async {
+    try {
+      return await Geolocator.getLastKnownPosition();
+    } on Exception {
+      return null;
+    }
+  }
+
   /// Posiciones cada 10 m, solo con la app abierta (para "Mi ubicación").
   Stream<Position> positions() => Geolocator.getPositionStream(
     locationSettings: const LocationSettings(

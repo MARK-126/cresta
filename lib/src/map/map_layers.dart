@@ -65,8 +65,9 @@ const mapLayers = <MapLayer>[
   MapLayer(
     'labels',
     LayerGroup.mountain,
-    'Cumbres y lugares',
+    'Nombres',
     Color(0xFF6B4A2B),
+    note: 'cumbres, lugares, calles y límites',
   ),
   MapLayer(
     'members',

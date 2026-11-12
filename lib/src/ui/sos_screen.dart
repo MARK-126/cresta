@@ -35,13 +35,14 @@ class _Fix {
   final DateTime at;
 }
 
-class _SosScreenState extends State<SosScreen> {
+class _SosScreenState extends State<SosScreen> with WidgetsBindingObserver {
   late final AppServices _services = AppScope.of(context);
   StreamSubscription<dynamic>? _sub;
   Timer? _tick;
   _Fix? _fix;
   double? _ground;
   String? _problem;
+  LocationStatus? _problemStatus;
   bool _wasAwake = false;
   bool _started = false;
 
@@ -50,7 +51,14 @@ class _SosScreenState extends State<SosScreen> {
     super.didChangeDependencies();
     if (_started) return;
     _started = true;
+    WidgetsBinding.instance.addObserver(this);
     _start();
+  }
+
+  /// Al volver de Ajustes con la ubicación encendida, reintenta sin otro toque.
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed && _problem != null) _listenGps();
   }
 
   Future<void> _start() async {
@@ -78,11 +86,12 @@ class _SosScreenState extends State<SosScreen> {
     final status = await _services.location.ensurePermission();
     if (!mounted) return;
     if (status != LocationStatus.granted) {
-      setState(
-        () => _problem = status == LocationStatus.serviceOff
-            ? 'La ubicación del teléfono está apagada. Actívala en los ajustes rápidos.'
-            : 'Cresta no tiene permiso de ubicación. Actívalo en Ajustes → Apps → Cresta → Permisos.',
-      );
+      setState(() {
+        _problemStatus = status;
+        _problem = status == LocationStatus.serviceOff
+            ? 'La ubicación del teléfono está apagada.'
+            : 'Cresta no tiene permiso de ubicación.';
+      });
       return;
     }
     await _sub?.cancel();
@@ -112,6 +121,7 @@ class _SosScreenState extends State<SosScreen> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _sub?.cancel();
     _tick?.cancel();
     // Si una descarga de mapas ya la tenía encendida, se respeta
@@ -219,8 +229,18 @@ class _SosScreenState extends State<SosScreen> {
                       ),
                       if (_problem != null)
                         TextButton(
-                          onPressed: _listenGps,
-                          child: const Text('Reintentar'),
+                          // Lleva directo al ajuste; al volver se reintenta solo
+                          onPressed: () =>
+                              _problemStatus == LocationStatus.denied
+                              ? _listenGps()
+                              : _services.location.openSettings(
+                                  _problemStatus!,
+                                ),
+                          child: Text(
+                            _problemStatus == LocationStatus.denied
+                                ? 'Permitir'
+                                : 'Activar',
+                          ),
                         ),
                     ],
                   ),

@@ -43,7 +43,10 @@ enum MapSource {
     maxZoomBasic: 13,
     maxZoomDetailed: 14,
     avgBytes: 22 * 1024,
-    attribution: '© OpenMapTiles · © colaboradores de OpenStreetMap',
+    // Términos de OpenFreeMap (oct 2026): cada descarga offline, hasta 3,000 mosaicos
+    maxTilesPerDownload: 3000,
+    attribution:
+        'OpenFreeMap · © OpenMapTiles · © colaboradores de OpenStreetMap',
   );
 
   const MapSource({
@@ -54,7 +57,11 @@ enum MapSource {
     required this.maxZoomDetailed,
     required this.avgBytes,
     required this.attribution,
+    this.maxTilesPerDownload,
   });
+
+  /// Tope de mosaicos de esta fuente en una sola descarga, si su servicio lo pide.
+  final int? maxTilesPerDownload;
 
   final String label;
   final String? template;

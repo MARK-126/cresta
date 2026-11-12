@@ -90,7 +90,7 @@ RouteMapPlan planRouteMap(
   }
   for (final detail in [DetailLevel.detailed, DetailLevel.basic]) {
     final estimate = OfflineRegion.estimate(zone, detail, sources);
-    if (estimate.tiles <= maxTilesPerRegion) {
+    if (!estimate.tooBig) {
       return RouteMapPlan(
         RouteMapState.none,
         zone,

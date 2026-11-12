@@ -363,7 +363,9 @@ class _AreaPickerScreenState extends State<AreaPickerScreen> {
                     ),
                     if (est?.tooBig == true)
                       Text(
-                        'Zona demasiado grande: acerca el mapa o usa detalle Básico.',
+                        est!.overSource == null
+                            ? 'Zona demasiado grande: acerca el mapa o usa detalle Básico.'
+                            : '${est.overSource!.label}: hasta ${fmtInt(est.overSource!.maxTilesPerDownload!)} mosaicos por descarga (lo pide su servicio). Acerca el mapa o usa detalle Básico.',
                         style: TextStyle(color: scheme.error, fontSize: 12.5),
                       ),
                     const SizedBox(height: 10),

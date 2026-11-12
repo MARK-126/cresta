@@ -63,7 +63,11 @@ class MapScreen extends StatefulWidget {
 }
 
 class _MapScreenState extends State<MapScreen> {
-  static const _sheetMin = 0.14, _sheetInitial = 0.38, _sheetMax = 0.9;
+  static const _sheetMin = 0.14, _sheetMax = 0.9;
+
+  /// Altura media del panel. En el mapa libre es más baja: el panel solo trae
+  /// la vista y las capas, y el mapa es lo principal.
+  double get _sheetInitial => _free ? 0.26 : 0.38;
 
   final _bridge = MapBridge();
   final _sheet = DraggableScrollableController();
@@ -137,6 +141,11 @@ class _MapScreenState extends State<MapScreen> {
   bool _flying = false;
   double? _cursor;
   bool _locating = false;
+
+  /// Última posición leída en el mapa (para "Mi ubicación" sin grabar).
+  (double, double)? _myPos;
+  bool _centerOnFix = false;
+  Timer? _paddingTimer;
   bool _started = false;
 
   @override
@@ -189,13 +198,7 @@ class _MapScreenState extends State<MapScreen> {
 
     await _bridge.ready;
     if (!mounted) return;
-    final size = MediaQuery.sizeOf(context);
-    await _bridge.setPadding(
-      top: 110,
-      bottom: size.height * _sheetInitial + 20,
-      left: 30,
-      right: 30,
-    );
+    await _pushPadding(_sheetInitial);
     await _bridge.setBase(_base);
     await _bridge.setLayers(_layers);
     _pushRegions();
@@ -445,9 +448,7 @@ class _MapScreenState extends State<MapScreen> {
     final status = await _location.ensurePermission();
     if (!mounted) return;
     if (status != LocationStatus.granted) {
-      messenger.showSnackBar(
-        SnackBar(content: Text(_permissionMessage(status))),
-      );
+      messenger.showSnackBar(_permissionSnack(status));
       return;
     }
     final mode = await askRecordingMode(context);
@@ -523,6 +524,18 @@ class _MapScreenState extends State<MapScreen> {
     );
   }
 
+  /// Aviso de ubicación con un botón al ajuste que la destraba (sin él, el
+  /// usuario tenía que buscarlo por su cuenta).
+  SnackBar _permissionSnack(LocationStatus status) => SnackBar(
+    content: Text(_permissionMessage(status)),
+    action: status == LocationStatus.denied
+        ? null
+        : SnackBarAction(
+            label: 'Abrir ajustes',
+            onPressed: () => _location.openSettings(status),
+          ),
+  );
+
   String _permissionMessage(LocationStatus status) => switch (status) {
     LocationStatus.serviceOff =>
       'Activa la ubicación del teléfono para verte en el mapa.',
@@ -540,6 +553,7 @@ class _MapScreenState extends State<MapScreen> {
     for (final s in _subs) {
       s.cancel();
     }
+    _paddingTimer?.cancel();
     _group?.dispose();
     _planner?.dispose();
     _bridge.dispose();
@@ -649,22 +663,61 @@ class _MapScreenState extends State<MapScreen> {
     final status = await _location.ensurePermission();
     if (!mounted) return;
     if (status != LocationStatus.granted) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(_permissionMessage(status))));
+      ScaffoldMessenger.of(context).showSnackBar(_permissionSnack(status));
       return;
+    }
+    // Cada toque vuelve a centrar (antes solo el primero: luego no hacía nada)
+    final known = _myPos;
+    if (known != null) {
+      _centerOn(known);
+    } else {
+      // Sin lectura aún: centra en la última conocida y otra vez al llegar la nueva
+      _centerOnFix = true;
+      final last = await _location.lastKnown();
+      if (!mounted) return;
+      if (last != null && _myPos == null) {
+        _bridge.setMyLocation(last.longitude, last.latitude);
+        _centerOn((last.longitude, last.latitude));
+      }
     }
     if (_locating) return;
     setState(() => _locating = true);
-    var first = true;
     _subs.add(
       _location.positions().listen((p) {
+        _myPos = (p.longitude, p.latitude);
         _bridge.setMyLocation(p.longitude, p.latitude);
-        if (first) {
-          first = false;
-          _bridge.flyTo(p.longitude, p.latitude, zoom: 14);
+        if (_centerOnFix) {
+          _centerOnFix = false;
+          _centerOn(_myPos!);
         }
       }),
     );
+  }
+
+  /// Centra en tu posición sin cambiar la inclinación ni el giro que tenga el mapa.
+  void _centerOn((double, double) p) =>
+      _bridge.flyTo(p.$1, p.$2, zoom: 15, pitch: null);
+
+  /// El centro del mapa es el de la parte que no tapa el panel: el margen
+  /// inferior sigue la altura del panel (antes era fija, al 38 %).
+  Future<void> _pushPadding(double sheet) {
+    final height = MediaQuery.sizeOf(context).height;
+    return _bridge.setPadding(
+      top: 110,
+      bottom: height * sheet + 20,
+      left: 30,
+      right: 30,
+    );
+  }
+
+  bool _onSheet(DraggableScrollableNotification n) {
+    _paddingTimer?.cancel();
+    final extent = n.extent;
+    // Se manda al soltar el panel, no en cada cuadro del arrastre
+    _paddingTimer = Timer(const Duration(milliseconds: 200), () {
+      if (mounted) _pushPadding(extent);
+    });
+    return false;
   }
 
   void _simulateAlert() {
@@ -905,163 +958,173 @@ class _MapScreenState extends State<MapScreen> {
                       ],
                     ),
                   ),
-                  DraggableScrollableSheet(
-                    controller: _sheet,
-                    minChildSize: _sheetMin,
-                    initialChildSize: _sheetInitial,
-                    maxChildSize: _sheetMax,
-                    snap: true,
-                    snapSizes: const [_sheetMin, _sheetInitial, _sheetMax],
-                    builder: (context, scroll) => Material(
-                      // Opaco: sobre el WebView cualquier transparencia deja ver las etiquetas del mapa
-                      color: Andes.surfaceLow,
-                      borderRadius: const BorderRadius.vertical(
-                        top: Radius.circular(24),
-                      ),
-                      clipBehavior: Clip.antiAlias,
-                      child: ListView(
-                        controller: scroll,
-                        padding: EdgeInsets.fromLTRB(
-                          20,
-                          0,
-                          20,
-                          24 + MediaQuery.paddingOf(context).bottom,
+                  NotificationListener<DraggableScrollableNotification>(
+                    onNotification: _onSheet,
+                    child: DraggableScrollableSheet(
+                      controller: _sheet,
+                      minChildSize: _sheetMin,
+                      initialChildSize: _sheetInitial,
+                      maxChildSize: _sheetMax,
+                      snap: true,
+                      snapSizes: [_sheetMin, _sheetInitial, _sheetMax],
+                      builder: (context, scroll) => Material(
+                        // Opaco: sobre el WebView cualquier transparencia deja ver las etiquetas del mapa
+                        color: Andes.surfaceLow,
+                        borderRadius: const BorderRadius.vertical(
+                          top: Radius.circular(24),
                         ),
-                        children: [
-                          Center(
-                            child: Container(
-                              margin: const EdgeInsets.symmetric(vertical: 12),
-                              width: 40,
-                              height: 4,
-                              decoration: BoxDecoration(
-                                color: scheme.outlineVariant,
-                                borderRadius: BorderRadius.circular(2),
+                        clipBehavior: Clip.antiAlias,
+                        child: ListView(
+                          controller: scroll,
+                          padding: EdgeInsets.fromLTRB(
+                            20,
+                            0,
+                            20,
+                            24 + MediaQuery.paddingOf(context).bottom,
+                          ),
+                          children: [
+                            Center(
+                              child: Container(
+                                margin: const EdgeInsets.symmetric(
+                                  vertical: 12,
+                                ),
+                                width: 40,
+                                height: 4,
+                                decoration: BoxDecoration(
+                                  color: scheme.outlineVariant,
+                                  borderRadius: BorderRadius.circular(2),
+                                ),
                               ),
                             ),
-                          ),
-                          if (_planner != null)
-                            PlannerPanel(
-                              planner: _planner!,
-                              placingPoi: _placingPoi,
-                              onPlacePoi: (k) {
-                                setState(() => _placingPoi = k);
-                                // Baja el panel para dejar libre el mapa donde hay que tocar
-                                if (k != null) {
-                                  // Después del cuadro: el selector aún se está cerrando
-                                  WidgetsBinding.instance.addPostFrameCallback(
-                                    (_) => _moveSheet(_sheetMin),
-                                  );
-                                }
-                              },
-                              onSave: _savePlan,
-                              onCancel: _cancelPlan,
-                            )
-                          else ...[
-                            if (_recordingHere)
-                              RecordingPanel(
-                                recorder: _recorder,
-                                onPause: _recorder.pause,
-                                onResume: _recorder.resume,
-                                onStop: _stopRecording,
-                              ),
-                            if (civil && _civil != null) ...[
-                              VolcanoAlertCard(civil: _civil!),
-                              ShelterList(
-                                civil: _civil!,
-                                onTap: (s) => _bridge.flyTo(
-                                  s.at.lng,
-                                  s.at.lat,
-                                  zoom: 13.2,
-                                  pitch: 50,
-                                ),
-                              ),
-                              ReportList(
-                                civil: _civil!,
-                                onTap: (r) => _bridge.flyTo(
-                                  r.at.lng,
-                                  r.at.lat,
-                                  zoom: 13.5,
-                                ),
-                                onSimulateAlert: _simulateAlert,
-                              ),
-                            ] else if (_route != null) ...[
-                              RouteCard(
-                                route: _route!,
-                                cursorMeters: _cursor,
-                                flying: _flying,
-                                onScrub: (m) {
-                                  setState(() => _cursor = m);
-                                  _bridge.showCursorAtMeters(m);
+                            if (_planner != null)
+                              PlannerPanel(
+                                planner: _planner!,
+                                placingPoi: _placingPoi,
+                                onPlacePoi: (k) {
+                                  setState(() => _placingPoi = k);
+                                  // Baja el panel para dejar libre el mapa donde hay que tocar
+                                  if (k != null) {
+                                    // Después del cuadro: el selector aún se está cerrando
+                                    WidgetsBinding.instance
+                                        .addPostFrameCallback(
+                                          (_) => _moveSheet(_sheetMin),
+                                        );
+                                  }
                                 },
-                                onScrubEnd: () {},
-                                onFly: _toggleFly,
-                                onFit: () {
-                                  _bridge.stopFly();
-                                  _bridge.fitRoute();
-                                },
-                              ),
-                              if (_group != null)
-                                GroupList(
+                                onSave: _savePlan,
+                                onCancel: _cancelPlan,
+                              )
+                            else ...[
+                              if (_recordingHere)
+                                RecordingPanel(
+                                  recorder: _recorder,
+                                  onPause: _recorder.pause,
+                                  onResume: _recorder.resume,
+                                  onStop: _stopRecording,
+                                ),
+                              if (civil && _civil != null) ...[
+                                VolcanoAlertCard(civil: _civil!),
+                                ShelterList(
+                                  civil: _civil!,
+                                  onTap: (s) => _bridge.flyTo(
+                                    s.at.lng,
+                                    s.at.lat,
+                                    zoom: 13.2,
+                                    pitch: 50,
+                                  ),
+                                ),
+                                ReportList(
+                                  civil: _civil!,
+                                  onTap: (r) => _bridge.flyTo(
+                                    r.at.lng,
+                                    r.at.lat,
+                                    zoom: 13.5,
+                                  ),
+                                  onSimulateAlert: _simulateAlert,
+                                ),
+                              ] else if (_route != null) ...[
+                                RouteCard(
                                   route: _route!,
-                                  members: _group!.members,
-                                  onTap: (m) {
-                                    final p = _route!.along(m.meters).position;
-                                    _bridge.flyTo(
-                                      p.lng,
-                                      p.lat,
-                                      zoom: 14.6,
-                                      pitch: 62,
-                                    );
+                                  cursorMeters: _cursor,
+                                  flying: _flying,
+                                  onScrub: (m) {
+                                    setState(() => _cursor = m);
+                                    _bridge.showCursorAtMeters(m);
+                                  },
+                                  onScrubEnd: () {},
+                                  onFly: _toggleFly,
+                                  onFit: () {
+                                    _bridge.stopFly();
+                                    _bridge.fitRoute();
                                   },
                                 ),
-                            ] else if (_comparing)
-                              _CompareLegend(routes: _compared)
-                            else if (_free)
-                              _FreeMapCard(
-                                onNew: () =>
-                                    startNewExpedition(context, replace: true),
-                              )
-                            else
-                              _OfflineSummary(
-                                status: status,
-                                onAddZone: _addZone,
-                                onFit: () {
-                                  final b = status.bounds;
-                                  if (b != null) _bridge.fitBounds(b);
+                                if (_group != null)
+                                  GroupList(
+                                    route: _route!,
+                                    members: _group!.members,
+                                    onTap: (m) {
+                                      final p = _route!
+                                          .along(m.meters)
+                                          .position;
+                                      _bridge.flyTo(
+                                        p.lng,
+                                        p.lat,
+                                        zoom: 14.6,
+                                        pitch: 62,
+                                      );
+                                    },
+                                  ),
+                              ] else if (_comparing)
+                                _CompareLegend(routes: _compared)
+                              else if (_free)
+                                _FreeMapCard(
+                                  onNew: () => startNewExpedition(
+                                    context,
+                                    replace: true,
+                                  ),
+                                )
+                              else
+                                _OfflineSummary(
+                                  status: status,
+                                  onAddZone: _addZone,
+                                  onFit: () {
+                                    final b = status.bounds;
+                                    if (b != null) _bridge.fitBounds(b);
+                                  },
+                                ),
+                              ViewControls(
+                                base: _base,
+                                is3d: _is3d,
+                                exaggeration: _exaggeration,
+                                onBase: (b) {
+                                  setState(() => _base = b);
+                                  _bridge.setBase(b);
+                                },
+                                on3d: _set3d,
+                                onExaggeration: (x) {
+                                  setState(() => _exaggeration = x);
+                                  _bridge.setExaggeration(x);
                                 },
                               ),
-                            ViewControls(
-                              base: _base,
-                              is3d: _is3d,
-                              exaggeration: _exaggeration,
-                              onBase: (b) {
-                                setState(() => _base = b);
-                                _bridge.setBase(b);
-                              },
-                              on3d: _set3d,
-                              onExaggeration: (x) {
-                                setState(() => _exaggeration = x);
-                                _bridge.setExaggeration(x);
-                              },
-                            ),
-                            LayerList(
-                              layers: _availableLayers,
-                              states: _layers,
-                              onChanged: _setLayer,
-                            ),
-                            const SizedBox(height: 16),
-                            Text(
-                              'Mapa: © OpenMapTiles, © colaboradores de OpenStreetMap. Satélite: Sentinel-2 cloudless 2024 de EOX '
-                              '(datos Copernicus). Relieve: Mapzen Terrain Tiles.'
-                              '${_civil != null ? ' Los datos de protección civil y el grupo son ilustrativos, no información oficial.' : ''}',
-                              style: TextStyle(
-                                fontSize: 11,
-                                color: scheme.onSurfaceVariant,
-                                height: 1.4,
+                              LayerList(
+                                layers: _availableLayers,
+                                states: _layers,
+                                onChanged: _setLayer,
                               ),
-                            ),
+                              const SizedBox(height: 16),
+                              Text(
+                                'Mapa: OpenFreeMap, © OpenMapTiles, © colaboradores de OpenStreetMap. Satélite: Sentinel-2 cloudless 2024 de EOX '
+                                '(datos Copernicus). Relieve: Mapzen Terrain Tiles.'
+                                '${_civil != null ? ' Los datos de protección civil y el grupo son ilustrativos, no información oficial.' : ''}',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: scheme.onSurfaceVariant,
+                                  height: 1.4,
+                                ),
+                              ),
+                            ],
                           ],
-                        ],
+                        ),
                       ),
                     ),
                   ),
@@ -1132,7 +1195,7 @@ class _FreeMapCard extends StatelessWidget {
       children: [
         const SectionTitle('Mapa libre'),
         Text(
-          'Explora el mapa, cambia de vista y usa tu ubicación sin crear nada. Las líneas punteadas marcan lo que ya descargaste. Toca el botón de ruta para marcar puntos y guardarla sola o en una expedición. Para grabar un recorrido o preparar la salida (clima, equipo) necesitas una expedición.',
+          'Las líneas punteadas son tus mapas descargados. Para grabar o preparar la salida (clima, equipo) crea una expedición.',
           style: TextStyle(color: muted, fontSize: 13, height: 1.35),
         ),
         const SizedBox(height: 10),

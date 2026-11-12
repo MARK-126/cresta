@@ -180,7 +180,8 @@ class MapBridge {
     double lng,
     double lat, {
     double zoom = 13.5,
-    double pitch = 55,
+    // null: conserva la inclinación que ya tiene el mapa
+    double? pitch = 55,
     double? bearing,
   }) => _call('flyTo', [lng, lat, zoom, pitch, bearing]);
   Future<void> jumpTo(double lng, double lat, double zoom) =>
