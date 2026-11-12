@@ -6,9 +6,9 @@ Teléfono de pruebas: Samsung Galaxy S23 Ultra (SM-S918B), Android 16, salvo que
 
 ## Sin probar todavía (revisar antes de dar por hecho)
 
-- **Avisos de puntos de interés en el teléfono** (12 nov 2026): el teléfono se desconectó tras compilar. Falta instalar,
-  ver que el canal se llame "Avisos del recorrido" y, en una salida con ruta y puntos, recibir la notificación al
-  acercarse y ver "Próximo:" en el panel.
+- **Avisos de puntos de interés en una salida** (12 nov 2026): instalado y la app arranca. El canal sigue como
+  "Hora límite de regreso" hasta el próximo aviso (Android lo renombra al volver a registrarlo). Falta, con una ruta
+  con puntos, recibir la notificación al acercarse y ver "Próximo:" en el panel (la "Ruta de Salto" no tiene puntos).
 
 - **Volver por mi traza caminando** (12 nov 2026): falta grabar unos cientos de metros, tocar "Volver al inicio por mi
   traza", ver "REGRESANDO", lo que falta y el rumbo, y salirse > 80 m para ver el aviso. En el teléfono quieto solo se
@@ -22,6 +22,22 @@ Teléfono de pruebas: Samsung Galaxy S23 Ultra (SM-S918B), Android 16, salvo que
 - Descargas de mapas en Android con conexión móvil (opción "solo Wi-Fi").
 
 ## 2026-11-12
+
+**Pasar un recorrido libre a una expedición · `feat/recorrido-a-expedicion`** (S23)
+- Recorrido libre de prueba ("Prueba Cerro", 8 dic 2024, 30 puntos) cargado con `run-as`. Detalle: "RECORRIDO LIBRE";
+  menú con "Pasar a una expedición"; selector con "Recorrido libre" marcado, "Nueva expedición" y las 3 expediciones.
+  **OK**.
+- Nueva expedición: formulario lleno ("Prueba Cerro", "dom 8 dic 2024", botón "Crear expedición"); el calendario abre
+  en diciembre de 2024 sin fallar. Al crear: cabecera "RECORRIDO · PRUEBA CERRO", la Bitácora lo muestra con la
+  expedición y la expedición lo lista en "Recorridos grabados". **OK**. Falla: la fecha se guardó con la hora de salida
+  (`2024-12-08T10:00`) → se pasa solo el día (`DateUtils.dateOnly`) → `2024-12-08T00:00`. **OK**.
+- "Cambiar de expedición" → Vallecitos ("RECORRIDO · VALLECITOS") → "Recorrido libre" ("Ahora es un recorrido libre.",
+  `expeditionId: null` en `tracks.json`). **OK**. Datos del usuario restaurados (sin recorridos, 3 expediciones).
+- Pruebas automáticas: 168 en verde (1 nueva: pasar a una expedición y volver a libre, se conserva al recargar con
+  sus puntos; el resumen guardado se redondea al metro).
+
+**Avisos de puntos de interés en el teléfono**: instalado, la app arranca con el inicio de siempre. El canal aún dice
+"Hora límite de regreso" (`dumpsys notification`): se crea en `showAlert`, así que se renombra con el próximo aviso.
 
 **Avisos de puntos de interés · `feat/aviso-puntos`** (solo pruebas automáticas; el teléfono se desconectó)
 - Distancias de aviso; próximo punto por delante (400 m, luego 800 m; uno a 1 km de la ruta no cuenta; al final, nada);

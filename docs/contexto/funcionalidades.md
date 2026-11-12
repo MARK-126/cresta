@@ -29,7 +29,8 @@ Detalles técnicos en `estado.md`; qué se probó en `pruebas.md`.
 - Inicio con cuatro acciones: grabar desde aquí, explorar el mapa, trazar una ruta y planear una expedición.
 - Cuidar la batería al grabar: modo Ahorro (un punto cada 20 m), pedir que Android no detenga la app y consejos.
 - Grabar recorridos sin señal, con la pantalla bloqueada, pausa y recuperación si la app se cierra; también sin
-  expedición ("recorrido libre", en la Bitácora).
+  expedición ("recorrido libre", en la Bitácora), y pasarlo después a una expedición (nueva o existente) o de
+  vuelta a libre.
 - Reloj de tiempo total, distancia, altitud, desnivel, velocidad vertical y aviso de GPS débil.
 - Hora de llegada en vivo a tu ritmo, con aviso si llegarías después de tu hora límite o, de regreso, después del
   atardecer.

@@ -248,6 +248,31 @@ void main() {
     });
 
     test(
+      'un recorrido libre se pasa a una expedición y vuelve a ser libre',
+      () async {
+        await rec.start(name: 'Desde aquí');
+        await feed(_walk(5));
+        final t = await rec.stop();
+
+        await store.moveTo(t.id, 'e');
+        var again = TrackStore(store.dir);
+        await again.load();
+        expect(again.byId(t.id)!.expeditionId, 'e');
+        expect(again.forExpedition('e').map((x) => x.id), [t.id]);
+        // Conserva sus puntos y cifras
+        expect((await again.readPoints(t.id)).length, 5);
+        // (el resumen se guarda redondeado al metro)
+        expect(again.byId(t.id)!.summary.meters, closeTo(t.summary.meters, 1));
+
+        await store.moveTo(t.id, null);
+        again = TrackStore(store.dir);
+        await again.load();
+        expect(again.byId(t.id)!.expeditionId, isNull);
+        expect(again.forExpedition('e'), isEmpty);
+      },
+    );
+
+    test(
       'volver por la traza: guía al inicio y luego devuelve la ruta planeada',
       () async {
         final planned = TrailRoute(

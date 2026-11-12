@@ -74,6 +74,11 @@ Actualizado: 12 nov 2026 · avisos al acercarse a los puntos de interés de la r
 - **Recorridos libres:** `Track.expeditionId` es opcional. Desde el mapa libre (o "Grabar · Desde aquí", que abre
   `MapScreen(record: true)`) se graba sin expedición: sin ruta ni hora límite. Salen en la Bitácora como "Recorrido
   libre", cuentan en el Resumen y no se borran con ninguna expedición. `ExpeditionStore.byId` acepta null.
+  Desde su detalle (menú: "Pasar a una expedición" / "Cambiar de expedición") se pasan a una expedición existente,
+  a una nueva (formulario lleno con el nombre y el día del recorrido) o de vuelta a libre: `TrackStore.moveTo`
+  (`expeditionId` ya no es `final`). El selector es `askExpeditionDestination` en `ui/route_destination.dart`, el
+  mismo que usan las rutas (`askRouteDestination`/`askTrackDestination`). La cabecera dice "RECORRIDO LIBRE" o
+  "RECORRIDO · NOMBRE".
 - Segundo plano (Android: servicio en primer plano; iOS: indicador azul), puntos cada 10 s, recuperación
   en pausa si la app se cierra.
 - Reloj de tiempo activo (sin pausas) que corre desde que se toca Grabar; aviso "Esperando una señal GPS
