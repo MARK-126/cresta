@@ -10,6 +10,11 @@
   TileJSON), Sentinel-2 cloudless 2024 de EOX (CC BY-NC-SA, **no comercial**, hasta z14), Mapzen Terrain
   Tiles en AWS (terrarium, hasta z12 ≈ 30 m), Nominatim (1 búsqueda/s). **Esri se retiró**: prohíbe guardar
   mosaicos. El **User-Agent debe ser ASCII** (con acentos fallan las descargas).
+- **Límites de OpenFreeMap** (términos del 14 oct 2026): cada descarga offline, como máximo 3,000 mosaicos o 50 MB,
+  4 peticiones en paralelo y User-Agent propio; para más, escribir a info@openfreemap.org. La app ya usaba 4
+  conexiones; desde el 12 nov 2026 el topo se limita a 3,000 mosaicos por zona (≈ 100 × 100 km en Detallado). Sus
+  datos se regeneran cada semana. Alternativa si hace falta más: Protomaps (versiones diarias, ODbL, otro esquema:
+  habría que rehacer el estilo).
 - **Curvas de nivel** con `maplibre-contour` en el teléfono.
 - **Mosaicos** en `<fuente>/<z>/<x>/<y>`, compartidos entre zonas; borrar una zona quita solo los que
   ninguna otra usa. Descargas: una a la vez, reanudables, máx. 40,000 mosaicos, solo con la app abierta.
@@ -86,6 +91,19 @@
 - Ícono generado con `tool/make_icon.py`; adaptativo y monocromático en Android 8+/13.
 
 ## Errores resueltos (síntoma → causa → solución)
+
+- **"Mi ubicación" solo centraba la primera vez** → `_locating` nunca volvía a `false` y el vuelo solo iba en la
+  primera lectura → centra en cada toque con la última lectura (o `getLastKnownPosition` mientras llega una).
+- **En 3D tu punto quedaba fuera de la pantalla tras centrar** → MapLibre 4.7.1 toma la altura del destino al
+  empezar el vuelo; si su relieve no había cargado, la cámara quedaba a la altura del sitio anterior (la montaña) →
+  en `moveend` + `idle`, `map.js` corrige `transform.elevation` con la del centro y hace `jumpTo` al mismo centro.
+- **El punto quedaba a la mitad de toda la pantalla, tapado por el panel** → con animaciones reducidas (el S23 las
+  tiene en 0), `flyTo`/`easeTo` de MapLibre se vuelven un `jumpTo` que descarta `padding` → `essential: true` (con
+  duración 0 sigue siendo instantáneo). Además el margen era fijo al 38 %: ahora sigue al panel.
+- **Mapa en blanco tras agregar los límites** → dos `interpolate` de zoom dentro de un `match` ("Only one zoom-based
+  step or interpolate") → un solo `interpolate` con el `match` en cada parada. El error sale en el log como `Mapa: ...`.
+- **Sin nombres de calles ni colonias** → el estilo propio nunca tuvo capas de `transportation_name` y `places` solo
+  dejaba ciudad/pueblo/caserío → capas nuevas (ver `estado.md`). Los datos de OpenFreeMap sí los traían.
 
 - **Dos rutas con el mismo nombre en Comparar** → el nombre por defecto era solo la fecha → incluye la hora, y
   los chips muestran los km.

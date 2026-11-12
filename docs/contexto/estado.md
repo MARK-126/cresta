@@ -1,6 +1,6 @@
 # Estado: qué está hecho
 
-Actualizado: 28 oct 2026 · `main` con SOS probado, aviso al salir del perfil, notificación de hora límite y mapa libre.
+Actualizado: 12 nov 2026 · mapa libre: centrar, nombres de calles y regiones, tope de OpenFreeMap y botones a Ajustes.
 
 ## Fases
 
@@ -16,13 +16,14 @@ Actualizado: 28 oct 2026 · `main` con SOS probado, aviso al salir del perfil, n
 | Fix | Mapas del ejemplo, relieve interpolado (pendientes), umbral de nieve, graphify con Gemini | `fix/ejemplo-pendiente-nieve` | `7b7c2dc` |
 | Mejoras | Sangre con palabras en el SMS, aviso al salir del perfil, notificación de hora límite, mapa libre | `fix/sms-sangre`, `fix/perfil-sin-guardar`, `feat/notificacion-hora-limite`, `feat/mapa-libre` | `0bf2400` |
 | Rutas A | Rutas como entidades propias (id, expedición opcional), formato 2 con migración y respaldo | `feat/rutas-propias` | `9d690f4` |
-| Rutas B | Trazar en el mapa libre y guardar sola o en una expedición; rutas guardadas en el inicio | `feat/rutas-b-mapa-libre` | (ver `git log`) |
-| Rutas C | Clima por ruta y descarga de la zona de mapa de la ruta | `feat/rutas-c-clima-mapa` | (ver `git log`) |
+| Rutas B | Trazar en el mapa libre y guardar sola o en una expedición; rutas guardadas en el inicio | `feat/rutas-b-mapa-libre` | `12beba6` |
+| Rutas C | Clima por ruta y descarga de la zona de mapa de la ruta | `feat/rutas-c-clima-mapa` | `e59b06f` |
 | Rutas D | Comparar rutas: cifras, perfiles superpuestos y mapa | `feat/rutas-d-comparar` | `c3f01e7` |
 | Seguridad | Tramos sin sendero punteados y con etiqueta, pendientes de más de 40 % marcadas, aviso en el detalle | `feat/tramos-sin-sendero` | `1d26731` |
 | Fase 5 · sol | Amanecer, atardecer y hora límite sugerida, sin conexión | `feat/luz-del-dia` | `323ebff` |
 | Fase 5 · hora límite | Botón para quitarla (con Deshacer) y selector solo de reloj | `feat/quitar-hora-limite` | `18a5a46` |
-| Experimento | Leer senderos de los mosaicos en Dart (base de la fase E) | `spike/senderos-dart` | (este commit) |
+| Experimento | Leer senderos de los mosaicos en Dart (base de la fase E) | `spike/senderos-dart` | `7c099ba` |
+| Fix mapa libre | Centrar en cada toque, nombres de calles/colonias/estados, tope de 3,000 mosaicos del topo, "Abrir ajustes" | `fix/mapa-libre` | (ver `git log`) |
 
 ## Por área
 
@@ -31,6 +32,15 @@ Actualizado: 28 oct 2026 · `main` con SOS probado, aviso al salir del perfil, n
 - Servidor local `lib/src/tiles/tile_server.dart`: zonas descargadas → caché → red.
 - Descarga por zona (`lib/src/offline/`), topográfico OpenFreeMap, satélite Sentinel-2 (EOX), relieve
   Terrain Tiles (AWS), curvas de nivel calculadas en el teléfono, buscador (Nominatim).
+- **Nombres** (capa "Nombres" de `map.js`): cumbres, ríos y pueblos; desde el 12 nov 2026 también calles, caminos y
+  senderos (`road-names`: grandes desde z12, el resto desde z14), colonias y parajes (`places-minor`, z12+), estados y
+  países en español (`places-region`, hasta z10) y límites (`boundaries`). Sin red, solo lo de las zonas (z8–14).
+- **Tope por fuente:** `MapSource.maxTilesPerDownload` (topo: 3,000, términos de OpenFreeMap). `RegionEstimate.overSource`
+  dice cuál se pasa; el selector de zona lo avisa y no deja descargar.
+- **Mi ubicación** (`_locateMe` en `map_screen.dart`): centra en cada toque (última lectura, o la última conocida del
+  teléfono mientras llega una nueva) sin cambiar la inclinación. El margen inferior sigue la altura del panel
+  (`_onSheet` → `setPadding`). En el mapa libre el panel abre al 26 % (en expediciones, 38 %).
+- `window.cresta.cameraInfo()` (para `cdp.py`): centro, zoom, inclinación, margen y dónde se dibuja tu posición.
 
 ### Expediciones (`lib/src/expeditions/`, `ui/expedition_screen.dart`)
 - Nombre, fecha, notas, zonas de mapas, hora límite de retorno.

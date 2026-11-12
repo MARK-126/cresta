@@ -8,6 +8,9 @@ Detalles técnicos en `estado.md`; qué se probó en `pruebas.md`.
 - Mapa 2D y 3D con relieve, curvas de nivel, satélite, topográfico y relieve sombreado.
 - Descargar mapas de cualquier zona del mundo para usarlos sin señal; gestor de mapas descargados.
 - Buscador de lugares (cumbres, parques, pueblos).
+- Nombres en el mapa según el zoom: calles, caminos y senderos; colonias y parajes; pueblos; estados y países.
+- "Mi ubicación" centra en cada toque, en la parte del mapa que no tapa el panel; si la ubicación está apagada, el
+  aviso (mapa y SOS) lleva directo a Ajustes.
 - Expediciones: nombre, fecha, notas, zonas de mapas y lista "Antes de salir".
 - Hora límite de retorno con aviso dentro de la app y notificación (30 min antes y a la hora) mientras se
   graba (la notificación, solo en Android).
@@ -41,6 +44,20 @@ Detalles técnicos en `estado.md`; qué se probó en `pruebas.md`.
 
 ## Por implementar
 
+De la revisión del 12 nov 2026 (detalle en `pendientes.md`):
+- Inicio con cuatro acciones (grabar desde aquí, explorar, ruta A → B, planear) y grabar sin expedición.
+- Capa de pendientes por ángulo (avalanchas) y de zonas planas (acampar, descansar).
+- Ruta A → B: por senderos y calles; sin sendero, por el terreno buscando lo más llano.
+- Actualizar mapas descargados al haber Wi-Fi.
+- Volver por mi traza (guía de regreso por el recorrido grabado).
+- Tiempo restante y hora de llegada en vivo (Tobler) comparados con la hora límite.
+- Modo ahorro de batería (intervalo de GPS, exención de optimización de Android).
+- Aviso al acercarse a un punto de interés (agua, punto de no retorno, peligro).
+- Buscar cumbres y lugares sin señal en los mapas descargados.
+- Distancia configurable del aviso de salida de ruta.
+- Plan de salida para un contacto: ruta, hora límite y hora de alarma, enviado antes de salir.
+- Puntos de agua con fecha de comprobación.
+
 - Ruta sugerida: buscar la mejor ruta entre los puntos marcados (más corta, más rápida, con menos desnivel),
   con el relieve y los senderos descargados, y dejarla comparable con las demás. Necesita los mosaicos de zoom 14
   (descarga Detallado) y la búsqueda en Dart (ver `decisiones.md`).
@@ -56,6 +73,8 @@ Detalles técnicos en `estado.md`; qué se probó en `pruebas.md`.
 ## Deseables a futuro
 
 - Compartir la ubicación con el grupo sin señal (radios LoRa con Meshtastic).
+- SMS periódico con la ubicación a contactos (solo Android; necesita algo de señal celular).
+- Identificador de cumbres con la cámara (o girar el mapa 3D con la brújula y nombrar las cumbres).
 - Sincronizar recorridos y expediciones entre teléfonos o con la nube.
 - Mapa base oscuro, a juego con el diseño de la app.
 - Versión para iPhone probada en un teléfono real.

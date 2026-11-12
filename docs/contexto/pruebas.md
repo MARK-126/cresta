@@ -13,6 +13,30 @@ Teléfono de pruebas: Samsung Galaxy S23 Ultra (SM-S918B), Android 16, salvo que
 - Exportar GPX (ruta) a otra app.
 - Descargas de mapas en Android con conexión móvil (opción "solo Wi-Fi").
 
+## 2026-11-12
+
+**Revisión de diseño y mapa libre · `fix/mapa-libre`** (S23, Wi-Fi, ubicación encendida por el usuario)
+- Revisión (skill design-critique) con capturas de inicio, mapa libre, expedición, SOS y Mapas; hallazgos en
+  `pendientes.md`. Con la ubicación apagada, "Mi ubicación" solo daba un aviso sin acción y el SOS solo "Reintentar".
+- Nombres: antes, en la Ciudad de México a z15 no salía ninguna calle ni colonia. Después: calles ("Calle Río Lerma",
+  "Avenida Paseo de la Reforma"), colonias ("COLONIA CUAUHTÉMOC", "ZONA ROSA") y a z6.5 estados ("HIDALGO", "MORELOS",
+  "PUEBLA", "TLAXCALA"). **OK**.
+- **Falla mía:** el primer APK abrió el mapa en blanco: la capa de límites tenía dos `interpolate` de zoom dentro de un
+  `match` (log: `Mapa: layers[19].paint.line-width: Only one zoom-based...`). Corregido; el mapa volvió a cargar.
+- "Mi ubicación", medido con `cameraInfo()` (vista 411 × 882, margen arriba 110):
+  - Primer intento en 3D: centro = tus coordenadas, pero tu punto en y = 1373 (fuera de la pantalla). Causa: altura de
+    la cámara del sitio anterior. Con la corrección en `idle`: en pantalla.
+  - Segundo intento: punto en y = 441 = mitad de toda la vista; `getPadding()` = 0. Causa: animaciones en 0 →
+    `flyTo` se volvía `jumpTo` sin padding. Con `essential: true`: y = 371, esperado (110 + 882 − 249) / 2 = 371. **OK**.
+  - Mover el mapa con el dedo (punto en y = 614) y volver a tocar: y = 371. **OK** (antes no hacía nada).
+  - Panel al mínimo: margen 144, punto en y = 424 = esperado; en 2D igual. **OK**.
+- Ubicación apagada (con `settings put secure location_mode 0`, luego devuelta a 3): en el SOS sale "La ubicación del
+  teléfono está apagada." con "Activar", que abrió los ajustes de ubicación; al volver con la ubicación encendida dijo
+  "Buscando GPS…" sin otro toque. En el mapa, el aviso trae "Abrir ajustes". **OK**.
+- Panel del mapa libre al 26 %: se ve casi el doble de mapa; texto de ayuda de 2 líneas.
+- Pruebas automáticas: 136 en verde (1 nueva: tope de 3,000 mosaicos del topo, satélite sin tope, zona normal cabe).
+- Sin probar en el teléfono: el aviso del selector de zona al pasar el tope (cubierto por la prueba automática).
+
 ## 2026-10-28
 
 **Experimento: senderos de los mosaicos en Dart · `spike/senderos-dart`**

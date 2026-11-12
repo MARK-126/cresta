@@ -24,7 +24,9 @@ Por **depuración inalámbrica** (por USB, Windows no lo detectó: probablemente
 Cuidado:
 - Si viene un código, ese puerto es el de **vincular**: solo `adb pair`. Un `adb connect` a ese puerto gasta
   el código ("protocol fault" después). Nunca `adb pair` al puerto de conexión.
-- La IP del teléfono ha sido siempre `.39` (una vez el usuario escribió `.38` por error).
+- La IP del teléfono fue `.39` hasta oct 2026; el 12 nov 2026 era `192.168.100.3` (revisar con `adb devices`).
+- El S23 tiene las **animaciones en 0** (Opciones de desarrollador): el WebView ve `prefers-reduced-motion` y
+  MapLibre cambia vuelos por saltos. Probar los movimientos de cámara con eso en mente.
 - Conviene "Pantalla activa" en Opciones de desarrollador y el teléfono cargando.
 
 ## Compilar e instalar
@@ -67,5 +69,9 @@ Cuidado:
 - `cdp.py 'expresión JS'`: evalúa JavaScript en el WebView del mapa (p. ej.
   `window.cresta.jumpTo(-98.64, 19.15, 14)` o `window.cresta.snapLeg([...], [...])`). Requiere
   `adb forward tcp:9333 localabstract:webview_devtools_remote_$(adb shell pidof com.cresta.cresta)`.
+  Tras reinstalar o reabrir la app el pid cambia: `adb forward --remove tcp:9333` y volver a enlazar. Varias
+  consultas seguidas: envolver en `(()=>{ ... })()` (un `const` repetido falla). `window.cresta.cameraInfo()` da la
+  cámara y la posición en pantalla de tu punto. Los errores del estilo salen en `adb logcat` como `flutter: Mapa: ...`.
+- `uiautomator` (y `ui.sh`) a veces no alcanza a leer un SnackBar: si no aparece, confirmar con captura.
 - En scripts `bash -s <<'EOF'`, cada `adb shell` necesita `</dev/null` o se come el resto del script.
 - No hay `node` en WSL; Python 3 sí (con Pillow).
