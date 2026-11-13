@@ -24,6 +24,30 @@ Teléfono de pruebas: Samsung Galaxy S23 Ultra (SM-S918B), Android 16, salvo que
 - Exportar GPX (ruta) a otra app.
 - Descargas de mapas en Android con conexión móvil (opción "solo Wi-Fi").
 
+## 2026-11-13
+
+**Video del recorrido: relevamiento de fallas** (prueba del usuario: parpadea, abre en un punto por defecto, a veces
+sale en blanco, cuadros trabados; pide leyendas de inicio y fin más visibles)
+- Videos del usuario (caché de la app y los enviados por WhatsApp, que sí acepta el MP4): uno a **6.4 cuadros/s** (91
+  cuadros en 14 s, ~160 ms entre cuadros) y otro a 9.6 cuadros/s **todo en blanco** (mismo brillo en los 127 cuadros:
+  solo cielo, color de fondo y el título). Análisis con `ffmpeg` (`imageio-ffmpeg` en un venv temporal).
+- **En blanco**: reproducido en el teléfono (también la pantalla). `debugState()` en `map.js`: durante el vuelo
+  `transform.elevation` = 0 con el suelo a 808 m (×1.4 de exageración = 1,138 m): la **cámara queda bajo el terreno**
+  y solo se dibujan las etiquetas (el resto va en la textura del relieve). Causa: al empezar el vuelo el relieve del
+  lugar aún no cargó, `getElevationForLngLatZoom` da 0 y la corrección por cuadro (13 nov) lo copiaba. Antes de esa
+  corrección pasaba lo contrario: la altura del ejemplo del Izta (cámara lejísimos).
+- **Parpadeo**: en cuadros seguidos, nombres e íconos aparecen y desaparecen ("Punta del Lago", "Fuente de los
+  Continentes", íconos): con la cámara girando en cada cuadro, MapLibre recalcula qué etiquetas caben y las funde.
+- **Trabado**: el mapa se dibuja a ~44 cuadros/s y copiar el lienzo cuesta 12.8 ms; con la copia en cada cuadro el
+  codificador da 22–30 cuadros/s (H.264 o VP8, 720 × 1546 o 720 × 1280). Los 6–10 del usuario coinciden con la primera
+  vez en una zona: los mosaicos de la ciudad bajan de internet durante el vuelo, el mapa se dibuja a tirones y, como el
+  vuelo avanza con el reloj, la cámara salta. `MediaRecorder` pone a cada cuadro la hora real: no hay forma de esperar a
+  que cargue el mapa sin que el video se congele.
+- **Punto por defecto**: el mapa arranca centrado en el ejemplo (Izta), luego encuadra la última zona descargada y
+  recién después vuela al recorrido.
+- WebCodecs (`VideoEncoder`) está en el WebView del S23 (Chrome 157; H.264 720 × 1280 admitido): permite armar el video
+  cuadro por cuadro con tiempos exactos, esperando a que cargue cada cuadro.
+
 ## 2026-11-12
 
 **Salida del usuario al Parque General San Martín (Mendoza), con pantalla bloqueada** · `main` + `feat/buscar-lugares`

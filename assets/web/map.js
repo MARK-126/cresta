@@ -870,6 +870,19 @@
       const g = await slopeGrid(z, Math.floor(xf), Math.floor(yf));
       return g && Math.round(g.deg[Math.floor((yf % 1) * g.n) * g.n + Math.floor((xf % 1) * g.n)] * 10) / 10;
     },
+    // Para pruebas (tool/dev/cdp.py): estado de carga del mapa y del relieve
+    debugState() {
+      const t = map.transform;
+      return { flying: !!flying, recording: !!recorder, terrain: !!map.terrain, tilesLoaded: map.areTilesLoaded(),
+        dem: map.isSourceLoaded('dem'), topo: map.isSourceLoaded('topo'), elevation: Math.round(t.elevation),
+        zoom: +map.getZoom().toFixed(2), center: map.getCenter().toArray().map((x) => +x.toFixed(4)),
+        cameraAlt: Math.round(map.transform.getCameraAltitude ? map.transform.getCameraAltitude() : -1),
+        tileZoom: t.tileZoom,
+        eTile: map.terrain && Math.round(map.terrain.getElevationForLngLatZoom(map.getCenter(), t.tileZoom)),
+        e12: map.terrain && Math.round(map.terrain.getElevationForLngLatZoom(map.getCenter(), 12)),
+        e10: map.terrain && Math.round(map.terrain.getElevationForLngLatZoom(map.getCenter(), 10)),
+        demTiles: map.terrain ? Object.keys(map.terrain.sourceCache.sourceCache._tiles || {}).length : -1 };
+    },
     // Para pruebas (tool/dev/cdp.py): dónde está la cámara y dónde se dibuja tu posición
     cameraInfo() {
       const c = map.getCenter(), m = me && map.project(me.getLngLat());

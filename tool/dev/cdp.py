@@ -64,5 +64,7 @@ while True:
     m = recv()
     if m.get('id') == 1:
         r = m['result']
-        print(json.dumps(r.get('exceptionDetails') or r['result'].get('value'), ensure_ascii=False)[:4000])
+        out = json.dumps(r.get('exceptionDetails') or r['result'].get('value'), ensure_ascii=False)
+        # CDP_FULL=1: sin recortar (p. ej. para bajar un video en base64)
+        print(out if os.environ.get('CDP_FULL') else out[:4000])
         break
