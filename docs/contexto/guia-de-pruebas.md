@@ -46,8 +46,11 @@ Lo que se corrigió a partir de tus observaciones en el Parque San Martín, y c�
 - **Escribir lugares al trazar una ruta**: campo "¿Desde dónde sales?" / "Agregar parada o destino por nombre".
   "Tu ubicación", tus mapas y, con conexión, todo el mundo (confirma con Enter).
 - **Íconos de lugares** (agua, refugio, camping, comida, baños, salud…) y nombres legibles sobre el satélite.
-- **Video del recorrido en 3D**: en el detalle del recorrido, "Video del recorrido en 3D". No toques el mapa mientras
-  graba; al terminar se abre compartir. Probar que WhatsApp lo acepte.
+- **Video del recorrido en 3D** (rehecho el 13 nov 2026): en el detalle del recorrido, "Video del recorrido en 3D".
+  Primero dice "Preparando el video…" y luego "Generando el video… N %"; al terminar se abre compartir. Debe verse
+  fluido, sin parpadeos ni cuadros en blanco, con carteles INICIO y FIN. Probar con un recorrido en la montaña (zona
+  descargada) y en una zona que nunca se vio (los mosaicos bajan de internet: tarda más en generarse, pero debe salir
+  igual de fluido).
 
 ## En casa (con el teléfono conectado a la computadora)
 

@@ -215,6 +215,7 @@
         found: { type: 'geojson', data: empty },
         track: { type: 'geojson', data: empty },
         'track-ends': { type: 'geojson', data: empty },
+        'video-track': { type: 'geojson', data: empty, lineMetrics: true },
         regions: { type: 'geojson', data: empty },
         zones: { type: 'geojson', data: empty },
         ash: { type: 'geojson', data: empty },
@@ -297,6 +298,9 @@
         // Recorrido grabado (coral, el color de grabar; encima de la ruta planeada, que es teal)
         { id: 'track-casing', type: 'line', source: 'track', layout: { 'line-join': 'round', 'line-cap': 'round' }, paint: { 'line-color': '#0e1416', 'line-width': 8, 'line-opacity': 0.8 } },
         { id: 'track', type: 'line', source: 'track', layout: { 'line-join': 'round', 'line-cap': 'round' }, paint: { 'line-color': '#ffa089', 'line-width': 4.5 } },
+        // Traza del video: se pinta con un degradado según el avance (sin recalcular la geometría)
+        { id: 'video-casing', type: 'line', source: 'video-track', layout: { visibility: 'none', 'line-join': 'round', 'line-cap': 'round' }, paint: { 'line-width': 10, 'line-gradient': ['step', ['line-progress'], 'rgba(0,0,0,0)', 1, 'rgba(0,0,0,0)'] } },
+        { id: 'video-line', type: 'line', source: 'video-track', layout: { visibility: 'none', 'line-join': 'round', 'line-cap': 'round' }, paint: { 'line-width': 6, 'line-gradient': ['step', ['line-progress'], 'rgba(0,0,0,0)', 1, 'rgba(0,0,0,0)'] } },
         // Inicio y fin del recorrido (el fin, solo al verlo terminado: grabando, el fin eres tú)
         { id: 'track-ends', type: 'circle', source: 'track-ends', paint: {
           'circle-radius': ['match', ['get', 'role'], 'head', 8, 7], 'circle-color': ['match', ['get', 'role'], 'start', '#f0bf63', '#ffa089'],
@@ -443,7 +447,6 @@
     if (!flying) return;
     cancelAnimationFrame(flying);
     flying = null;
-    if (recorder) recorder.stop(); // manda lo grabado hasta aquí
     emit('flyEnd');
   }
   function flyRoute(durationMs = 38000) {
@@ -469,17 +472,12 @@
     };
     flying = requestAnimationFrame(step);
   }
-  // --- Sobrevuelo de un recorrido grabado (y su video)
-  // La línea se va dibujando detrás de un punto que avanza; la cámara lo sigue en 3D.
-  // Con `record`, el lienzo del mapa se graba (MediaRecorder) y el video se manda a Flutter en
-  // pedazos ('videoChunk', luego 'videoEnd'): un solo mensaje de varios MB no pasa por el puente.
-  let recorder = null;
-  function videoType() {
-    for (const t of ['video/mp4;codecs=avc1', 'video/mp4', 'video/webm;codecs=vp9', 'video/webm;codecs=vp8', 'video/webm']) {
-      if (window.MediaRecorder && MediaRecorder.isTypeSupported(t)) return t;
-    }
-    return null;
-  }
+  // --- Video del recorrido
+  // Se genera cuadro por cuadro (WebCodecs + mp4-muxer), no se graba "en vivo": cada cuadro espera
+  // a que cargue lo visible y lleva su tiempo exacto, así sale fluido aunque los mosaicos tarden
+  // (13 nov 2026: grabando en vivo salían 6–10 cuadros/s y saltos de cámara). El video se manda a
+  // Flutter en pedazos ('videoChunk', luego 'videoEnd'): un solo mensaje de varios MB no pasa.
+  let videoJob = null;
   function sendVideo(blob, type) {
     const reader = new FileReader();
     reader.onload = () => {
@@ -491,37 +489,41 @@
     };
     reader.readAsDataURL(blob);
   }
-  // Graba una copia reducida del mapa (720 px de ancho): el lienzo a resolución completa
-  // (1440 × 3088 en el S23) hacía fallar el codificador de video del teléfono. La copia se
-  // hace en 'render', justo al terminar de dibujar (después, WebGL ya borró el cuadro).
-  function startCapture(type, caption) {
-    const src = map.getCanvas();
-    const w = 720, h = Math.round(w * src.height / src.width / 2) * 2;
-    const c = document.createElement('canvas');
-    c.width = w; c.height = h;
-    const g = c.getContext('2d');
-    const draw = () => {
-      g.drawImage(src, 0, 0, w, h);
-      if (!caption) return;
-      const band = g.createLinearGradient(0, h - 150, 0, h);
-      band.addColorStop(0, 'rgba(14,20,22,0)'); band.addColorStop(1, 'rgba(14,20,22,0.85)');
-      g.fillStyle = band; g.fillRect(0, h - 150, w, 150);
-      g.fillStyle = '#ffffff'; g.font = 'bold 30px sans-serif'; g.textAlign = 'left';
-      g.fillText(caption.title, 28, h - 62);
-      g.fillStyle = '#46eae5'; g.font = 'bold 22px sans-serif';
-      g.fillText(caption.detail, 28, h - 28);
-      g.textAlign = 'right'; g.fillStyle = 'rgba(255,255,255,0.7)';
-      g.fillText('CRESTA', w - 28, h - 28);
-    };
-    map.on('render', draw);
-    const rec = new MediaRecorder(c.captureStream(30), { mimeType: type, videoBitsPerSecond: 5e6 });
-    rec.cleanup = () => map.off('render', draw);
-    return rec;
+  const VIDEO = { w: 720, h: 1280, fps: 30 };
+  // Capas que en el video solo estorban: cambian de lugar al girar la cámara y parpadean
+  const VIDEO_HIDE = ['poi-icons', 'road-names', 'places-minor', 'regions-line', 'track', 'track-casing', 'track-ends', 'track-ends-label', 'found-ring', 'found-dot', 'found-label'];
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+  const nextRender = () => new Promise((r) => { map.once('render', r); map.triggerRepaint(); });
+  const smooth = (x) => x * x * (3 - 2 * x);
+  async function videoCodec() {
+    if (!window.VideoEncoder || !window.Mp4Muxer) return null;
+    for (const codec of ['avc1.640028', 'avc1.4d0028', 'avc1.42002a', 'avc1.42001f']) {
+      const cfg = { codec, width: VIDEO.w, height: VIDEO.h, bitrate: 4e6, framerate: VIDEO.fps };
+      try { if ((await VideoEncoder.isConfigSupported(cfg)).supported) return cfg; } catch (_) { /* siguiente */ }
+    }
+    return null;
   }
-  function flyTrack(segments, record, caption) {
+  // Un cartel redondeado ("INICIO", "FIN") con una punta hacia el punto
+  function pill(g, x, y, text, color) {
+    // Fuera del cuadro o sobre la franja del título, no se dibuja
+    if (x < -60 || x > VIDEO.w + 60 || y < 60 || y > VIDEO.h - 200) return;
+    g.font = 'bold 30px sans-serif';
+    const w = g.measureText(text).width + 36, h = 50, top = y - h - 26;
+    g.fillStyle = 'rgba(0,0,0,0.25)'; g.beginPath(); g.roundRect(x - w / 2 + 2, top + 3, w, h, 25); g.fill();
+    g.fillStyle = color; g.beginPath(); g.roundRect(x - w / 2, top, w, h, 25); g.fill();
+    g.beginPath(); g.moveTo(x - 11, top + h - 1); g.lineTo(x + 11, top + h - 1); g.lineTo(x, top + h + 14); g.closePath(); g.fill();
+    g.fillStyle = '#ffffff'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(text, x, top + h / 2 + 1);
+    g.beginPath(); g.arc(x, y, 11, 0, Math.PI * 2); g.fillStyle = color; g.fill();
+    g.lineWidth = 4; g.strokeStyle = '#ffffff'; g.stroke();
+  }
+  async function flyTrack(segments, record, caption) {
     stopFly();
     const coords = segments.flat();
     if (coords.length < 2) return;
+    const cfg = await videoCodec();
+    if (!cfg) { emit('videoError', { message: 'Este teléfono no puede generar video del mapa.' }); return; }
+    const job = (videoJob = { cancelled: false });
+    // Distancias a lo largo del recorrido
     const d = [0];
     for (let i = 1; i < coords.length; i++) {
       const [a, b] = [coords[i - 1], coords[i]];
@@ -532,68 +534,151 @@
     const at = (m) => {
       let i = 1;
       while (i < d.length - 1 && d[i] < m) i++;
-      const t = (m - d[i - 1]) / Math.max(1, d[i] - d[i - 1]);
-      return { i, pt: [coords[i - 1][0] + (coords[i][0] - coords[i - 1][0]) * t, coords[i - 1][1] + (coords[i][1] - coords[i - 1][1]) * t] };
+      const t = (m - d[i - 1]) / Math.max(1e-6, d[i] - d[i - 1]);
+      return [coords[i - 1][0] + (coords[i][0] - coords[i - 1][0]) * t, coords[i - 1][1] + (coords[i][1] - coords[i - 1][1]) * t];
     };
-    // ~6 s por km, entre 12 y 45 s; más cerca si el recorrido es corto
-    const durationMs = Math.max(12000, Math.min(45000, total / 1000 * 6000));
     const zoom = total < 2000 ? 15.6 : total < 8000 ? 14.6 : 13.6;
+    const pitch = 60;
+    // Partes: 1 s quieto en el inicio, el vuelo (~6 s por km, 10–40 s) y 4 s alejándose para ver todo
+    const fps = VIDEO.fps;
+    const nIntro = fps, nFly = Math.round(Math.max(10, Math.min(40, total / 1000 * 6)) * fps), nOutro = Math.round(2.5 * fps), nHold = Math.round(1.5 * fps);
+    const N = nIntro + nFly + nOutro + nHold;
+
+    // Estado del mapa durante el video (se restaura al final)
+    const was = VIDEO_HIDE.map((id) => [id, map.getLayer(id) && map.getLayoutProperty(id, 'visibility')]);
+    VIDEO_HIDE.forEach((id) => map.getLayer(id) && map.setLayoutProperty(id, 'visibility', 'none'));
+    const fade = map._fadeDuration;
+    map._fadeDuration = 0; // sin fundido de etiquetas: se veía como parpadeo
+    map.getSource('video-track').setData({ type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: coords } });
+    const progress = (p) => {
+      const q = Math.max(1e-6, Math.min(1, p));
+      map.setPaintProperty('video-line', 'line-gradient', ['step', ['line-progress'], '#ffa089', q, 'rgba(255,160,137,0)']);
+      map.setPaintProperty('video-casing', 'line-gradient', ['step', ['line-progress'], 'rgba(14,20,22,0.85)', q, 'rgba(14,20,22,0)']);
+    };
+    ['video-line', 'video-casing'].forEach((id) => map.setLayoutProperty(id, 'visibility', 'visible'));
+    progress(0);
     if (!is3d) api.set3d(true);
-    let brg = bearing(coords[0], at(Math.min(total, 300)).pt);
-    // Con relieve, la cámara conserva la altura del lugar anterior mientras se mueve (solo se
-    // corrige al detenerse, y en el vuelo nunca se detiene): se pone la del terreno en cada cuadro
-    const ground = (pt) => {
+
+    // Altura de la cámara: la del terreno, nunca 0 (0 = el relieve aún no cargó; la cámara quedaba
+    // bajo el terreno y el video salía en blanco)
+    let ground = 0;
+    const setGround = (pt) => {
       if (!map.terrain) return;
       const el = map.terrain.getElevationForLngLatZoom(maplibregl.LngLat.convert(pt), map.transform.tileZoom);
-      if (Number.isFinite(el)) map.transform.elevation = el;
+      if (Number.isFinite(el) && el > 0) ground = el;
+      if (ground > 0) map.transform.elevation = ground;
     };
-    const go = (pt) => { ground(pt); map.jumpTo({ center: pt, zoom, pitch: 62, bearing: brg }); };
-    go(coords[0]);
-    // Empieza cuando cargó el relieve y el mapa del inicio (o a los 4 s)
-    let started = false;
-    const begin = () => { if (!started) { started = true; go(coords[0]); start(); } };
-    map.once('idle', begin);
-    setTimeout(begin, 4000);
-    const start = () => {
-    let type = null;
-    if (record && (type = videoType())) {
-      const chunks = [];
-      recorder = startCapture(type, caption);
-      recorder.ondataavailable = (e) => e.data.size && chunks.push(e.data);
-      recorder.onerror = (e) => emit('videoError', { message: `No se pudo grabar el video: ${e.error || e}` });
-      recorder.onstop = () => {
-        recorder.cleanup();
-        recorder = null;
-        if (chunks.length) sendVideo(new Blob(chunks, { type }), type);
-        else emit('videoError', { message: 'El video quedó vacío.' });
-      };
-      recorder.start(1000);
-    } else if (record) {
-      emit('videoError', { message: 'Este teléfono no puede grabar video del mapa.' });
+    const noPad = { top: 0, bottom: 0, left: 0, right: 0 };
+    let brg = bearing(coords[0], at(Math.min(total, 300)));
+    const pose = (center, z, p, b) => { setGround(center); map.jumpTo({ center, zoom: z, pitch: p, bearing: b, padding: noPad }); };
+    pose(coords[0], zoom, pitch, brg);
+    // Espera a que cargue el inicio (relieve y mapa), máx 8 s
+    for (let t0 = performance.now(); performance.now() - t0 < 8000;) {
+      await nextRender();
+      setGround(coords[0]);
+      if (ground > 0 && map.areTilesLoaded()) break;
+      await sleep(60);
     }
-    let t0 = null, frame = 0;
-    const step = (ts) => {
-      if (t0 === null) t0 = ts + 800; // un momento quieto al inicio
-      const k = Math.max(0, Math.min(1, (ts - t0) / durationMs));
-      const m = k * total;
-      const a = at(m);
-      const target = bearing(a.pt, at(Math.min(total, m + 250)).pt);
-      brg += (((target - brg + 540) % 360) - 180) * 0.04;
-      go(a.pt);
-      if (frame++ % 2 === 0) {
-        map.getSource('track').setData({ type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: [...coords.slice(0, a.i), a.pt] } });
-        map.getSource('track-ends').setData({ type: 'FeatureCollection', features: [pointFeature(coords[0], { role: 'start' }), pointFeature(a.pt, { role: 'head' })] });
+    pose(coords[0], zoom, pitch, brg);
+
+    // Vista final: todo el recorrido
+    const bounds = coords.reduce((b, c) => b.extend(c), new maplibregl.LngLatBounds(coords[0], coords[0]));
+    const src = map.getCanvas();
+    const c = document.createElement('canvas');
+    c.width = VIDEO.w; c.height = VIDEO.h;
+    const g = c.getContext('2d');
+    const dpr = src.width / src.clientWidth;
+    // Recorte 9:16 al centro del mapa (sin padding, el centro de la cámara es el centro del lienzo)
+    const cropW = Math.min(src.width, src.height * 9 / 16), cropH = cropW * 16 / 9;
+    const sx = (src.width - cropW) / 2, sy = (src.height - cropH) / 2, scale = VIDEO.w / cropW;
+    const toVideo = (pt) => { const q = map.project(pt); return [(q.x * dpr - sx) * scale, (q.y * dpr - sy) * scale]; };
+    const draw = (state) => {
+      g.drawImage(src, sx, sy, cropW, cropH, 0, 0, VIDEO.w, VIDEO.h);
+      const [x0, y0] = toVideo(coords[0]);
+      if (state.end) { const [x1, y1] = toVideo(coords[coords.length - 1]); pill(g, x1, y1, '🏁 FIN', '#d64545'); }
+      pill(g, x0, y0, 'INICIO', '#2f9e5f');
+      if (!state.end) {
+        const [hx, hy] = toVideo(state.head);
+        g.beginPath(); g.arc(hx, hy, 22, 0, Math.PI * 2); g.fillStyle = 'rgba(255,160,137,0.35)'; g.fill();
+        g.beginPath(); g.arc(hx, hy, 12, 0, Math.PI * 2); g.fillStyle = '#ffa089'; g.fill();
+        g.lineWidth = 4; g.strokeStyle = '#ffffff'; g.stroke();
       }
-      emit('flyProgress', { meters: Math.round(m) });
-      if (k < 1) { flying = requestAnimationFrame(step); return; }
-      flying = null;
-      // Al final, todo el recorrido con su inicio y fin
+      // Título, cifras y avance
+      const band = g.createLinearGradient(0, VIDEO.h - 190, 0, VIDEO.h);
+      band.addColorStop(0, 'rgba(14,20,22,0)'); band.addColorStop(1, 'rgba(14,20,22,0.88)');
+      g.fillStyle = band; g.fillRect(0, VIDEO.h - 190, VIDEO.w, 190);
+      g.textBaseline = 'alphabetic'; g.textAlign = 'left';
+      if (caption) {
+        g.fillStyle = '#ffffff'; g.font = 'bold 32px sans-serif'; g.fillText(caption.title, 32, VIDEO.h - 82);
+        g.fillStyle = '#46eae5'; g.font = 'bold 24px sans-serif'; g.fillText(caption.detail, 32, VIDEO.h - 46);
+      }
+      g.textAlign = 'right'; g.fillStyle = 'rgba(255,255,255,0.75)'; g.font = 'bold 22px sans-serif';
+      g.fillText(`${(state.m / 1000).toFixed(2)} km`, VIDEO.w - 32, VIDEO.h - 82);
+      g.fillText('CRESTA', VIDEO.w - 32, VIDEO.h - 46);
+      g.fillStyle = 'rgba(255,255,255,0.18)'; g.fillRect(0, VIDEO.h - 8, VIDEO.w, 8);
+      g.fillStyle = '#ffa089'; g.fillRect(0, VIDEO.h - 8, VIDEO.w * state.m / total, 8);
+    };
+
+    const muxer = new Mp4Muxer.Muxer({ target: new Mp4Muxer.ArrayBufferTarget(), video: { codec: 'avc', width: VIDEO.w, height: VIDEO.h, frameRate: fps }, fastStart: 'in-memory' });
+    let failed = null;
+    const encoder = new VideoEncoder({ output: (chunk, meta) => muxer.addVideoChunk(chunk, meta), error: (e) => { failed = e; } });
+    encoder.configure(cfg);
+    let flyEnd = null; // última pose del vuelo, de donde parte el alejamiento
+    let overview = null;
+    try {
+      for (let k = 0; k < N && !job.cancelled && !failed; k++) {
+        let state;
+        if (k < nIntro + nFly) {
+          const f = k < nIntro ? 0 : smooth((k - nIntro) / (nFly - 1));
+          const m = f * total;
+          const head = at(m);
+          const target = bearing(head, at(Math.min(total, m + 250)));
+          brg += (((target - brg + 540) % 360) - 180) * 0.05;
+          pose(head, zoom, pitch, brg);
+          progress(m / total);
+          state = { head, m, end: false };
+          flyEnd = { center: head, zoom, pitch, bearing: brg };
+        } else {
+          if (!overview) {
+            const cam = map.cameraForBounds(bounds, { padding: { top: 220, bottom: 320, left: 120, right: 120 }, bearing: brg, pitch: 45 });
+            // (MapLibre 4 no cuenta la inclinación al calcularlo: un poco más lejos para que quepa)
+            overview = { center: cam.center.toArray(), zoom: Math.min(cam.zoom - 0.4, zoom), pitch: 45, bearing: brg };
+          }
+          const f = smooth(Math.min(1, (k - nIntro - nFly) / nOutro));
+          const lerp = (a, b) => a + (b - a) * f;
+          pose([lerp(flyEnd.center[0], overview.center[0]), lerp(flyEnd.center[1], overview.center[1])],
+            lerp(flyEnd.zoom, overview.zoom), lerp(flyEnd.pitch, overview.pitch), flyEnd.bearing);
+          progress(1);
+          state = { head: coords[coords.length - 1], m: total, end: true };
+        }
+        // Espera a que cargue lo visible (máx 2.5 s por cuadro) y copia el cuadro al terminar de dibujarlo
+        for (let t0 = performance.now(); !map.areTilesLoaded() && performance.now() - t0 < 2500;) { await nextRender(); await sleep(30); }
+        await new Promise((r) => { map.once('render', () => { draw(state); r(); }); map.triggerRepaint(); });
+        const frame = new VideoFrame(c, { timestamp: Math.round(k * 1e6 / fps), duration: Math.round(1e6 / fps) });
+        encoder.encode(frame, { keyFrame: k % (fps * 2) === 0 });
+        frame.close();
+        while (encoder.encodeQueueSize > 4) await sleep(5);
+        if (k % 10 === 0) emit('videoProgress', { p: +(k / N).toFixed(3) });
+      }
+      await encoder.flush();
+      if (failed) throw failed;
+      if (job.cancelled) return;
+      muxer.finalize();
+      emit('videoProgress', { p: 1 });
+      sendVideo(new Blob([muxer.target.buffer], { type: 'video/mp4' }), 'video/mp4');
+    } catch (e) {
+      emit('videoError', { message: `No se pudo generar el video: ${e && e.message ? e.message : e}` });
+    } finally {
+      try { encoder.close(); } catch (_) { /* ya cerrado */ }
+      ['video-line', 'video-casing'].forEach((id) => map.setLayoutProperty(id, 'visibility', 'none'));
+      was.forEach(([id, v]) => map.getLayer(id) && map.setLayoutProperty(id, 'visibility', v || 'visible'));
+      map._fadeDuration = fade;
+      if (videoJob === job) videoJob = null;
       api.setTrack(segments, true);
-      setTimeout(() => { if (recorder) recorder.stop(); emit('flyEnd'); }, 1500);
-    };
-    flying = requestAnimationFrame(step);
-    };
+      fitBounds(bounds.getWest(), bounds.getSouth(), bounds.getEast(), bounds.getNorth());
+    }
   }
+  function cancelVideo() { if (videoJob) videoJob.cancelled = true; }
 
   // Seguir la posición mientras se graba; si el usuario mueve el mapa, se deja de seguir
   let following = false;
@@ -855,6 +940,7 @@
     fitRoute,
     flyRoute,
     flyTrack,
+    cancelVideo,
     stopFly,
     flyTo(lng, lat, zoom = 13.5, pitch = 55, bearingDeg) {
       stopFly();
@@ -873,7 +959,7 @@
     // Para pruebas (tool/dev/cdp.py): estado de carga del mapa y del relieve
     debugState() {
       const t = map.transform;
-      return { flying: !!flying, recording: !!recorder, terrain: !!map.terrain, tilesLoaded: map.areTilesLoaded(),
+      return { flying: !!flying, recording: !!videoJob, terrain: !!map.terrain, tilesLoaded: map.areTilesLoaded(),
         dem: map.isSourceLoaded('dem'), topo: map.isSourceLoaded('topo'), elevation: Math.round(t.elevation),
         zoom: +map.getZoom().toFixed(2), center: map.getCenter().toArray().map((x) => +x.toFixed(4)),
         cameraAlt: Math.round(map.transform.getCameraAltitude ? map.transform.getCameraAltitude() : -1),

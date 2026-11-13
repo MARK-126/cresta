@@ -45,6 +45,12 @@ sale en blanco, cuadros trabados; pide leyendas de inicio y fin más visibles)
   que cargue el mapa sin que el video se congele.
 - **Punto por defecto**: el mapa arranca centrado en el ejemplo (Izta), luego encuadra la última zona descargada y
   recién después vuela al recorrido.
+- **Corrección** (`fix/video-recorrido`): video generado cuadro por cuadro (ver `estado.md`). Con el "Recorrido 2":
+  450 cuadros a 30/s exactos en 15 s, sin cuadros lisos ni parpadeos (análisis de cuadros), INICIO y FIN visibles,
+  cámara a la altura correcta todo el vuelo, 7.4 MB (4 Mbps; con 6 Mbps eran 11 MB). Se genera en ~12 s. El mapa queda
+  tapado con "Preparando el video…" hasta el primer cuadro (ya no se ve el punto por defecto). Falla en el camino: el
+  cartel INICIO caía sobre la franja del título → no se dibuja ahí. Menú de compartir cerrado sin enviar; videos
+  temporales borrados. **OK**.
 - WebCodecs (`VideoEncoder`) está en el WebView del S23 (Chrome 157; H.264 720 × 1280 admitido): permite armar el video
   cuadro por cuadro con tiempos exactos, esperando a que cargue cada cuadro.
 

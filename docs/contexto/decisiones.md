@@ -110,7 +110,12 @@
   color de grabar), como el naranja de Wikiloc. Inicio dorado, fin coral, en rutas y recorridos.
 - **Íconos de lugares con emoji del sistema** dibujados en el teléfono: MapLibre necesita imágenes (sprite) y no hay
   sprite descargado; el emoji del sistema funciona sin señal. Sin nombre se ocultan estatuas y monumentos (ensuciaban).
-- **Video del recorrido**: grabado en el propio WebView (`MediaRecorder` sobre una copia reducida del lienzo) en vez
+- **Video generado, no grabado** (13 nov 2026): con `MediaRecorder` cada cuadro lleva la hora real, así que si el mapa
+  tarda en cargar el video se traba o la cámara salta (6–10 cuadros/s en la primera salida del usuario). Con WebCodecs
+  cada cuadro espera a que el mapa esté listo y lleva su tiempo exacto: siempre 30 cuadros/s; tarda unos segundos más.
+  Carteles y punto dibujados sobre el cuadro (no como capas del mapa): no compiten por espacio con las etiquetas ni
+  parpadean. 9:16 para redes y teléfonos.
+- **Video del recorrido** (primera versión, reemplazada): grabado en el propio WebView (`MediaRecorder` sobre una copia reducida del lienzo) en vez
   de un plugin de video: no suma dependencias nativas. Copia a 720 px porque a resolución completa falló el
   codificador del S23 ("Can't obtain input buffer"). Se copia en `render` (sin `preserveDrawingBuffer`, después el
   cuadro ya está borrado). El campo `type` del evento pisaba el nombre del evento: se llama `mime`.

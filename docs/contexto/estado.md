@@ -248,10 +248,17 @@ Actualizado: 12 nov 2026 · avisos al acercarse a los puntos de interés de la r
   montaña, desde z15 lo demás; sin nombre solo agua, baños, estacionamiento, refugio, camping y salud). Sobre el
   satélite los nombres pasan a blanco con borde oscuro (`paintNames`). Nombres de calles con
   `text-pitch-alignment: viewport` en 3D.
-- Video del recorrido (`MapScreen(video: true)`, botón en el detalle): `flyTrack` en `map.js` (línea que se dibuja,
-  punto que avanza, ~6 s/km entre 12 y 45 s, altura de cámara corregida en cada cuadro); `startCapture` graba una copia
-  de 720 px de ancho en `render` con título, distancia y "CRESTA"; `MediaRecorder` MP4 (o WebM); se manda en pedazos
-  base64 de 256 KB (`videoChunk`, `videoEnd` con `mime`) y se comparte con `share_plus`.
+- Video del recorrido (`MapScreen(video: true)`, botón en el detalle; rehecho el 13 nov 2026 en `fix/video-recorrido`):
+  `flyTrack` en `map.js` **genera** el video cuadro por cuadro con WebCodecs (`VideoEncoder` H.264, 720 × 1280, 30
+  cuadros/s, 4 Mbps) y `mp4-muxer` 5.2.2 (`assets/web/vendor/`, MIT): cada cuadro espera a que cargue lo visible (máx
+  2.5 s) y se copia en `render`. Partes: 1 s en el inicio, el vuelo (~6 s/km, 10–40 s, con aceleración suave) y 4 s
+  alejándose a la vista de todo el recorrido. La traza se pinta con `line-gradient` (fuente `video-track` con
+  `lineMetrics`) y los carteles INICIO (verde), 🏁 FIN (rojo), el punto que avanza, el título, los km recorridos y
+  la barra de avance se dibujan sobre cada cuadro. Durante el video se ocultan íconos, nombres de calles y barrios y
+  el fundido de etiquetas (`_fadeDuration = 0`). Altura de la cámara: la del terreno, nunca 0 (espera a que cargue el
+  relieve del inicio). Flutter tapa el mapa con "Preparando el video…" hasta el primer cuadro y luego muestra el
+  avance (`videoProgress`). Se manda en pedazos base64 de 256 KB (`videoChunk`, `videoEnd` con `mime`) y se comparte
+  con `share_plus`. Sin WebCodecs: aviso de que el teléfono no puede. `debugState()` en `map.js` para pruebas.
 - `tool/dev/tap.sh "TEXTO"`: toca un elemento por su texto.
 
 ### Interfaz

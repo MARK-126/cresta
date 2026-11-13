@@ -651,6 +651,10 @@ class _MapScreenState extends State<MapScreen> {
       case 'flyEnd':
         setState(() => _flying = false);
         if (_video == null) _moveSheet(_sheetInitial);
+      case 'videoProgress':
+        if (_video != null) {
+          setState(() => _video!.progress = (e.data['p'] as num).toDouble());
+        }
       case 'videoChunk':
         _video?.chunks[(e.data['i'] as num).toInt()] = e.data['data'] as String;
       case 'videoEnd':
@@ -803,7 +807,6 @@ class _MapScreenState extends State<MapScreen> {
   void _startVideo(List<TrackPoint> points) {
     setState(() {
       _video = _VideoJob();
-      _flying = true;
       _is3d = true;
     });
     // Después del cuadro: al abrir, el panel aún no está listo para moverse
@@ -1206,46 +1209,6 @@ class _MapScreenState extends State<MapScreen> {
                       ],
                     ),
                   ),
-                  if (_video != null)
-                    Positioned.fill(
-                      child: AbsorbPointer(
-                        child: Align(
-                          alignment: Alignment.topCenter,
-                          child: Padding(
-                            padding: EdgeInsets.only(
-                              top: MediaQuery.paddingOf(context).top + 76,
-                              left: 16,
-                              right: 80,
-                            ),
-                            child: Glass(
-                              child: Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 16,
-                                  vertical: 12,
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    const SizedBox.square(
-                                      dimension: 18,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 12),
-                                    Flexible(
-                                      child: Text(
-                                        _video!.saving ? 'Guardando el video…' : 'Grabando el video del recorrido… no toques el mapa',
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
                   if (_found != null)
                     Positioned(
                       left: 8,
@@ -1439,6 +1402,7 @@ class _MapScreenState extends State<MapScreen> {
                       ),
                     ),
                   ),
+                  if (_video != null) _VideoOverlay(job: _video!),
                 ],
               ),
             ),
@@ -1572,6 +1536,73 @@ class _OfflineSummary extends StatelessWidget {
 class _VideoJob {
   final chunks = <int, String>{};
   bool saving = false;
+
+  /// Avance de la generación (0–1); null mientras se prepara el inicio.
+  double? progress;
+}
+
+/// Mientras se prepara el video, tapa el mapa (si no, se ve el punto por defecto y el salto
+/// al recorrido); mientras se genera, muestra el avance. El mapa no se toca: un toque movería
+/// la cámara de un cuadro.
+class _VideoOverlay extends StatelessWidget {
+  const _VideoOverlay({required this.job});
+  final _VideoJob job;
+
+  @override
+  Widget build(BuildContext context) {
+    final p = job.progress;
+    final muted = Theme.of(context).colorScheme.onSurfaceVariant;
+    final text = job.saving
+        ? 'Guardando el video…'
+        : p == null
+        ? 'Preparando el video…'
+        : 'Generando el video… ${(p * 100).round()} %';
+    final card = Glass(
+      opacity: .92,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(18, 14, 18, 16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(text, style: const TextStyle(fontWeight: FontWeight.w700)),
+            const SizedBox(height: 10),
+            LinearProgressIndicator(value: job.saving ? null : p),
+            const SizedBox(height: 8),
+            Text(
+              p == null ? 'Cargando el mapa y el relieve del inicio.' : 'Cada cuadro espera a que cargue el mapa: así sale fluido. No toques el mapa.',
+              style: TextStyle(color: muted, fontSize: 12.5, height: 1.35),
+            ),
+          ],
+        ),
+      ),
+    );
+    return Positioned.fill(
+      child: AbsorbPointer(
+        child: p == null && !job.saving
+            ? ColoredBox(
+                color: Andes.surface,
+                child: Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: card,
+                  ),
+                ),
+              )
+            : Align(
+                alignment: Alignment.topCenter,
+                child: Padding(
+                  padding: EdgeInsets.only(
+                    top: MediaQuery.paddingOf(context).top + 76,
+                    left: 16,
+                    right: 80,
+                  ),
+                  child: card,
+                ),
+              ),
+      ),
+    );
+  }
 }
 
 /// Lugar elegido en la búsqueda: nombre, tipo y, si se sabe dónde estás, distancia.
