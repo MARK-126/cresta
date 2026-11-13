@@ -21,7 +21,6 @@ También hechas en la misma rama: indicaciones de la primera vez, escribir salid
 lugares y nombres legibles sobre el satélite, y video del recorrido en 3D.
 
 Queda:
-- **Barra de datos al grabar** como Gaia: altitud y velocidad siempre a la vista arriba del mapa; brújula.
 - **Probar caminando con la pantalla bloqueada** (la prueba en casa fue con la app en segundo plano y posiciones
   simuladas: ver `pruebas.md`).
 - Video: es MP4 fragmentado (lo que da `MediaRecorder` de Chrome): el reproductor del teléfono lo abre; falta probar

@@ -680,6 +680,20 @@
   }
   function cancelVideo() { if (videoJob) videoJob.cancelled = true; }
 
+  // Brújula: avisa a Flutter el giro del mapa (a lo sumo cada 120 ms y si cambió más de 1°)
+  let lastBearing = 0, bearingTimer = null;
+  map.on('move', () => {
+    if (bearingTimer) return;
+    bearingTimer = setTimeout(() => {
+      bearingTimer = null;
+      const b = map.getBearing();
+      if (Math.abs(b - lastBearing) > 1 || (b === 0 && lastBearing !== 0)) {
+        lastBearing = b;
+        emit('bearing', { deg: Math.round(b) });
+      }
+    }, 120);
+  });
+
   // Seguir la posición mientras se graba; si el usuario mueve el mapa, se deja de seguir
   let following = false;
   map.on('dragstart', () => {
@@ -937,6 +951,7 @@
     setFound(p) {
       whenReady(() => map.getSource('found').setData(p ? { type: 'FeatureCollection', features: [pointFeature(p.at, { name: p.name })] } : empty));
     },
+    resetNorth() { map.easeTo({ essential: true, bearing: 0, padding, duration: ms(500) }); },
     fitRoute,
     flyRoute,
     flyTrack,

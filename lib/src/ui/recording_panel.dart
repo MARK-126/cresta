@@ -7,6 +7,7 @@ import '../routes/planned_route.dart' show PoiKind;
 import '../sun/sun_times.dart';
 import '../tracking/backtrack.dart';
 import '../tracking/live_eta.dart';
+import '../tracking/live_speed.dart';
 import '../tracking/poi_alerts.dart';
 import '../tracking/track.dart' show haversine;
 import '../tracking/track_recorder.dart';
@@ -638,3 +639,114 @@ Future<RecordingMode?> askRecordingMode(BuildContext context) =>
         ),
       ),
     );
+
+/// Barra de datos arriba del mapa mientras se graba (como Gaia): altitud, velocidad y
+/// distancia siempre a la vista, aunque el panel de abajo esté bajado. Tocarla abre el panel.
+class RecordingBar extends StatelessWidget {
+  const RecordingBar({super.key, required this.recorder, this.onTap});
+  final TrackRecorder recorder;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final r = recorder;
+    final s = r.stats;
+    final paused = r.state == RecorderState.paused;
+    final kmh = paused
+        ? null
+        : liveSpeedKmh(r.lastFix, r.points, DateTime.now());
+    final alt = s.altitude ?? r.lastFix?.altitude;
+    return Glass(
+      opacity: .9,
+      child: Material(
+        type: MaterialType.transparency,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(16),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(12, 8, 10, 8),
+            child: Row(
+              children: [
+                // Grabando (rojo) o en pausa (oro)
+                Container(
+                  width: 10,
+                  height: 10,
+                  decoration: BoxDecoration(
+                    color: paused ? Andes.gold : recordColor,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: _BarValue(
+                    alt == null ? '–' : fmtInt(alt),
+                    'm',
+                    'ALTITUD',
+                  ),
+                ),
+                Expanded(
+                  child: _BarValue(
+                    kmh == null ? '–' : kmh.toStringAsFixed(1),
+                    'km/h',
+                    paused ? 'EN PAUSA' : 'VELOCIDAD',
+                  ),
+                ),
+                Expanded(
+                  child: _BarValue(
+                    fmtKm(s.meters, decimals: 2),
+                    'km',
+                    'DISTANCIA',
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _BarValue extends StatelessWidget {
+  const _BarValue(this.value, this.unit, this.label);
+  final String value;
+  final String unit;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final muted = Theme.of(context).colorScheme.onSurfaceVariant;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          maxLines: 1,
+          overflow: TextOverflow.fade,
+          softWrap: false,
+          style: labelStyle(context).copyWith(fontSize: 9, letterSpacing: 1),
+        ),
+        const SizedBox(height: 2),
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          alignment: Alignment.centerLeft,
+          child: Text.rich(
+            TextSpan(
+              children: [
+                TextSpan(
+                  text: value,
+                  style: dataStyle(context, size: 19, weight: FontWeight.w800),
+                ),
+                TextSpan(
+                  text: ' $unit',
+                  style: dataStyle(context, size: 11, color: muted),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}

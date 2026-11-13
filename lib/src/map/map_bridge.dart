@@ -199,6 +199,9 @@ class MapBridge {
   Future<void> fitBounds(BBox b) =>
       _call('fitBounds', [b.west, b.south, b.east, b.north]);
   Future<void> fitRoute() => _call('fitRoute');
+
+  /// Gira el mapa hasta dejar el norte arriba (sin cambiar la inclinación).
+  Future<void> resetNorth() => _call('resetNorth');
   Future<void> flyRoute() => _call('flyRoute');
 
   /// Sobrevuelo 3D de un recorrido grabado; con [record], lo graba a video (llega en

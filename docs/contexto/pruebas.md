@@ -26,6 +26,13 @@ Teléfono de pruebas: Samsung Galaxy S23 Ultra (SM-S918B), Android 16, salvo que
 
 ## 2026-11-13
 
+**Barra de datos y brújula · `feat/barra-datos`** (S23)
+- Con la ubicación del teléfono apagada, "Grabar" no abre nada y muestra el aviso "Activa la ubicación…" con "Abrir
+  ajustes" (correcto). Encendida para la prueba (y apagada otra vez al final): barra arriba con ALTITUD 738 m,
+  VELOCIDAD 0.0 km/h (quieto), DISTANCIA 0.00 km. Mapa girado 60°: aparece la brújula con la aguja al norte; al
+  tocarla el mapa vuelve al norte, conserva la inclinación (50°) y la brújula se va. Grabación descartada. **OK**.
+- Pruebas automáticas: 186 en verde (4 de velocidad en vivo y 1 de la barra).
+
 **Video del recorrido: relevamiento de fallas** (prueba del usuario: parpadea, abre en un punto por defecto, a veces
 sale en blanco, cuadros trabados; pide leyendas de inicio y fin más visibles)
 - Videos del usuario (caché de la app y los enviados por WhatsApp, que sí acepta el MP4): uno a **6.4 cuadros/s** (91

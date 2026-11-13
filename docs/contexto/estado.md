@@ -261,6 +261,14 @@ Actualizado: 12 nov 2026 · avisos al acercarse a los puntos de interés de la r
   con `share_plus`. Sin WebCodecs: aviso de que el teléfono no puede. `debugState()` en `map.js` para pruebas.
 - `tool/dev/tap.sh "TEXTO"`: toca un elemento por su texto.
 
+### Barra de datos y brújula (`feat/barra-datos`, 13 nov 2026)
+- `RecordingBar` (`ui/recording_panel.dart`): mientras se graba reemplaza al título del mapa. Punto rojo (oro en
+  pausa), ALTITUD (`stats.altitude`, suavizada), VELOCIDAD (`liveSpeedKmh` en `tracking/live_speed.dart`: la del GPS;
+  si no la da, con los dos últimos puntos del mismo tramo; < 0.8 km/h = 0; lectura de más de 30 s = "–") y DISTANCIA.
+  Tocarla sube el panel.
+- Brújula: `map.js` emite `bearing` (cada 120 ms como mucho, si cambió > 1°); con el mapa girado > 2° aparece arriba
+  de SOS una aguja que apunta al norte; al tocarla `resetNorth()` (conserva la inclinación).
+
 ### Interfaz
 - Botones secundarios (`OutlinedButton`, 23 en la app): tonales `surfaceHighest` sin borde, desde el tema.
 - Pestaña Mapas: "Descargar una zona" abre `AreaPickerScreen()` sin expedición (zona suelta, centrada en la última

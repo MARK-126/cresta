@@ -166,6 +166,9 @@ class _MapScreenState extends State<MapScreen> {
   /// Lugar elegido en la búsqueda (marcado en el mapa hasta cerrarlo).
   MapPlace? _found;
 
+  /// Giro del mapa en grados (0 = norte arriba), para la brújula.
+  double _bearing = 0;
+
   /// Video del recorrido en curso (sobrevuelo grabándose o guardándose).
   _VideoJob? _video;
   Timer? _paddingTimer;
@@ -651,6 +654,8 @@ class _MapScreenState extends State<MapScreen> {
       case 'flyEnd':
         setState(() => _flying = false);
         if (_video == null) _moveSheet(_sheetInitial);
+      case 'bearing':
+        setState(() => _bearing = (e.data['deg'] as num).toDouble());
       case 'videoProgress':
         if (_video != null) {
           setState(() => _video!.progress = (e.data['p'] as num).toDouble());
@@ -1082,6 +1087,13 @@ class _MapScreenState extends State<MapScreen> {
                                 ),
                               ),
                             )
+                          else if (_recordingHere)
+                            Expanded(
+                              child: RecordingBar(
+                                recorder: _recorder,
+                                onTap: () => _moveSheet(_sheetInitial),
+                              ),
+                            )
                           else
                             Expanded(
                               child: Align(
@@ -1149,6 +1161,18 @@ class _MapScreenState extends State<MapScreen> {
                     top: MediaQuery.paddingOf(context).top + 70,
                     child: Column(
                       children: [
+                        // Brújula: solo con el mapa girado; la aguja apunta al norte y al
+                        // tocarla el mapa vuelve a quedar con el norte arriba
+                        if (_bearing.abs() > 2) ...[
+                          _MapButton(
+                            icon: Icons.navigation_rounded,
+                            iconAngle: -_bearing * math.pi / 180,
+                            color: Andes.terracottaContainer,
+                            tooltip: 'Norte arriba',
+                            onPressed: _bridge.resetNorth,
+                          ),
+                          const SizedBox(height: 8),
+                        ],
                         _MapButton(
                           icon: Icons.sos_rounded,
                           color: Andes.terracottaContainer,
@@ -1675,12 +1699,16 @@ class _FoundCard extends StatelessWidget {
 class _MapButton extends StatelessWidget {
   const _MapButton({
     this.icon,
+    this.iconAngle = 0,
     this.label,
     this.color,
     required this.tooltip,
     required this.onPressed,
   });
   final IconData? icon;
+
+  /// Giro del ícono en radianes (la aguja de la brújula).
+  final double iconAngle;
   final String? label;
   final Color? color;
   final String tooltip;
@@ -1701,7 +1729,14 @@ class _MapButton extends StatelessWidget {
               height: 48,
               child: Center(
                 child: icon != null
-                    ? Icon(icon, size: 22, color: color ?? Andes.onSurface)
+                    ? Transform.rotate(
+                        angle: iconAngle,
+                        child: Icon(
+                          icon,
+                          size: 22,
+                          color: color ?? Andes.onSurface,
+                        ),
+                      )
                     : Text(
                         label!,
                         style: const TextStyle(
