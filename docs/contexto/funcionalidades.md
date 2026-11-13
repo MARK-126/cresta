@@ -12,7 +12,7 @@ Detalles técnicos en `estado.md`; qué se probó en `pruebas.md`.
   y los actualiza con un toque (sin volver a bajar relieve ni satélite).
 - Buscador de lugares (cumbres, parques, pueblos).
 - Nombres en el mapa según el zoom: calles, caminos y senderos; colonias y parajes; pueblos; estados y países.
-- "Mi ubicación" centra en cada toque, en la parte del mapa que no tapa el panel; si la ubicación está apagada, el
+- "Mi ubicación" centra en cada toque, en la parte del mapa que no tapan las barras; si la ubicación está apagada, el
   aviso (mapa y SOS) lleva directo a Ajustes.
 - Expediciones: nombre, fecha, notas, zonas de mapas y lista "Antes de salir".
 - Hora límite de retorno con aviso dentro de la app y notificación (30 min antes y a la hora) mientras se
@@ -36,7 +36,7 @@ Detalles técnicos en `estado.md`; qué se probó en `pruebas.md`.
   atardecer.
 - Aviso al salirse de la ruta planeada.
 - Aviso (notificación) al acercarte a un punto de interés de la ruta: agua, campamento, punto de no retorno, peligro; y
-  el próximo punto con su distancia y tiempo en el panel.
+  el próximo punto con su distancia y tiempo en la tira de grabación.
 - Volver al inicio por la propia traza mientras grabas: lo que falta, aviso si te sales de ella, y distancia y rumbo en
   línea recta al punto de salida.
 - Exportar recorridos a GPX.
@@ -71,6 +71,9 @@ Detalles técnicos en `estado.md`; qué se probó en `pruebas.md`.
 - Tu posición en vivo en el mapa; el mapa libre te centra al abrirlo y el botón de ubicación te sigue.
 - Buscar sin señal en los mapas descargados: cumbres (con altura), refugios, agua, campamentos, pueblos,
   senderos y ríos, con distancia y dirección desde donde estás; el lugar queda marcado en el mapa.
+- Mapa a pantalla completa: abajo una barra flotante (Capas, Grabar, Ruta); al grabar o trazar, una tira compacta
+  con lo esencial; con ruta, protección civil o rutas comparadas, una tarjeta de una línea. El detalle se abre en
+  hojas a pedido que se cierran deslizando o tocando el mapa.
 
 ## Por implementar
 
