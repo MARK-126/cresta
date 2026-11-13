@@ -66,6 +66,10 @@ Lo que se corrigió a partir de tus observaciones en el Parque San Martín, y c�
   (el botón rojo grande) y Ruta. Con una ruta aparece una tarjeta encima: tócala para ver el perfil. Grabando: arriba
   altitud, velocidad y distancia; abajo el tiempo, los avisos y Pausar/Terminar/Foto; la flecha ⌃ abre todo lo demás.
   Trazando: el buscador va arriba. Revisa que en la montaña se lea bien y que los botones se usen con guantes.
+- **Ruta hasta aquí** (13 nov 2026): busca un lugar (lupa de arriba) y en su tarjeta toca el botón de flecha: traza la
+  ruta desde donde estás. Si ya hay una ruta abierta, el lugar se suma al final ("Agregar a la ruta").
+- **Buscar zona sin conexión**: en Mapas → "Descargar una zona", sin datos ni Wi-Fi, busca un lugar de tus mapas
+  descargados: aparece "SIN CONEXIÓN · EN TUS MAPAS".
 
 ## En casa (con el teléfono conectado a la computadora)
 

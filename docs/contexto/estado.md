@@ -296,6 +296,16 @@ Actualizado: 12 nov 2026 · avisos al acercarse a los puntos de interés de la r
 - Se quitó `_FreeMapCard` (su texto está en la indicación de la primera vez).
 - Velocidad en vivo: la del GPS solo con precisión ≤ 15 m (`liveSpeedMaxAccuracy`).
 
+### Buscar y trazar (`feat/buscar-y-trazar`, 13 nov 2026)
+- `_FoundCard` (lugar encontrado) con botón "Ruta hasta aquí" / "Agregar a la ruta" (`_routeToFound` en
+  `map_screen.dart`): trazando, suma el lugar como siguiente punto; si no, abre el trazado (con la ruta que haya) y,
+  si está vacío, sale de tu posición cuando el lugar está a ≤ 50 km (`routeFromMeMaxMeters`); si no, pregunta desde
+  dónde sales. No se ofrece grabando, comparando ni en protección civil. Encuadre común en `_framePlan`.
+- `AreaPickerScreen`: si Nominatim falla (sin conexión), busca en los mapas descargados (`searchPlaces` sobre
+  `PlaceIndex`) y lo marca "SIN CONEXIÓN · EN TUS MAPAS".
+- `showPlaceSearch` acepta `near` (sugerir alrededor de otro lugar, "CERCA DE …") y `me` (tu posición para "Tu
+  ubicación"). `fmtKm` separa miles.
+
 ### Interfaz
 - Botones secundarios (`OutlinedButton`, 23 en la app): tonales `surfaceHighest` sin borde, desde el tema.
 - Pestaña Mapas: "Descargar una zona" abre `AreaPickerScreen()` sin expedición (zona suelta, centrada en la última

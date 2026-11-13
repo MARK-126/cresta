@@ -34,6 +34,9 @@ void main() {
     expect(fmtInt(5207), '5,207');
     expect(fmtInt(1234567), '1,234,567');
     expect(fmtKm(12104.8), '12.1');
+    expect(fmtKm(6598812), '6,598.8');
+    expect(fmtKm(1234567, decimals: 0), '1,235');
+    expect(fmtKm(-1500), '-1.5');
     expect(fmtDuration(const Duration(minutes: 427)), '7 h 07');
     expect(fmtAgo(65), 'hace 1 h 05');
   });

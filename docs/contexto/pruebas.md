@@ -27,6 +27,18 @@ Teléfono de pruebas: Samsung Galaxy S23 Ultra (SM-S918B), Android 16, salvo que
 
 ## 2026-11-13
 
+**Buscar y trazar · `feat/buscar-y-trazar`** (S23, desde Mendoza)
+- Mapa libre → buscar → Cerro del Medio (42 km): tarjeta con botón de flecha "Ruta hasta aquí" → trazado desde tu
+  posición, 42.2 km en línea recta con aviso (Mendoza no está en los mapas descargados). **OK**.
+- Iztaccíhuatl (6,599 km): pregunta "¿Desde dónde sales?". Falla: sugería lugares cerca de ti → `near`: "CERCA DE
+  IZTACCÍHUATL" con "Tu ubicación" arriba. Salida Peña Ordoñez → 0.6 km +13 m por sendero, encuadrado. **OK**.
+- Falla: distancias "6598.8 km" → `fmtKm` con miles ("6,598.8"). **OK**.
+- Expedición Salto → buscar → "Agregar a la ruta": 3.3 → 36.1 km; salir sin guardar, `routes.json` igual. **OK**.
+- Selector de zonas sin red para la app (chain3): "refugio" → "SIN CONEXIÓN · EN TUS MAPAS" con 4 resultados; elegir
+  uno pone el nombre de la zona. El mapa queda en blanco por el método (bloquea `127.0.0.1`; el mapa libre igual).
+  Con red: calcula el recuadro y "Aconcagua" busca en línea. **OK**.
+- Datos del usuario idénticos (md5). 193 pruebas automáticas en verde.
+
 **Mapa limpio · `feat/mapa-limpio`** (S23)
 - Falla al quitar el panel: la pila se encogió al alto de la barra de arriba (mapa en una franja, la barra de abajo
   arriba) → `SizedBox.expand`. **OK**.

@@ -29,8 +29,8 @@ Queda:
 ## Siguiente (revisión de diseño del 12 nov 2026)
 
 
-Búsqueda sin señal hecha (falta verla en el teléfono). Ideas: usarla de respaldo en el selector de zonas cuando no
-hay conexión, y "Trazar ruta hasta aquí" desde el lugar encontrado.
+Búsqueda sin señal hecha; también de respaldo en el selector de zonas sin conexión y con "Ruta hasta aquí" desde el
+lugar encontrado (13 nov 2026).
 
 De la revisión queda: probar al sol si las etiquetas de 10–11 px se leen (el contraste ya es AAA). El botón de
 "Planear ruta" del mapa usa el ícono de "Trazar ruta" del inicio; sigue sin texto (tiene ayuda al mantenerlo).

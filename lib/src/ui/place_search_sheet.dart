@@ -39,7 +39,9 @@ String placeDistance(MapPlace p, double meters, double lat, double lng) {
 /// ([fromMe]: tu posición; si no, el centro del mapa). Devuelve el lugar elegido.
 ///
 /// Para trazar rutas: [title] cambia el encabezado, [offerMe] agrega "Tu ubicación" como
-/// primera opción (si [fromMe]) y [online] permite buscar en todo el mundo con conexión.
+/// primera opción (si se sabe dónde estás) y [online] permite buscar en todo el mundo con
+/// conexión. Para sugerir alrededor de otro lugar (p. ej. el destino de una ruta lejana):
+/// [lat], [lng] de ese lugar, [near] su nombre y [me] tu posición (lng, lat).
 Future<MapPlace?> showPlaceSearch(
   BuildContext context, {
   double? lat,
@@ -48,19 +50,25 @@ Future<MapPlace?> showPlaceSearch(
   String title = 'Buscar en tus mapas',
   bool offerMe = false,
   bool online = false,
-}) => showModalBottomSheet<MapPlace>(
-  context: context,
-  isScrollControlled: true,
-  showDragHandle: true,
-  builder: (_) => _PlaceSearch(
-    lat: lat,
-    lng: lng,
-    fromMe: fromMe,
-    title: title,
-    offerMe: offerMe && fromMe && lat != null && lng != null,
-    online: online,
-  ),
-);
+  String? near,
+  (double, double)? me,
+}) {
+  final mine = me ?? (fromMe && lat != null && lng != null ? (lng, lat) : null);
+  return showModalBottomSheet<MapPlace>(
+    context: context,
+    isScrollControlled: true,
+    showDragHandle: true,
+    builder: (_) => _PlaceSearch(
+      lat: lat,
+      lng: lng,
+      fromMe: fromMe,
+      title: title,
+      me: offerMe ? mine : null,
+      online: online,
+      near: near,
+    ),
+  );
+}
 
 /// Convierte un resultado de la búsqueda en línea (Nominatim).
 MapPlace _fromOnline(Place p) => MapPlace(
@@ -81,15 +89,21 @@ class _PlaceSearch extends StatefulWidget {
     this.lng,
     required this.fromMe,
     required this.title,
-    required this.offerMe,
+    required this.me,
     required this.online,
+    this.near,
   });
   final double? lat;
   final double? lng;
   final bool fromMe;
   final String title;
-  final bool offerMe;
+
+  /// Tu posición (lng, lat) para ofrecer "Tu ubicación"; null: no se ofrece.
+  final (double, double)? me;
   final bool online;
+
+  /// Nombre del lugar alrededor del que se sugiere (en lugar de ti o del mapa).
+  final String? near;
 
   @override
   State<_PlaceSearch> createState() => _PlaceSearchState();
@@ -208,7 +222,7 @@ class _PlaceSearchState extends State<_PlaceSearch> {
                     );
                   }
                   final all = snap.data!;
-                  if (all.isEmpty && !widget.online && !widget.offerMe) {
+                  if (all.isEmpty && !widget.online && widget.me == null) {
                     return const _Message(
                       'Aún no hay mapas descargados.',
                       'Descarga una zona (pestaña Mapas o desde una expedición) y aquí podrás buscar en ella sin señal.',
@@ -228,15 +242,16 @@ class _PlaceSearchState extends State<_PlaceSearch> {
     final q = _query.text.trim();
     final hits = searchPlaces(all, q, lat: widget.lat, lng: widget.lng);
     final online = widget.online && q.isNotEmpty;
+    final me = widget.me;
     final extras = <Widget>[
-      if (widget.offerMe && q.isEmpty)
+      if (me != null && q.isEmpty)
         ListTile(
           leading: const Icon(Icons.my_location_rounded, color: Andes.cyan),
           title: const Text('Tu ubicación'),
           subtitle: const Text('Donde estás ahora'),
           onTap: () => Navigator.pop(
             context,
-            MapPlace('Tu ubicación', PlaceKind.other, widget.lng!, widget.lat!),
+            MapPlace('Tu ubicación', PlaceKind.other, me.$1, me.$2),
           ),
         ),
       if (online) ..._onlineSection(context, q),
@@ -259,6 +274,8 @@ class _PlaceSearchState extends State<_PlaceSearch> {
             child: Text(
               q.isNotEmpty
                   ? '${hits.length} ${hits.length == 1 ? 'LUGAR' : 'LUGARES'}'
+                  : widget.near != null
+                  ? 'CERCA DE ${widget.near!.toUpperCase()}'
                   : widget.fromMe
                   ? 'CERCA DE TI'
                   : 'CERCA DEL CENTRO DEL MAPA',
