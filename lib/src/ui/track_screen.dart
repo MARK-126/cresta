@@ -179,6 +179,26 @@ class _TrackScreenState extends State<TrackScreen> {
           ),
           const SizedBox(height: 8),
           OutlinedButton.icon(
+            onPressed: _points == null || _points!.length < 2
+                ? null
+                : () => Navigator.push(
+                    context,
+                    MaterialPageRoute<void>(
+                      builder: (_) => MapScreen(
+                        expeditionId: t.expeditionId,
+                        showTrackId: t.id,
+                        video: true,
+                      ),
+                    ),
+                  ),
+            icon: const Icon(Icons.movie_outlined),
+            label: const Text('Video del recorrido en 3D'),
+            style: OutlinedButton.styleFrom(
+              minimumSize: const Size.fromHeight(52),
+            ),
+          ),
+          const SizedBox(height: 8),
+          OutlinedButton.icon(
             onPressed: _points == null || _points!.isEmpty
                 ? null
                 : () => _exportGpx(t),

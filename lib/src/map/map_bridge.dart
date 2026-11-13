@@ -200,6 +200,31 @@ class MapBridge {
       _call('fitBounds', [b.west, b.south, b.east, b.north]);
   Future<void> fitRoute() => _call('fitRoute');
   Future<void> flyRoute() => _call('flyRoute');
+
+  /// Sobrevuelo 3D de un recorrido grabado; con [record], lo graba a video (llega en
+  /// eventos 'videoChunk' y 'videoEnd').
+  Future<void> flyTrack(
+    List<TrackPoint> points, {
+    bool record = false,
+    String? title,
+    String? detail,
+  }) {
+    final segments = <List<List<double>>>[];
+    int? seg;
+    for (final p in points) {
+      if (p.segment != seg) {
+        segments.add([]);
+        seg = p.segment;
+      }
+      segments.last.add([p.lng, p.lat]);
+    }
+    return _call('flyTrack', [
+      segments,
+      record,
+      if (title != null) {'title': title, 'detail': detail ?? ''},
+    ]);
+  }
+
   Future<void> stopFly() => _call('stopFly');
   Future<void> flyTo(
     double lng,

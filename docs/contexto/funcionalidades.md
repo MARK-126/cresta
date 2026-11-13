@@ -57,6 +57,14 @@ Detalles técnicos en `estado.md`; qué se probó en `pruebas.md`.
 - Expedición de ejemplo con sus mapas incluidos, que no se pueden borrar por error.
 - Modo protección civil (datos de demostración, no oficiales).
 - Diseño "Andes Industrial", solo oscuro; splash e ícono propios.
+- Video del recorrido en 3D: sobrevuelo con la línea que se va dibujando, título y distancia; MP4 para compartir.
+- Indicaciones la primera vez que se abre el mapa, se traza una ruta o se graba (se pueden volver a ver desde el
+  perfil).
+- Trazar rutas escribiendo la salida, las paradas y el destino (tu ubicación, tus mapas o, con conexión, todo el
+  mundo).
+- Íconos de lugares en el mapa (agua, refugio, camping, comida, alojamiento, salud, baños, estacionamiento…) y nombres
+  legibles sobre el satélite.
+- Tu posición en vivo en el mapa; el mapa libre te centra al abrirlo y el botón de ubicación te sigue.
 - Buscar sin señal en los mapas descargados: cumbres (con altura), refugios, agua, campamentos, pueblos,
   senderos y ríos, con distancia y dirección desde donde estás; el lugar queda marcado en el mapa.
 

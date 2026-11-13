@@ -102,6 +102,18 @@
   pide la exención al grabar (no al abrir la app) y se puede rechazar. `REQUEST_IGNORE_BATTERY_OPTIMIZATIONS` lo limita
   Google Play a apps cuyo núcleo lo necesita; para una app personal no aplica, pero revisarlo si se publica. El
   intervalo del GPS ya existía (modos Normal y Ahorro).
+- **Un solo flujo de GPS** (12 nov 2026): `geolocator_android` reutiliza el flujo abierto e ignora la configuración
+  nueva, así que la app abre uno a la vez en `LocationService`. **`forceLocationManager`**: el cliente de Google Play
+  mostraba "mejorar la precisión" en cada inicio y, si se rechazaba, cortaba el GPS; el proveedor `fused` del sistema
+  (Android 12+) combina GPS y red sin ese aviso. En la montaña no hay Wi-Fi ni antenas de todos modos.
+- **Colores de líneas** (pedido del usuario): la ruta a seguir en teal (el color de la app); lo grabado en coral (el
+  color de grabar), como el naranja de Wikiloc. Inicio dorado, fin coral, en rutas y recorridos.
+- **Íconos de lugares con emoji del sistema** dibujados en el teléfono: MapLibre necesita imágenes (sprite) y no hay
+  sprite descargado; el emoji del sistema funciona sin señal. Sin nombre se ocultan estatuas y monumentos (ensuciaban).
+- **Video del recorrido**: grabado en el propio WebView (`MediaRecorder` sobre una copia reducida del lienzo) en vez
+  de un plugin de video: no suma dependencias nativas. Copia a 720 px porque a resolución completa falló el
+  codificador del S23 ("Can't obtain input buffer"). Se copia en `render` (sin `preserveDrawingBuffer`, después el
+  cuadro ya está borrado). El campo `type` del evento pisaba el nombre del evento: se llama `mime`.
 - **Búsqueda sin señal con los mosaicos, no con un servicio:** los nombres ya vienen en los mosaicos topográficos
   descargados; leerlos no pide nada a nadie ni pesa más. Índice armado al primer uso (no al terminar la descarga: así
   sirve también para las zonas que ya estaban) y guardado. Solo zonas completas, para no rehacerlo a cada rato durante

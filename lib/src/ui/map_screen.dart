@@ -1,7 +1,12 @@
 import 'dart:async';
+import 'dart:convert';
+import 'dart:io';
 import 'dart:math' as math;
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
 import '../app_services.dart';
@@ -15,6 +20,7 @@ import '../map/map_bridge.dart';
 import '../map/map_layers.dart';
 import '../offline/tile_math.dart';
 import '../places/places.dart';
+import '../tips/tips.dart';
 import '../routes/planned_route.dart';
 import '../routes/route_planner.dart';
 import '../tracking/track.dart';
@@ -32,6 +38,7 @@ import 'recording_panel.dart';
 import 'route_actions.dart';
 import 'sos_screen.dart';
 import 'theme.dart';
+import 'tip_dialog.dart';
 import 'track_screen.dart';
 
 /// El mapa de una expedición, en 2D o 3D, con lo descargado y (si hay red) lo demás.
@@ -46,6 +53,7 @@ class MapScreen extends StatefulWidget {
     this.showTrackId,
     this.plan = false,
     this.record = false,
+    this.video = false,
   });
   final String? expeditionId;
 
@@ -63,6 +71,9 @@ class MapScreen extends StatefulWidget {
 
   /// Recorrido ya grabado que se muestra al abrir (desde su detalle).
   final String? showTrackId;
+
+  /// Con [showTrackId]: sobrevuelo 3D del recorrido grabado a video, y compartirlo.
+  final bool video;
 
   @override
   State<MapScreen> createState() => _MapScreenState();
@@ -154,6 +165,9 @@ class _MapScreenState extends State<MapScreen> {
 
   /// Lugar elegido en la búsqueda (marcado en el mapa hasta cerrarlo).
   MapPlace? _found;
+
+  /// Video del recorrido en curso (sobrevuelo grabándose o guardándose).
+  _VideoJob? _video;
   Timer? _paddingTimer;
   bool _started = false;
 
@@ -249,10 +263,17 @@ class _MapScreenState extends State<MapScreen> {
     } else if (widget.showTrackId != null) {
       final points = await _services.tracks.readPoints(widget.showTrackId!);
       await _bridge.setTrack(points, showEnd: true);
-      if (points.length > 1) await _bridge.fitBounds(_boundsOf(points));
+      if (widget.video && points.length > 1) {
+        _startVideo(points);
+      } else if (points.length > 1) {
+        await _bridge.fitBounds(_boundsOf(points));
+      }
     }
     if (widget.plan && mounted) _startPlanning();
     if (widget.record && mounted && !_recordingHere) await _startRecording();
+    if (mounted && !widget.plan && !widget.record && !widget.video) {
+      showTipOnce(context, Tips.map);
+    }
     if (mounted) {
       await _autoLocate(
         center:
@@ -305,6 +326,7 @@ class _MapScreenState extends State<MapScreen> {
     _bridge.setRoute(null);
     _pushPlan();
     _moveSheet(_sheetInitial);
+    showTipOnce(context, Tips.plan);
   }
 
   void _onPlanner() {
@@ -472,6 +494,8 @@ class _MapScreenState extends State<MapScreen> {
       messenger.showSnackBar(_permissionSnack(status));
       return;
     }
+    await showTipOnce(context, Tips.record);
+    if (!mounted) return;
     final mode = await askRecordingMode(context);
     if (mode == null || !mounted) return;
     // Si lo niega se graba igual, pero avisamos del riesgo
@@ -626,7 +650,15 @@ class _MapScreenState extends State<MapScreen> {
         setState(() => _cursor = (e.data['meters'] as num).toDouble());
       case 'flyEnd':
         setState(() => _flying = false);
-        _moveSheet(_sheetInitial);
+        if (_video == null) _moveSheet(_sheetInitial);
+      case 'videoChunk':
+        _video?.chunks[(e.data['i'] as num).toInt()] = e.data['data'] as String;
+      case 'videoEnd':
+        _saveVideo(e.data['mime'] as String);
+      case 'videoError':
+        setState(() => _video = null);
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(e.data['message'] as String)));
       case 'followOff':
         setState(() => _following = false);
       case 'markerTap':
@@ -725,6 +757,106 @@ class _MapScreenState extends State<MapScreen> {
     setState(() => _found = p);
     await _bridge.setFound(p);
     await _bridge.flyTo(p.lng, p.lat, zoom: 14, pitch: null);
+  }
+
+  /// Trazar ruta: agrega el siguiente punto (salida, parada o destino) escribiendo su
+  /// nombre. Busca en los mapas descargados y, con conexión, en todo el mundo.
+  Future<void> _addPointByName() async {
+    final planner = _planner;
+    if (planner == null) return;
+    final fix = _services.recorder.lastFix;
+    final me = _myPos ?? (fix == null ? null : (fix.lng, fix.lat));
+    final from = me ?? await _bridge.center();
+    if (!mounted) return;
+    final p = await showPlaceSearch(
+      context,
+      lng: from?.$1,
+      lat: from?.$2,
+      fromMe: me != null,
+      title: planner.waypoints.isEmpty
+          ? '¿Desde dónde sales?'
+          : 'Agregar parada o destino',
+      offerMe: true,
+      online: true,
+    );
+    if (p == null || !mounted || _planner != planner) return;
+    await planner.addPoint(LngLat(p.lng, p.lat));
+    if (!mounted) return;
+    // Encuadra lo trazado; con un solo punto, ve a él
+    if (planner.waypoints.length > 1) {
+      final pts = planner.line.isEmpty ? planner.waypoints : planner.line;
+      await _bridge.fitBounds(
+        BBox(
+          pts.map((e) => e.lng).reduce(math.min) - 0.002,
+          pts.map((e) => e.lat).reduce(math.min) - 0.002,
+          pts.map((e) => e.lng).reduce(math.max) + 0.002,
+          pts.map((e) => e.lat).reduce(math.max) + 0.002,
+        ),
+      );
+    } else {
+      await _bridge.flyTo(p.lng, p.lat, zoom: 14, pitch: null);
+    }
+  }
+
+  /// Graba el sobrevuelo del recorrido a video. El mapa queda a pantalla completa y sin
+  /// tocar (un toque detendría el vuelo).
+  void _startVideo(List<TrackPoint> points) {
+    setState(() {
+      _video = _VideoJob();
+      _flying = true;
+      _is3d = true;
+    });
+    // Después del cuadro: al abrir, el panel aún no está listo para moverse
+    WidgetsBinding.instance.addPostFrameCallback((_) => _moveSheet(_sheetMin));
+    final t = _services.tracks.byId(widget.showTrackId!);
+    final s = t?.summary;
+    _bridge.flyTrack(
+      points,
+      record: true,
+      title: t?.name,
+      detail: s == null
+          ? null
+          : '${fmtKm(s.meters, decimals: 2)} km · +${fmtInt(s.gain)} m · ${fmtDuration(s.moving)} en movimiento',
+    );
+  }
+
+  Future<void> _saveVideo(String type) async {
+    final job = _video;
+    if (job == null) return;
+    setState(() => job.saving = true);
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      final bytes = BytesBuilder(copy: false);
+      for (final c in [
+        for (final k in job.chunks.keys.toList()..sort()) job.chunks[k]!,
+      ]) {
+        bytes.add(base64Decode(c));
+      }
+      final ext = type.contains('mp4') ? 'mp4' : 'webm';
+      final dir = await getTemporaryDirectory();
+      final t = _services.tracks.byId(widget.showTrackId!);
+      final safe = (t?.name ?? 'recorrido')
+          .replaceAll(RegExp(r'[^\w\- áéíóúñÁÉÍÓÚÑ]'), '')
+          .trim();
+      final file = File(
+        '${dir.path}/${safe.isEmpty ? 'recorrido' : safe}.$ext',
+      );
+      await file.writeAsBytes(bytes.takeBytes(), flush: true);
+      if (!mounted) return;
+      setState(() => _video = null);
+      _moveSheet(_sheetInitial);
+      await SharePlus.instance.share(
+        ShareParams(
+          files: [XFile(file.path, mimeType: 'video/$ext')],
+          subject: t?.name,
+        ),
+      );
+    } on Object catch (e) {
+      if (mounted) setState(() => _video = null);
+      messenger.showSnackBar(
+        SnackBar(content: Text('No se pudo guardar el video: $e')),
+      );
+    }
   }
 
   void _clearFound() {
@@ -951,6 +1083,7 @@ class _MapScreenState extends State<MapScreen> {
                             Expanded(
                               child: Align(
                                 alignment: Alignment.centerLeft,
+                                heightFactor: 1,
                                 child: Glass(
                                   child: Padding(
                                     padding: const EdgeInsets.symmetric(
@@ -1073,6 +1206,46 @@ class _MapScreenState extends State<MapScreen> {
                       ],
                     ),
                   ),
+                  if (_video != null)
+                    Positioned.fill(
+                      child: AbsorbPointer(
+                        child: Align(
+                          alignment: Alignment.topCenter,
+                          child: Padding(
+                            padding: EdgeInsets.only(
+                              top: MediaQuery.paddingOf(context).top + 76,
+                              left: 16,
+                              right: 80,
+                            ),
+                            child: Glass(
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                  vertical: 12,
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const SizedBox.square(
+                                      dimension: 18,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Flexible(
+                                      child: Text(
+                                        _video!.saving ? 'Guardando el video…' : 'Grabando el video del recorrido… no toques el mapa',
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
                   if (_found != null)
                     Positioned(
                       left: 8,
@@ -1080,6 +1253,7 @@ class _MapScreenState extends State<MapScreen> {
                       top: MediaQuery.paddingOf(context).top + 70,
                       child: Align(
                         alignment: Alignment.centerLeft,
+                        heightFactor: 1,
                         child: _FoundCard(
                           place: _found!,
                           from: _myPos,
@@ -1134,6 +1308,7 @@ class _MapScreenState extends State<MapScreen> {
                             if (_planner != null)
                               PlannerPanel(
                                 planner: _planner!,
+                                onAddByName: _addPointByName,
                                 placingPoi: _placingPoi,
                                 onPlacePoi: (k) {
                                   setState(() => _placingPoi = k);
@@ -1391,6 +1566,12 @@ class _OfflineSummary extends StatelessWidget {
       ],
     );
   }
+}
+
+/// Video del recorrido: los pedazos que manda el mapa (base64) hasta 'videoEnd'.
+class _VideoJob {
+  final chunks = <int, String>{};
+  bool saving = false;
 }
 
 /// Lugar elegido en la búsqueda: nombre, tipo y, si se sabe dónde estás, distancia.

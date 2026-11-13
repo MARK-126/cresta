@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../app_services.dart';
 import '../places/places.dart';
+import '../search/place_search.dart';
 import '../tracking/backtrack.dart' show bearingDeg, cardinal;
 import 'format.dart';
 import 'theme.dart';
@@ -21,6 +22,7 @@ IconData placeIcon(PlaceKind k) => switch (k) {
   PlaceKind.police => Icons.local_police_outlined,
   PlaceKind.health => Icons.medical_services_outlined,
   PlaceKind.parking => Icons.local_parking_rounded,
+  PlaceKind.other => Icons.place_outlined,
 };
 
 /// "Cumbre · 3,460 m".
@@ -35,23 +37,59 @@ String placeDistance(MapPlace p, double meters, double lat, double lng) {
 
 /// Busca en los mapas descargados (sin señal). [lat], [lng]: desde dónde medir distancias
 /// ([fromMe]: tu posición; si no, el centro del mapa). Devuelve el lugar elegido.
+///
+/// Para trazar rutas: [title] cambia el encabezado, [offerMe] agrega "Tu ubicación" como
+/// primera opción (si [fromMe]) y [online] permite buscar en todo el mundo con conexión.
 Future<MapPlace?> showPlaceSearch(
   BuildContext context, {
   double? lat,
   double? lng,
   bool fromMe = false,
+  String title = 'Buscar en tus mapas',
+  bool offerMe = false,
+  bool online = false,
 }) => showModalBottomSheet<MapPlace>(
   context: context,
   isScrollControlled: true,
   showDragHandle: true,
-  builder: (_) => _PlaceSearch(lat: lat, lng: lng, fromMe: fromMe),
+  builder: (_) => _PlaceSearch(
+    lat: lat,
+    lng: lng,
+    fromMe: fromMe,
+    title: title,
+    offerMe: offerMe && fromMe && lat != null && lng != null,
+    online: online,
+  ),
+);
+
+/// Convierte un resultado de la búsqueda en línea (Nominatim).
+MapPlace _fromOnline(Place p) => MapPlace(
+  p.name,
+  switch (p.kind) {
+    'Cumbre' => PlaceKind.peak,
+    'Volcán' => PlaceKind.volcano,
+    'Refugio' => PlaceKind.hut,
+    _ => PlaceKind.other,
+  },
+  p.lng,
+  p.lat,
 );
 
 class _PlaceSearch extends StatefulWidget {
-  const _PlaceSearch({this.lat, this.lng, required this.fromMe});
+  const _PlaceSearch({
+    this.lat,
+    this.lng,
+    required this.fromMe,
+    required this.title,
+    required this.offerMe,
+    required this.online,
+  });
   final double? lat;
   final double? lng;
   final bool fromMe;
+  final String title;
+  final bool offerMe;
+  final bool online;
 
   @override
   State<_PlaceSearch> createState() => _PlaceSearchState();
@@ -60,6 +98,38 @@ class _PlaceSearch extends StatefulWidget {
 class _PlaceSearchState extends State<_PlaceSearch> {
   final _query = TextEditingController();
   Future<List<MapPlace>>? _places;
+
+  // Búsqueda en todo el mundo (solo con conexión y al confirmar: lo pide Nominatim)
+  final _search = PlaceSearch();
+  List<Place>? _onlineHits;
+  String? _onlineQuery;
+  String? _onlineError;
+  bool _onlineBusy = false;
+
+  Future<void> _searchOnline() async {
+    final q = _query.text.trim();
+    if (q.isEmpty || _onlineBusy) return;
+    setState(() {
+      _onlineBusy = true;
+      _onlineError = null;
+    });
+    try {
+      final hits = await _search.search(q);
+      if (!mounted) return;
+      setState(() {
+        _onlineHits = hits;
+        _onlineQuery = q;
+      });
+    } on Object {
+      if (mounted) {
+        setState(
+          () => _onlineError = 'No se pudo buscar en línea. ¿Hay conexión?',
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _onlineBusy = false);
+    }
+  }
 
   @override
   void didChangeDependencies() {
@@ -87,10 +157,7 @@ class _PlaceSearchState extends State<_PlaceSearch> {
           children: [
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 0, 20, 4),
-              child: Text(
-                'Buscar en tus mapas',
-                style: signage(context, size: 24),
-              ),
+              child: Text(widget.title, style: signage(context, size: 24)),
             ),
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
@@ -108,6 +175,7 @@ class _PlaceSearchState extends State<_PlaceSearch> {
                 enableSuggestions: false,
                 textInputAction: TextInputAction.search,
                 onChanged: (_) => setState(() {}),
+                onSubmitted: widget.online ? (_) => _searchOnline() : null,
                 decoration: InputDecoration(
                   hintText: 'Cerro, refugio, agua…',
                   prefixIcon: const Icon(Icons.search_rounded),
@@ -140,7 +208,7 @@ class _PlaceSearchState extends State<_PlaceSearch> {
                     );
                   }
                   final all = snap.data!;
-                  if (all.isEmpty) {
+                  if (all.isEmpty && !widget.online && !widget.offerMe) {
                     return const _Message(
                       'Aún no hay mapas descargados.',
                       'Descarga una zona (pestaña Mapas o desde una expedición) y aquí podrás buscar en ella sin señal.',
@@ -159,26 +227,54 @@ class _PlaceSearchState extends State<_PlaceSearch> {
   Widget _results(BuildContext context, List<MapPlace> all) {
     final q = _query.text.trim();
     final hits = searchPlaces(all, q, lat: widget.lat, lng: widget.lng);
-    if (hits.isEmpty) {
+    final online = widget.online && q.isNotEmpty;
+    final extras = <Widget>[
+      if (widget.offerMe && q.isEmpty)
+        ListTile(
+          leading: const Icon(Icons.my_location_rounded, color: Andes.cyan),
+          title: const Text('Tu ubicación'),
+          subtitle: const Text('Donde estás ahora'),
+          onTap: () => Navigator.pop(
+            context,
+            MapPlace('Tu ubicación', PlaceKind.other, widget.lng!, widget.lat!),
+          ),
+        ),
+      if (online) ..._onlineSection(context, q),
+    ];
+    if (hits.isEmpty && extras.isEmpty) {
       return _Message(
         q.isEmpty ? 'Nada cerca.' : 'Sin resultados para "$q".',
-        'Solo se busca en tus zonas descargadas.',
+        all.isEmpty
+            ? 'Descarga una zona (pestaña Mapas o desde una expedición) para buscar en ella sin señal.'
+            : 'Solo se busca en tus zonas descargadas.',
       );
     }
     return ListView(
       padding: const EdgeInsets.fromLTRB(8, 0, 8, 16),
       children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(12, 6, 12, 4),
-          child: Text(
-            q.isNotEmpty
-                ? '${hits.length} ${hits.length == 1 ? 'LUGAR' : 'LUGARES'}'
-                : widget.fromMe
-                ? 'CERCA DE TI'
-                : 'CERCA DEL CENTRO DEL MAPA',
-            style: labelStyle(context),
+        if (q.isEmpty) ...extras,
+        if (hits.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 6, 12, 4),
+            child: Text(
+              q.isNotEmpty
+                  ? '${hits.length} ${hits.length == 1 ? 'LUGAR' : 'LUGARES'}'
+                  : widget.fromMe
+                  ? 'CERCA DE TI'
+                  : 'CERCA DEL CENTRO DEL MAPA',
+              style: labelStyle(context),
+            ),
           ),
-        ),
+        if (q.isNotEmpty && hits.isEmpty)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 6, 12, 4),
+            child: Text(
+              'Nada en tus mapas descargados.',
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ),
         for (final h in hits)
           ListTile(
             leading: Icon(placeIcon(h.place.kind)),
@@ -192,8 +288,53 @@ class _PlaceSearchState extends State<_PlaceSearch> {
             ),
             onTap: () => Navigator.pop(context, h.place),
           ),
+        if (q.isNotEmpty) ...extras,
       ],
     );
+  }
+
+  /// "Buscar en todo el mundo" y sus resultados (con conexión).
+  List<Widget> _onlineSection(BuildContext context, String q) {
+    final muted = Theme.of(context).colorScheme.onSurfaceVariant;
+    final hits = _onlineQuery == q ? _onlineHits : null;
+    return [
+      Padding(
+        padding: const EdgeInsets.fromLTRB(12, 14, 12, 4),
+        child: Text('EN TODO EL MUNDO', style: labelStyle(context)),
+      ),
+      if (hits == null)
+        ListTile(
+          leading: _onlineBusy
+              ? const SizedBox.square(
+                  dimension: 22,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : const Icon(Icons.public_rounded),
+          title: Text('Buscar "$q" en línea'),
+          subtitle: Text(_onlineError ?? 'Necesita conexión'),
+          onTap: _searchOnline,
+        )
+      else if (hits.isEmpty)
+        Padding(
+          padding: const EdgeInsets.fromLTRB(12, 6, 12, 8),
+          child: Text(
+            'Sin resultados en línea.',
+            style: TextStyle(color: muted),
+          ),
+        )
+      else
+        for (final p in hits)
+          ListTile(
+            leading: const Icon(Icons.public_rounded),
+            title: Text(p.name),
+            subtitle: Text(
+              [p.kind, p.detail].where((s) => s.isNotEmpty).join(' · '),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            onTap: () => Navigator.pop(context, _fromOnline(p)),
+          ),
+    ];
   }
 }
 

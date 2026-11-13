@@ -23,7 +23,11 @@ enum PlaceKind {
   park('Parque'),
   police('Policía'),
   health('Salud'),
-  parking('Estacionamiento');
+  parking('Estacionamiento'),
+
+  /// Un lugar que no viene de los mapas: tu ubicación o un resultado de la búsqueda en
+  /// línea. Nunca está en el índice.
+  other('Lugar');
 
   const PlaceKind(this.label);
   final String label;

@@ -45,6 +45,25 @@ Teléfono de pruebas: Samsung Galaxy S23 Ultra (SM-S918B), Android 16, salvo que
   `recording()` para grabar; se abre uno a la vez, la grabación con el servicio en primer plano), `forceLocationManager`
   en Android (el proveedor "fused" del sistema, sin el aviso de Wi-Fi), aviso y reintento cada 15 s si el GPS falla,
   posición en vivo y seguir al abrir el mapa libre, y no guardar ni mostrar como normal un recorrido sin puntos.
+- **Segundo plano (13 nov 2026, de madrugada):** grabando con "Mi ubicación" ya abierto, app en segundo plano (botón de
+  inicio, para que no se cayera la depuración inalámbrica como al bloquear) y posiciones simuladas con el proveedor de
+  prueba `fused` (`cmd location providers add-test-provider`): **un punto cada 5 s** durante 1 minuto con la app fuera
+  de la vista. Al quitar el proveedor de prueba: el panel avisó "El GPS no está entregando tu posición…" y a los 15 s
+  se recuperó solo (GPS ±16 m). Grabación de prueba descartada. **OK**. Falta: caminar con la pantalla bloqueada.
+- Falla mía en la prueba: la barra de arriba del mapa quedó a media pantalla (el `Align` que separa el título de la
+  lupa se estiraba a todo el alto) → `heightFactor: 1`. **OK**.
+- Indicaciones de la primera vez: mapa, trazar ruta y grabar salen una vez. **OK**.
+- Íconos de lugares en el Parque San Martín: agua, museo, colectivo, hotel, comida, deportes, estacionamiento. Falla:
+  muchos íconos de "cultura" sin nombre (estatuas) → sin nombre solo lo útil. Satélite: nombres blancos con borde
+  oscuro legibles. **OK**.
+- Trazar por nombre: "Tu ubicación" como salida + "Museo Moyano" buscado en línea ("EN TODO EL MUNDO") → ruta de 5.4 km
+  por calles, en teal. No se guardó. **OK**.
+- Video del recorrido con el "Recorrido 2" del usuario. Fallas en orden: (1) el codificador por hardware falló con el
+  lienzo completo → copia de 720 px; (2) la copia salía vacía fuera de `render` → copiar en `render`; (3) los pedazos
+  llegaban pero no el final: `type` pisaba el nombre del evento → `mime`; (4) a mitad del vuelo la cámara se veía
+  lejísimos (altura del terreno del lugar anterior) → altura corregida en cada cuadro y esperar a que cargue el inicio.
+  Resultado: MP4 de 4.4 MB que abre el reproductor del teléfono, con título y distancia; se abre compartir (cerrado
+  sin compartir; video temporal borrado). **OK**.
 - En el teléfono: con la ubicación del teléfono apagada, el mapa no centra (correcto). Encendida: el mapa libre se
   centra solo en tu posición y queda "Siguiendo tu posición", sin el aviso de Wi-Fi. Al grabar con "Mi ubicación"
   abierto: se cierra ese flujo y se abre el de grabación con servicio en primer plano (`isForeground=true`, tipo

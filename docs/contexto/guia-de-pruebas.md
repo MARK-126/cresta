@@ -29,6 +29,26 @@ juntarla).
 Descartado a pedido del usuario: franja de riesgo de avalanchas (casi no aplica en Argentina) y descargas más
 grandes que el límite de OpenFreeMap (no vale la pena por ahora).
 
+## Correcciones de la salida del 12 nov 2026 (rama `feat/gps-grabacion`)
+
+Lo que se corrigió a partir de tus observaciones en el Parque San Martín, y cómo probarlo:
+
+- **Grabar con la pantalla bloqueada** (antes salían líneas rectas): graba caminando 10 minutos con la pantalla
+  bloqueada. La traza debe seguir tu camino, sin tramos rectos. Debe verse la notificación fija "Cresta está grabando".
+- **Ya no pide encender el Wi-Fi** al ubicarte ni al grabar.
+- **Si el GPS falla**, el panel lo dice en rojo y vuelve a intentarlo solo.
+- **Tu posición en vivo**: al abrir el mapa libre te centra solo; el botón de ubicación te sigue mientras caminas
+  hasta que muevas el mapa con el dedo.
+- **Recorrido sin puntos**: lo explica y no deja abrir mapa, video ni GPX vacíos (tu "Recorrido 1" es así: puedes
+  borrarlo desde su menú).
+- **Inicio y fin** marcados en la traza; **ruta en teal** y recorrido en coral.
+- **Indicaciones la primera vez** que abres el mapa, trazas una ruta o grabas (se vuelven a ver desde el perfil).
+- **Escribir lugares al trazar una ruta**: campo "¿Desde dónde sales?" / "Agregar parada o destino por nombre".
+  "Tu ubicación", tus mapas y, con conexión, todo el mundo (confirma con Enter).
+- **Íconos de lugares** (agua, refugio, camping, comida, baños, salud…) y nombres legibles sobre el satélite.
+- **Video del recorrido en 3D**: en el detalle del recorrido, "Video del recorrido en 3D". No toques el mapa mientras
+  graba; al terminar se abre compartir. Probar que WhatsApp lo acepte.
+
 ## En casa (con el teléfono conectado a la computadora)
 
 Para estas basta con que el teléfono esté en la misma red Wi-Fi con **depuración inalámbrica** activa: pasarle a

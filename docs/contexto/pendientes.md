@@ -17,16 +17,15 @@ Hechas en `feat/gps-grabacion` (detalle en `pruebas.md`): grabar con la pantalla
 Wi-Fi, grabación sin puntos, ver tu posición en vivo y centrarte al abrir el mapa libre, recorrido sin puntos (no se
 podía ver ni exportar; "Ver en el mapa" llevaba a la zona descargada), inicio y fin en la traza, ruta en teal.
 
-Por hacer, en este orden propuesto:
-1. **Indicaciones la primera vez** que se usa cada parte (mapa libre, trazar ruta, grabar): una ventana breve que no
-   vuelve a salir.
-2. **Escribir el origen, el destino y paradas** al trazar una ruta (con la búsqueda sin señal y, con conexión, la de
-   Nominatim), además de tocar el mapa.
-3. **Mapa más legible y con más detalle** (comparado con Gaia y Wikiloc): íconos de lugares (agua, refugio, baños,
-   comida, salud), nombres más grandes y con mejor contraste sobre el satélite, relieve más marcado.
-4. **Barra de datos al grabar** como Gaia: altitud y velocidad siempre a la vista arriba del mapa; brújula.
-5. **Video del recorrido** (no existía en Cresta: lo tienen Wikiloc y Relive): sobrevuelo 3D del recorrido grabado y
-   exportarlo a video (posible con `MediaRecorder` sobre el lienzo del mapa en el WebView).
+También hechas en la misma rama: indicaciones de la primera vez, escribir salida/paradas/destino al trazar, íconos de
+lugares y nombres legibles sobre el satélite, y video del recorrido en 3D.
+
+Queda:
+- **Barra de datos al grabar** como Gaia: altitud y velocidad siempre a la vista arriba del mapa; brújula.
+- **Probar caminando con la pantalla bloqueada** (la prueba en casa fue con la app en segundo plano y posiciones
+  simuladas: ver `pruebas.md`).
+- Video: es MP4 fragmentado (lo que da `MediaRecorder` de Chrome): el reproductor del teléfono lo abre; falta probar
+  que WhatsApp e Instagram lo acepten.
 
 ## Siguiente (revisión de diseño del 12 nov 2026)
 
