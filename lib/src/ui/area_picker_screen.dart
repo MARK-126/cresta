@@ -9,9 +9,11 @@ import '../map/map_layers.dart';
 import '../offline/map_sources.dart';
 import '../offline/offline_region.dart';
 import '../offline/tile_math.dart';
+import '../places/places.dart';
 import '../search/place_search.dart';
 import 'format.dart';
 import 'offline_widgets.dart';
+import 'place_search_sheet.dart' show placeDetail;
 import 'theme.dart';
 
 /// Elegir una zona en el mapa y descargarla: lo que queda dentro del recuadro es lo que se baja.
@@ -43,6 +45,9 @@ class _AreaPickerScreenState extends State<AreaPickerScreen> {
   List<Place>? _results;
   bool _searching = false;
   String? _searchError;
+
+  /// Los resultados vienen de los mapas descargados (no hubo conexión).
+  bool _offline = false;
   bool _nameEdited = false;
 
   @override
@@ -124,12 +129,43 @@ class _AreaPickerScreenState extends State<AreaPickerScreen> {
     });
     try {
       final r = await _search.search(q.trim());
-      setState(() => _results = r);
-      if (r.isEmpty) _searchError = 'Sin resultados para "$q"';
+      if (!mounted) return;
+      setState(() {
+        _results = r;
+        _offline = false;
+        if (r.isEmpty) _searchError = 'Sin resultados para "$q"';
+      });
     } on Exception {
-      setState(() => _searchError = 'No se pudo buscar. ¿Hay conexión?');
+      // Sin conexión: se busca en los mapas ya descargados (sirve para ampliar una zona)
+      final r = await _searchDownloaded(q.trim());
+      if (!mounted) return;
+      setState(() {
+        _results = r;
+        _offline = true;
+        if (r.isEmpty) {
+          _searchError =
+              'Sin conexión, y "$q" no está en tus mapas descargados.';
+        }
+      });
     } finally {
       if (mounted) setState(() => _searching = false);
+    }
+  }
+
+  Future<List<Place>> _searchDownloaded(String q) async {
+    try {
+      final all = await AppScope.of(context).places.places();
+      return [
+        for (final h in searchPlaces(all, q, limit: 10))
+          Place(
+            name: h.place.name,
+            detail: placeDetail(h.place),
+            lng: h.place.lng,
+            lat: h.place.lat,
+          ),
+      ];
+    } on Exception {
+      return const [];
     }
   }
 
@@ -302,6 +338,19 @@ class _AreaPickerScreenState extends State<AreaPickerScreen> {
                                 shrinkWrap: true,
                                 padding: EdgeInsets.zero,
                                 children: [
+                                  if (_offline)
+                                    Padding(
+                                      padding: const EdgeInsets.fromLTRB(
+                                        16,
+                                        12,
+                                        16,
+                                        4,
+                                      ),
+                                      child: Text(
+                                        'SIN CONEXIÓN · EN TUS MAPAS',
+                                        style: labelStyle(context),
+                                      ),
+                                    ),
                                   for (final p in _results!)
                                     ListTile(
                                       dense: true,

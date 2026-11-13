@@ -9,8 +9,20 @@ String fmtInt(num n) {
   return out.toString();
 }
 
-String fmtKm(double meters, {int decimals = 1}) =>
-    (meters / 1000).toStringAsFixed(decimals);
+/// Kilómetros con miles separados: "6,598.8".
+String fmtKm(double meters, {int decimals = 1}) {
+  final s = (meters / 1000).toStringAsFixed(decimals);
+  final neg = s.startsWith('-');
+  final dot = s.indexOf('.');
+  final whole = s.substring(neg ? 1 : 0, dot < 0 ? s.length : dot);
+  final out = StringBuffer(neg ? '-' : '');
+  for (var i = 0; i < whole.length; i++) {
+    if (i > 0 && (whole.length - i) % 3 == 0) out.write(',');
+    out.write(whole[i]);
+  }
+  if (dot >= 0) out.write(s.substring(dot));
+  return out.toString();
+}
 
 String fmtDuration(Duration d) =>
     '${d.inHours} h ${(d.inMinutes % 60).toString().padLeft(2, '0')}';

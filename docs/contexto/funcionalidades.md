@@ -70,7 +70,9 @@ Detalles técnicos en `estado.md`; qué se probó en `pruebas.md`.
   legibles sobre el satélite.
 - Tu posición en vivo en el mapa; el mapa libre te centra al abrirlo y el botón de ubicación te sigue.
 - Buscar sin señal en los mapas descargados: cumbres (con altura), refugios, agua, campamentos, pueblos,
-  senderos y ríos, con distancia y dirección desde donde estás; el lugar queda marcado en el mapa.
+  senderos y ríos, con distancia y dirección desde donde estás; el lugar queda marcado en el mapa. Desde él, "Ruta
+  hasta aquí" (o "Agregar a la ruta") traza el camino desde tu posición. Sin conexión, el selector de zonas para
+  descargar también busca en los mapas descargados.
 - Mapa a pantalla completa: abajo una barra flotante (Capas, Grabar, Ruta); al grabar o trazar, una tira compacta
   con lo esencial; con ruta, protección civil o rutas comparadas, una tarjeta de una línea. El detalle se abre en
   hojas a pedido que se cierran deslizando o tocando el mapa.

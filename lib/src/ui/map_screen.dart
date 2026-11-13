@@ -46,6 +46,10 @@ import 'track_screen.dart';
 /// El mapa de una expedición, en 2D o 3D, con lo descargado y (si hay red) lo demás.
 /// Sin [expeditionId] es el mapa libre: se explora, se trazan rutas y se graba sin expedición
 /// (el recorrido queda libre, en la Bitácora).
+/// "Ruta hasta aquí" sale de tu posición solo si el lugar está a menos de esto; más
+/// lejos se pregunta desde dónde sales (nadie camina 200 km desde su casa).
+const routeFromMeMaxMeters = 50000.0;
+
 class MapScreen extends StatefulWidget {
   const MapScreen({
     super.key,
@@ -793,7 +797,12 @@ class _MapScreenState extends State<MapScreen> {
     if (p == null || !mounted || _planner != planner) return;
     await planner.addPoint(LngLat(p.lng, p.lat));
     if (!mounted) return;
-    // Encuadra lo trazado; con un solo punto, ve a él
+    await _framePlan(planner);
+  }
+
+  /// Encuadra lo trazado; con un solo punto, ve a él.
+  Future<void> _framePlan(RoutePlanner planner) async {
+    if (planner.waypoints.isEmpty) return;
     if (planner.waypoints.length > 1) {
       final pts = planner.line.isEmpty ? planner.waypoints : planner.line;
       await _bridge.fitBounds(
@@ -805,8 +814,49 @@ class _MapScreenState extends State<MapScreen> {
         ),
       );
     } else {
+      final p = planner.waypoints.first;
       await _bridge.flyTo(p.lng, p.lat, zoom: 14, pitch: null);
     }
+  }
+
+  /// Trazar ruta hasta el lugar encontrado. Trazando, lo agrega como siguiente punto;
+  /// si no, empieza a trazar (o sigue la ruta que ya hay) desde tu posición. Sin tu
+  /// posición, o si estás lejos, pregunta desde dónde sales.
+  Future<void> _routeToFound() async {
+    final dest = _found;
+    if (dest == null) return;
+    if (_planner == null) _startPlanning();
+    final planner = _planner;
+    if (planner == null) return;
+    if (planner.waypoints.isEmpty) {
+      final fix = _services.recorder.lastFix;
+      final me = _myPos ?? (fix == null ? null : (fix.lng, fix.lat));
+      final near =
+          me != null &&
+          haversine(me.$2, me.$1, dest.lat, dest.lng) <= routeFromMeMaxMeters;
+      if (near) {
+        await planner.addPoint(LngLat(me.$1, me.$2));
+      } else {
+        // Lejos de ti: las salidas que se sugieren son las cercanas al destino
+        final start = await showPlaceSearch(
+          context,
+          lng: dest.lng,
+          lat: dest.lat,
+          near: dest.name,
+          me: me,
+          title: '¿Desde dónde sales?',
+          offerMe: true,
+          online: true,
+        );
+        if (start == null || !mounted || _planner != planner) return;
+        await planner.addPoint(LngLat(start.lng, start.lat));
+      }
+    }
+    if (!mounted || _planner != planner) return;
+    await planner.addPoint(LngLat(dest.lng, dest.lat));
+    if (!mounted) return;
+    _clearFound();
+    await _framePlan(planner);
   }
 
   /// Graba el sobrevuelo del recorrido a video. El mapa queda a pantalla completa y sin
@@ -1590,6 +1640,20 @@ class _MapScreenState extends State<MapScreen> {
                           child: _FoundCard(
                             place: _found!,
                             from: _myPos,
+                            // Con una ruta abierta o trazando, el lugar se suma al final
+                            routeLabel:
+                                _planner != null ||
+                                    _route != null ||
+                                    _savedRoute != null
+                                ? 'Agregar a la ruta'
+                                : 'Ruta hasta aquí',
+                            onRoute:
+                                _recordingHere ||
+                                    _comparing ||
+                                    widget.video ||
+                                    civil
+                                ? null
+                                : _routeToFound,
                             onTap: () => _bridge.flyTo(
                               _found!.lng,
                               _found!.lat,
@@ -1836,11 +1900,17 @@ class _FoundCard extends StatelessWidget {
     required this.from,
     required this.onTap,
     required this.onClose,
+    required this.routeLabel,
+    this.onRoute,
   });
   final MapPlace place;
   final (double, double)? from;
   final VoidCallback onTap;
   final VoidCallback onClose;
+  final String routeLabel;
+
+  /// Null: no se ofrece (grabando, comparando).
+  final VoidCallback? onRoute;
 
   @override
   Widget build(BuildContext context) {
@@ -1883,6 +1953,12 @@ class _FoundCard extends StatelessWidget {
                   ],
                 ),
               ),
+              if (onRoute != null)
+                IconButton(
+                  tooltip: routeLabel,
+                  icon: const Icon(Icons.directions_rounded, color: Andes.cyan),
+                  onPressed: onRoute,
+                ),
               IconButton(
                 tooltip: 'Quitar del mapa',
                 icon: const Icon(Icons.close_rounded, size: 20),

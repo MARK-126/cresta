@@ -137,6 +137,12 @@
   `editing` aparte: antes "Editar" se deducía de traer nombre, y el formulario lleno de antemano decía "Editar
   expedición". El calendario acepta años anteriores si la fecha lo es (un recorrido de 2024 lo rompía).
 - **Grupo en tiempo real descartado** (no hay señal en la montaña).
+- **"Ruta hasta aquí"** (13 nov 2026): con una ruta abierta, el lugar se suma al final ("Agregar a la ruta") en vez de
+  empezar otra: es lo que se espera al estar editando, y "Deshacer" lo quita. Sale de tu posición solo si el lugar está
+  a ≤ 50 km; más lejos (planear desde casa otro país) pregunta desde dónde sales y sugiere lo cercano al destino
+  (`near`/`me` en `showPlaceSearch`), sin perder "Tu ubicación".
+- **Selector de zonas sin conexión:** busca en `PlaceIndex` solo si Nominatim falla; con conexión manda Nominatim
+  (todo el mundo, con el recuadro del lugar).
 
 - **Ahorro de tokens** (pedido del usuario, 28 oct 2026): leer solo README y pendientes al empezar, graphify
   antes de `grep`, verificar con texto (`ui.sh`) antes que con capturas, capturas a la mitad. Reglas en
@@ -204,6 +210,12 @@
 - **graphify no nombraba grupos con Gemini** → su backend de Gemini usa el cliente `openai`, que no venía
   instalado → `graphifyy[openai]` en `tool/dev/graphify-setup.sh`. Si quedaron nombres provisionales
   (nombre de archivo), `--missing-only` no los cambia: correr una vez `graphify label . --backend gemini`.
+- **"6598.8 km" sin separador de miles** → `fmtKm` solo hacía `toStringAsFixed`; ahora agrupa como `fmtInt`
+  ("6,598.8").
+- **Probar "sin conexión" con adb Wi-Fi:** apagar el Wi-Fi corta adb. `cmd connectivity set-chain3-enabled true` +
+  `set-package-networking-enabled false com.cresta.cresta` le quita la red solo a la app, pero también bloquea
+  `127.0.0.1`: el mapa queda en blanco (no es falla de la app). Sirve para probar búsquedas, no el mapa. Al final,
+  `set-package-networking-enabled true` y `set-chain3-enabled false`.
 - **Reloj de grabación en 0 bajo techo** → contaba tiempo en movimiento y las lecturas > ±50 m se descartan.
 - **Logo de Flutter al abrir** → faltaba configurar el splash de Android 12+ (y `values-night-v31`: con el
   teléfono en modo oscuro, `night` pesa más que `v31`).
