@@ -5,13 +5,33 @@ Lo que falta **probar** está al inicio de `pruebas.md`. La lista de funciones p
 
 ## Prioridad
 
+0. **Pruebas del usuario:** ver [`guia-de-pruebas.md`](guia-de-pruebas.md) (búsqueda sin señal en casa; grabación,
+   avisos, regreso por la traza y llegada en vivo en el terreno).
+
 1. **Prueba de grabación al aire libre** (la hace el usuario): pantalla bloqueada, notificación fija,
    reloj, bitácora y resumen con datos reales.
+
+## Observaciones de la salida del 12 nov 2026 (Parque General San Martín, Mendoza)
+
+Hechas en `feat/gps-grabacion` (detalle en `pruebas.md`): grabar con la pantalla bloqueada, el aviso repetido de
+Wi-Fi, grabación sin puntos, ver tu posición en vivo y centrarte al abrir el mapa libre, recorrido sin puntos (no se
+podía ver ni exportar; "Ver en el mapa" llevaba a la zona descargada), inicio y fin en la traza, ruta en teal.
+
+También hechas en la misma rama: indicaciones de la primera vez, escribir salida/paradas/destino al trazar, íconos de
+lugares y nombres legibles sobre el satélite, y video del recorrido en 3D.
+
+Queda:
+- **Barra de datos al grabar** como Gaia: altitud y velocidad siempre a la vista arriba del mapa; brújula.
+- **Probar caminando con la pantalla bloqueada** (la prueba en casa fue con la app en segundo plano y posiciones
+  simuladas: ver `pruebas.md`).
+- Video: es MP4 fragmentado (lo que da `MediaRecorder` de Chrome): el reproductor del teléfono lo abre; falta probar
+  que WhatsApp e Instagram lo acepten.
 
 ## Siguiente (revisión de diseño del 12 nov 2026)
 
 
-Siguiente de la lista: buscar cumbres y lugares sin señal en los mapas descargados.
+Búsqueda sin señal hecha (falta verla en el teléfono). Ideas: usarla de respaldo en el selector de zonas cuando no
+hay conexión, y "Trazar ruta hasta aquí" desde el lugar encontrado.
 
 De la revisión queda: probar al sol si las etiquetas de 10–11 px se leen (el contraste ya es AAA). El botón de
 "Planear ruta" del mapa usa el ícono de "Trazar ruta" del inicio; sigue sin texto (tiene ayuda al mantenerlo).

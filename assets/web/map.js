@@ -143,6 +143,48 @@
   const empty = { type: 'FeatureCollection', features: [] };
   // Mismos tipos que PoiKind en Dart
   const POI_COLORS = ['water', '#5aa9e6', 'camp', '#f0bf63', 'shelter', '#d69a5c', 'summit', '#46eae5', 'noReturn', '#ffa089', 'danger', '#ff5f52'];
+  // Íconos de lugares (como Gaia o Wikiloc): un círculo de color con un emoji del sistema,
+  // dibujados en el teléfono (sin descargar nada; funcionan sin señal)
+  const POI_ICONS = {
+    water: ['💧', '#2f7fc4'], hut: ['🏠', '#9a5f33'], camp: ['⛺', '#3a8a48'], food: ['🍴', '#d9682a'],
+    lodging: ['🛏', '#7552b8'], health: ['✚', '#cf3d3d'], police: ['🚓', '#34539c'], parking: ['P', '#2f62c4'],
+    toilets: ['🚻', '#56636e'], view: ['🔭', '#22827d'], shop: ['🛒', '#b26f1f'], fuel: ['⛽', '#b8402f'],
+    bus: ['🚌', '#2f62c4'], culture: ['🏛', '#8a4fa3'], info: ['ℹ', '#2f62c4'], sport: ['⚽', '#3a8a48'],
+  };
+  // Tipo de ícono según la clase de OpenMapTiles; '' = sin ícono
+  const POI_KIND = ['match', ['get', 'subclass'],
+    ['drinking_water', 'spring', 'water_point'], 'water',
+    ['alpine_hut', 'shelter', 'wilderness_hut'], 'hut',
+    ['camp_site', 'caravan_site'], 'camp',
+    ['viewpoint'], 'view',
+    ['toilets'], 'toilets',
+    ['parking'], 'parking',
+    ['hospital', 'clinic', 'doctors', 'pharmacy'], 'health',
+    ['police'], 'police',
+    ['fuel'], 'fuel',
+    ['bus_station', 'bus_stop'], 'bus',
+    ['museum', 'attraction', 'artwork', 'theatre'], 'culture',
+    ['information'], 'info',
+    ['match', ['get', 'class'],
+      ['restaurant', 'cafe', 'fast_food', 'bar', 'beer', 'ice_cream', 'bakery'], 'food',
+      ['lodging'], 'lodging',
+      ['grocery', 'shop', 'alcohol_shop', 'clothing_store'], 'shop',
+      ['sports_centre', 'stadium', 'pitch'], 'sport',
+      '']];
+  // Lo que importa en la montaña se ve desde más lejos; lo de ciudad, solo de cerca
+  const POI_FAR = ['match', POI_KIND, ['water', 'hut', 'camp', 'health', 'toilets', 'view'], true, false];
+  function poiImage(glyph, color) {
+    const r = devicePixelRatio || 2, size = Math.round(26 * r), c = document.createElement('canvas');
+    c.width = c.height = size;
+    const g = c.getContext('2d');
+    g.beginPath(); g.arc(size / 2, size / 2, size / 2 - 1.5 * r, 0, Math.PI * 2);
+    g.fillStyle = color; g.fill(); g.lineWidth = 2 * r; g.strokeStyle = '#ffffff'; g.stroke();
+    const ascii = /^[\x20-\x7e✚ℹ]$/.test(glyph);
+    g.font = `${ascii ? 'bold ' : ''}${Math.round((ascii ? 14 : 13) * r)}px sans-serif`;
+    g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillStyle = '#ffffff';
+    g.fillText(glyph, size / 2, size / 2 + r);
+    return { image: g.getImageData(0, 0, size, size), pixelRatio: r };
+  }
   const font = (w) => [w === 'bold' ? 'Noto Sans Bold' : w === 'italic' ? 'Noto Sans Italic' : 'Noto Sans Regular'];
   const roadClass = (...c) => ['match', ['get', 'class'], c, true, false];
 
@@ -170,7 +212,9 @@
         plan: { type: 'geojson', data: empty },
         'plan-pts': { type: 'geojson', data: empty },
         pois: { type: 'geojson', data: empty },
+        found: { type: 'geojson', data: empty },
         track: { type: 'geojson', data: empty },
+        'track-ends': { type: 'geojson', data: empty },
         regions: { type: 'geojson', data: empty },
         zones: { type: 'geojson', data: empty },
         ash: { type: 'geojson', data: empty },
@@ -220,26 +264,28 @@
         { id: 'road-names', type: 'symbol', source: 'topo', 'source-layer': 'transportation_name', minzoom: 12,
           filter: ['any', ['match', ['get', 'class'], ['motorway', 'trunk', 'primary', 'secondary'], true, false], ['>=', ['zoom'], 14]],
           layout: { 'symbol-placement': 'line', 'symbol-spacing': 320, 'text-field': ['get', 'name'], 'text-font': font(),
-            'text-size': ['interpolate', ['linear'], ['zoom'], 12, 9.5, 16, 12.5], 'text-max-angle': 30, 'text-padding': 4 },
+            'text-size': ['interpolate', ['linear'], ['zoom'], 12, 10.5, 16, 13.5], 'text-max-angle': 30, 'text-padding': 4,
+            // En 3D, de frente a la pantalla y no tumbados sobre el terreno (se leían "planos")
+            'text-pitch-alignment': 'viewport' },
           paint: { 'text-color': ['match', ['get', 'class'], 'path', '#8f2a24', 'track', '#6b4a2b', '#4a4540'], 'text-halo-color': C.halo, 'text-halo-width': 1.4 } },
         { id: 'regions-line', type: 'line', source: 'regions', paint: { 'line-color': ['case', ['get', 'complete'], '#00a8a3', '#c99630'], 'line-width': 2, 'line-dasharray': [4, 2] } },
         { id: 'route-casing', type: 'line', source: 'route', layout: { 'line-join': 'round', 'line-cap': 'round' }, paint: { 'line-color': '#0e1416', 'line-width': 7, 'line-opacity': 0.75 } },
-        { id: 'route', type: 'line', source: 'route', filter: ['!=', ['get', 'snapped'], false], layout: { 'line-join': 'round', 'line-cap': 'round' }, paint: { 'line-color': '#f0bf63', 'line-width': 4 } },
+        { id: 'route', type: 'line', source: 'route', filter: ['!=', ['get', 'snapped'], false], layout: { 'line-join': 'round', 'line-cap': 'round' }, paint: { 'line-color': '#46eae5', 'line-width': 4 } },
         // Tramos sin sendero (línea recta): punteados y con etiqueta
-        { id: 'route-straight', type: 'line', source: 'route', filter: ['==', ['get', 'snapped'], false], layout: { 'line-join': 'round' }, paint: { 'line-color': '#f0bf63', 'line-width': 3.5, 'line-dasharray': [1.6, 1.2] } },
+        { id: 'route-straight', type: 'line', source: 'route', filter: ['==', ['get', 'snapped'], false], layout: { 'line-join': 'round' }, paint: { 'line-color': '#46eae5', 'line-width': 3.5, 'line-dasharray': [1.6, 1.2] } },
         { id: 'route-straight-label', type: 'symbol', source: 'route', filter: ['==', ['get', 'snapped'], false], layout: {
           'symbol-placement': 'line', 'symbol-spacing': 260, 'text-field': 'sin sendero', 'text-font': font(), 'text-size': 11 },
           paint: { 'text-color': '#ffa089', 'text-halo-color': '#0e1416', 'text-halo-width': 1.6 } },
         // Comparar rutas: varias líneas, cada una con su color
         { id: 'compare-casing', type: 'line', source: 'compare', layout: { 'line-join': 'round', 'line-cap': 'round' }, paint: { 'line-color': '#0e1416', 'line-width': 8, 'line-opacity': 0.75 } },
         { id: 'compare', type: 'line', source: 'compare', layout: { 'line-join': 'round', 'line-cap': 'round' }, paint: { 'line-color': ['get', 'color'], 'line-width': 4.5 } },
-        // Planificador: tramos ajustados a sendero en oro continuo; los rectos, punteados
+        // Planificador: tramos ajustados a sendero en teal continuo (el color de la app); los rectos, punteados
         { id: 'plan-casing', type: 'line', source: 'plan', layout: { 'line-join': 'round', 'line-cap': 'round' }, paint: { 'line-color': '#0e1416', 'line-width': 7, 'line-opacity': 0.75 } },
-        { id: 'plan-snapped', type: 'line', source: 'plan', filter: ['==', ['get', 'snapped'], true], layout: { 'line-join': 'round', 'line-cap': 'round' }, paint: { 'line-color': '#f0bf63', 'line-width': 4 } },
-        { id: 'plan-straight', type: 'line', source: 'plan', filter: ['==', ['get', 'snapped'], false], layout: { 'line-join': 'round' }, paint: { 'line-color': '#f0bf63', 'line-width': 3.5, 'line-dasharray': [1.6, 1.2] } },
+        { id: 'plan-snapped', type: 'line', source: 'plan', filter: ['==', ['get', 'snapped'], true], layout: { 'line-join': 'round', 'line-cap': 'round' }, paint: { 'line-color': '#46eae5', 'line-width': 4 } },
+        { id: 'plan-straight', type: 'line', source: 'plan', filter: ['==', ['get', 'snapped'], false], layout: { 'line-join': 'round' }, paint: { 'line-color': '#46eae5', 'line-width': 3.5, 'line-dasharray': [1.6, 1.2] } },
         { id: 'plan-pts', type: 'circle', source: 'plan-pts', paint: {
           'circle-radius': ['match', ['get', 'role'], 'start', 7, 'end', 7, 5],
-          'circle-color': ['match', ['get', 'role'], 'start', '#46eae5', 'end', '#ffa089', '#f0bf63'],
+          'circle-color': ['match', ['get', 'role'], 'start', '#f0bf63', 'end', '#ffa089', '#e8f1f7'],
           'circle-stroke-color': '#0e1416', 'circle-stroke-width': 2.5 } },
         // Puntos de interés de la ruta (agua, campamento, punto de no retorno…)
         { id: 'pois-dot', type: 'circle', source: 'pois', paint: {
@@ -248,9 +294,17 @@
         { id: 'pois-label', type: 'symbol', source: 'pois', layout: {
           'text-field': ['get', 'name'], 'text-font': font('bold'), 'text-size': 11.5, 'text-offset': [0, 1.2], 'text-anchor': 'top', 'text-optional': true },
           paint: { 'text-color': '#0e1416', 'text-halo-color': 'rgba(255,255,255,0.92)', 'text-halo-width': 1.4 } },
-        // Recorrido grabado (azul, encima de la ruta planeada)
+        // Recorrido grabado (coral, el color de grabar; encima de la ruta planeada, que es teal)
         { id: 'track-casing', type: 'line', source: 'track', layout: { 'line-join': 'round', 'line-cap': 'round' }, paint: { 'line-color': '#0e1416', 'line-width': 8, 'line-opacity': 0.8 } },
-        { id: 'track', type: 'line', source: 'track', layout: { 'line-join': 'round', 'line-cap': 'round' }, paint: { 'line-color': '#46eae5', 'line-width': 4.5 } },
+        { id: 'track', type: 'line', source: 'track', layout: { 'line-join': 'round', 'line-cap': 'round' }, paint: { 'line-color': '#ffa089', 'line-width': 4.5 } },
+        // Inicio y fin del recorrido (el fin, solo al verlo terminado: grabando, el fin eres tú)
+        { id: 'track-ends', type: 'circle', source: 'track-ends', paint: {
+          'circle-radius': ['match', ['get', 'role'], 'head', 8, 7], 'circle-color': ['match', ['get', 'role'], 'start', '#f0bf63', '#ffa089'],
+          'circle-stroke-color': '#0e1416', 'circle-stroke-width': 2.5 } },
+        { id: 'track-ends-label', type: 'symbol', source: 'track-ends', layout: {
+          'text-field': ['match', ['get', 'role'], 'start', 'Inicio', 'end', 'Fin', ''], 'text-font': font('bold'), 'text-size': 12,
+          'text-offset': [0, 1.3], 'text-anchor': 'top', 'text-allow-overlap': true },
+          paint: { 'text-color': '#0e1416', 'text-halo-color': 'rgba(255,255,255,0.95)', 'text-halo-width': 1.6 } },
         { id: 'evac', type: 'line', source: 'evac', layout: { visibility: 'none', 'line-cap': 'round' }, paint: { 'line-color': '#22c06a', 'line-width': 4, 'line-dasharray': [1.5, 1] } },
         // Nombres
         { id: 'water-names', type: 'symbol', source: 'topo', 'source-layer': 'water_name', layout: { 'text-field': ['get', 'name'], 'text-font': font('italic'), 'text-size': 11 },
@@ -261,6 +315,15 @@
           'text-field': ['format', ['get', 'name'], { 'text-font': ['literal', font('bold')] }, ['case', ['has', 'ele'], ['concat', '\n', ['number-format', ['get', 'ele'], {}], ' m'], ''], {}],
           'text-font': font(), 'text-size': 11, 'text-anchor': 'top', 'text-offset': [0, 0.6], 'text-optional': true },
           paint: { 'text-color': C.label, 'text-halo-color': C.halo, 'text-halo-width': 1.4 } },
+        // Íconos de lugares: agua, refugios, camping, comida, salud…
+        { id: 'poi-icons', type: 'symbol', source: 'topo', 'source-layer': 'poi', minzoom: 13,
+          // Sin nombre solo lo útil aunque no lo tenga (agua, baños…): estatuas y monumentos sin nombre ensuciaban el mapa
+          filter: ['all', ['!=', POI_KIND, ''], ['any', ['>=', ['zoom'], 15], POI_FAR],
+            ['any', ['has', 'name'], ['match', POI_KIND, ['water', 'toilets', 'parking', 'hut', 'camp', 'health'], true, false]]],
+          layout: { 'icon-image': ['concat', 'poi-', POI_KIND], 'symbol-sort-key': ['get', 'rank'],
+            'text-field': ['step', ['zoom'], '', 15, ['get', 'name']], 'text-font': font('bold'), 'text-size': 11.5,
+            'text-offset': [0, 1.25], 'text-anchor': 'top', 'text-optional': true, 'text-max-width': 8 },
+          paint: { 'text-color': '#3b3530', 'text-halo-color': C.halo, 'text-halo-width': 1.6 } },
         // Colonias, barrios y parajes: solo de cerca, en versales grises para no competir con los pueblos
         { id: 'places-minor', type: 'symbol', source: 'topo', 'source-layer': 'place', minzoom: 12, filter: roadClass('suburb', 'quarter', 'neighbourhood', 'isolated_dwelling', 'locality'), layout: {
           'text-field': ['get', 'name'], 'text-font': font(), 'text-size': 10.5, 'text-transform': 'uppercase', 'text-letter-spacing': 0.08, 'text-max-width': 8 },
@@ -274,6 +337,15 @@
           'text-field': ['get', 'name'], 'text-font': font('bold'),
           'text-size': ['match', ['get', 'class'], 'city', 15, 'town', 13, 'village', 12, 11] },
           paint: { 'text-color': C.label, 'text-halo-color': C.halo, 'text-halo-width': 1.6 } },
+        // Lugar encontrado con la búsqueda: encima de todo, con su nombre siempre visible
+        { id: 'found-ring', type: 'circle', source: 'found', paint: {
+          'circle-radius': 15, 'circle-color': 'rgba(240,191,99,0.25)', 'circle-stroke-color': '#f0bf63', 'circle-stroke-width': 2 } },
+        { id: 'found-dot', type: 'circle', source: 'found', paint: {
+          'circle-radius': 6, 'circle-color': '#f0bf63', 'circle-stroke-color': '#0e1416', 'circle-stroke-width': 2.5 } },
+        { id: 'found-label', type: 'symbol', source: 'found', layout: {
+          'text-field': ['get', 'name'], 'text-font': font('bold'), 'text-size': 13, 'text-offset': [0, 1.5], 'text-anchor': 'top',
+          'text-allow-overlap': true, 'text-ignore-placement': true },
+          paint: { 'text-color': '#0e1416', 'text-halo-color': 'rgba(255,255,255,0.95)', 'text-halo-width': 1.6 } },
       ],
       terrain: { source: 'dem', exaggeration: 1.4 },
       sky: { 'sky-color': '#8ec1ea', 'horizon-color': '#e8f1f7', 'fog-color': '#dbe6ec', 'sky-horizon-blend': 0.6, 'horizon-fog-blend': 0.6, 'fog-ground-blend': 0.4 },
@@ -291,7 +363,7 @@
     track: { layers: ['track', 'track-casing'] },
     trails: { layers: ['trails', 'tracks'] },
     contours: { layers: ['contours', 'contour-labels'] },
-    labels: { layers: ['peaks', 'peaks-dot', 'places', 'places-minor', 'places-region', 'road-names', 'water-names', 'boundaries'] },
+    labels: { layers: ['peaks', 'peaks-dot', 'places', 'places-minor', 'places-region', 'road-names', 'water-names', 'boundaries', 'poi-icons'] },
     hillshade: { layers: ['hillshade'] },
     slope: { layers: ['slope'] },
     flat: { layers: ['flat'] },
@@ -323,11 +395,27 @@
     if (def.markers) markers[def.markers].forEach((m) => (on ? m.addTo(map) : m.remove()));
   }
 
+  // Nombres del mapa: sobre el satélite, letras blancas con borde oscuro (como Google); con
+  // fondo oscuro de por medio, las letras oscuras con borde blanco no se leían
+  const NAME_LAYERS = ['peaks', 'places', 'places-minor', 'places-region', 'road-names', 'water-names', 'poi-icons'];
+  const namePaint = {};
+  function paintNames() {
+    const sat = base === 'sat';
+    NAME_LAYERS.forEach((id) => {
+      if (!map.getLayer(id)) return;
+      namePaint[id] ??= { color: map.getPaintProperty(id, 'text-color'), halo: map.getPaintProperty(id, 'text-halo-color') };
+      map.setPaintProperty(id, 'text-color', sat ? '#ffffff' : namePaint[id].color);
+      map.setPaintProperty(id, 'text-halo-color', sat ? 'rgba(8,12,14,0.92)' : namePaint[id].halo);
+      map.setPaintProperty(id, 'text-halo-width', sat ? 1.8 : 1.5);
+    });
+  }
+
   function setBase(next) {
     base = next;
     whenReady(() => {
       const all = new Set(Object.values(BASE_LAYERS).flat());
       all.forEach((l) => show(l, BASE_LAYERS[base].includes(l)));
+      paintNames();
       show('hillshade', base === 'relief' || !!visible.hillshade);
       map.setPaintProperty('hillshade', 'hillshade-exaggeration', base === 'relief' ? 0.85 : 0.5);
     });
@@ -355,6 +443,7 @@
     if (!flying) return;
     cancelAnimationFrame(flying);
     flying = null;
+    if (recorder) recorder.stop(); // manda lo grabado hasta aquí
     emit('flyEnd');
   }
   function flyRoute(durationMs = 38000) {
@@ -380,6 +469,132 @@
     };
     flying = requestAnimationFrame(step);
   }
+  // --- Sobrevuelo de un recorrido grabado (y su video)
+  // La línea se va dibujando detrás de un punto que avanza; la cámara lo sigue en 3D.
+  // Con `record`, el lienzo del mapa se graba (MediaRecorder) y el video se manda a Flutter en
+  // pedazos ('videoChunk', luego 'videoEnd'): un solo mensaje de varios MB no pasa por el puente.
+  let recorder = null;
+  function videoType() {
+    for (const t of ['video/mp4;codecs=avc1', 'video/mp4', 'video/webm;codecs=vp9', 'video/webm;codecs=vp8', 'video/webm']) {
+      if (window.MediaRecorder && MediaRecorder.isTypeSupported(t)) return t;
+    }
+    return null;
+  }
+  function sendVideo(blob, type) {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const b64 = String(reader.result).split(',')[1] || '';
+      const size = 256 * 1024;
+      const n = Math.ceil(b64.length / size);
+      for (let i = 0; i < n; i++) emit('videoChunk', { i, n, data: b64.slice(i * size, (i + 1) * size) });
+      emit('videoEnd', { mime: type, chunks: n }); // 'type' pisaría el nombre del evento
+    };
+    reader.readAsDataURL(blob);
+  }
+  // Graba una copia reducida del mapa (720 px de ancho): el lienzo a resolución completa
+  // (1440 × 3088 en el S23) hacía fallar el codificador de video del teléfono. La copia se
+  // hace en 'render', justo al terminar de dibujar (después, WebGL ya borró el cuadro).
+  function startCapture(type, caption) {
+    const src = map.getCanvas();
+    const w = 720, h = Math.round(w * src.height / src.width / 2) * 2;
+    const c = document.createElement('canvas');
+    c.width = w; c.height = h;
+    const g = c.getContext('2d');
+    const draw = () => {
+      g.drawImage(src, 0, 0, w, h);
+      if (!caption) return;
+      const band = g.createLinearGradient(0, h - 150, 0, h);
+      band.addColorStop(0, 'rgba(14,20,22,0)'); band.addColorStop(1, 'rgba(14,20,22,0.85)');
+      g.fillStyle = band; g.fillRect(0, h - 150, w, 150);
+      g.fillStyle = '#ffffff'; g.font = 'bold 30px sans-serif'; g.textAlign = 'left';
+      g.fillText(caption.title, 28, h - 62);
+      g.fillStyle = '#46eae5'; g.font = 'bold 22px sans-serif';
+      g.fillText(caption.detail, 28, h - 28);
+      g.textAlign = 'right'; g.fillStyle = 'rgba(255,255,255,0.7)';
+      g.fillText('CRESTA', w - 28, h - 28);
+    };
+    map.on('render', draw);
+    const rec = new MediaRecorder(c.captureStream(30), { mimeType: type, videoBitsPerSecond: 5e6 });
+    rec.cleanup = () => map.off('render', draw);
+    return rec;
+  }
+  function flyTrack(segments, record, caption) {
+    stopFly();
+    const coords = segments.flat();
+    if (coords.length < 2) return;
+    const d = [0];
+    for (let i = 1; i < coords.length; i++) {
+      const [a, b] = [coords[i - 1], coords[i]];
+      const k = Math.cos(b[1] * Math.PI / 180);
+      d.push(d[i - 1] + Math.hypot((b[0] - a[0]) * k, b[1] - a[1]) * 111320);
+    }
+    const total = d[d.length - 1];
+    const at = (m) => {
+      let i = 1;
+      while (i < d.length - 1 && d[i] < m) i++;
+      const t = (m - d[i - 1]) / Math.max(1, d[i] - d[i - 1]);
+      return { i, pt: [coords[i - 1][0] + (coords[i][0] - coords[i - 1][0]) * t, coords[i - 1][1] + (coords[i][1] - coords[i - 1][1]) * t] };
+    };
+    // ~6 s por km, entre 12 y 45 s; más cerca si el recorrido es corto
+    const durationMs = Math.max(12000, Math.min(45000, total / 1000 * 6000));
+    const zoom = total < 2000 ? 15.6 : total < 8000 ? 14.6 : 13.6;
+    if (!is3d) api.set3d(true);
+    let brg = bearing(coords[0], at(Math.min(total, 300)).pt);
+    // Con relieve, la cámara conserva la altura del lugar anterior mientras se mueve (solo se
+    // corrige al detenerse, y en el vuelo nunca se detiene): se pone la del terreno en cada cuadro
+    const ground = (pt) => {
+      if (!map.terrain) return;
+      const el = map.terrain.getElevationForLngLatZoom(maplibregl.LngLat.convert(pt), map.transform.tileZoom);
+      if (Number.isFinite(el)) map.transform.elevation = el;
+    };
+    const go = (pt) => { ground(pt); map.jumpTo({ center: pt, zoom, pitch: 62, bearing: brg }); };
+    go(coords[0]);
+    // Empieza cuando cargó el relieve y el mapa del inicio (o a los 4 s)
+    let started = false;
+    const begin = () => { if (!started) { started = true; go(coords[0]); start(); } };
+    map.once('idle', begin);
+    setTimeout(begin, 4000);
+    const start = () => {
+    let type = null;
+    if (record && (type = videoType())) {
+      const chunks = [];
+      recorder = startCapture(type, caption);
+      recorder.ondataavailable = (e) => e.data.size && chunks.push(e.data);
+      recorder.onerror = (e) => emit('videoError', { message: `No se pudo grabar el video: ${e.error || e}` });
+      recorder.onstop = () => {
+        recorder.cleanup();
+        recorder = null;
+        if (chunks.length) sendVideo(new Blob(chunks, { type }), type);
+        else emit('videoError', { message: 'El video quedó vacío.' });
+      };
+      recorder.start(1000);
+    } else if (record) {
+      emit('videoError', { message: 'Este teléfono no puede grabar video del mapa.' });
+    }
+    let t0 = null, frame = 0;
+    const step = (ts) => {
+      if (t0 === null) t0 = ts + 800; // un momento quieto al inicio
+      const k = Math.max(0, Math.min(1, (ts - t0) / durationMs));
+      const m = k * total;
+      const a = at(m);
+      const target = bearing(a.pt, at(Math.min(total, m + 250)).pt);
+      brg += (((target - brg + 540) % 360) - 180) * 0.04;
+      go(a.pt);
+      if (frame++ % 2 === 0) {
+        map.getSource('track').setData({ type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: [...coords.slice(0, a.i), a.pt] } });
+        map.getSource('track-ends').setData({ type: 'FeatureCollection', features: [pointFeature(coords[0], { role: 'start' }), pointFeature(a.pt, { role: 'head' })] });
+      }
+      emit('flyProgress', { meters: Math.round(m) });
+      if (k < 1) { flying = requestAnimationFrame(step); return; }
+      flying = null;
+      // Al final, todo el recorrido con su inicio y fin
+      api.setTrack(segments, true);
+      setTimeout(() => { if (recorder) recorder.stop(); emit('flyEnd'); }, 1500);
+    };
+    flying = requestAnimationFrame(step);
+    };
+  }
+
   // Seguir la posición mientras se graba; si el usuario mueve el mapa, se deja de seguir
   let following = false;
   map.on('dragstart', () => {
@@ -564,8 +779,14 @@
       });
     },
     /// Tramos del recorrido: lista de listas de [lng, lat] (una por cada tramo entre pausas).
-    setTrack(segments) {
-      whenReady(() => map.getSource('track').setData({ type: 'Feature', properties: {}, geometry: { type: 'MultiLineString', coordinates: segments } }));
+    setTrack(segments, showEnd = false) {
+      const all = segments.flat();
+      whenReady(() => {
+        map.getSource('track').setData({ type: 'Feature', properties: {}, geometry: { type: 'MultiLineString', coordinates: segments } });
+        const ends = all.length ? [pointFeature(all[0], { role: 'start' })] : [];
+        if (showEnd && all.length > 1) ends.push(pointFeature(all[all.length - 1], { role: 'end' }));
+        map.getSource('track-ends').setData({ type: 'FeatureCollection', features: ends });
+      });
     },
     setRegions(list) {
       whenReady(() => map.getSource('regions').setData({
@@ -627,8 +848,13 @@
         features: (list || []).map((p) => pointFeature(p.at, { kind: p.kind, name: p.name })),
       }));
     },
+    /// Lugar encontrado: { name, at: [lng, lat] } o null para quitarlo.
+    setFound(p) {
+      whenReady(() => map.getSource('found').setData(p ? { type: 'FeatureCollection', features: [pointFeature(p.at, { name: p.name })] } : empty));
+    },
     fitRoute,
     flyRoute,
+    flyTrack,
     stopFly,
     flyTo(lng, lat, zoom = 13.5, pitch = 55, bearingDeg) {
       stopFly();
@@ -688,6 +914,14 @@
     },
   };
   window.cresta = api;
+
+  // Los íconos de lugares se dibujan la primera vez que el mapa los pide
+  map.on('styleimagemissing', (e) => {
+    const def = POI_ICONS[e.id.replace(/^poi-/, '')];
+    if (!def || map.hasImage(e.id)) return;
+    const { image, pixelRatio } = poiImage(def[0], def[1]);
+    map.addImage(e.id, image, { pixelRatio });
+  });
 
   map.on('load', () => {
     // Créditos plegados al inicio (botón ⓘ) para no tapar los controles

@@ -36,6 +36,7 @@ class PlannerPanel extends StatelessWidget {
     required this.onPlacePoi,
     required this.onSave,
     required this.onCancel,
+    required this.onAddByName,
   });
 
   final RoutePlanner planner;
@@ -45,6 +46,9 @@ class PlannerPanel extends StatelessWidget {
   final ValueChanged<PoiKind?> onPlacePoi;
   final VoidCallback onSave;
   final VoidCallback onCancel;
+
+  /// Agrega el siguiente punto escribiendo su nombre (en vez de tocar el mapa).
+  final VoidCallback onAddByName;
 
   @override
   Widget build(BuildContext context) {
@@ -63,6 +67,33 @@ class PlannerPanel extends StatelessWidget {
         Text('PLANEANDO RUTA', style: labelStyle(context, color: Andes.gold)),
         const SizedBox(height: 4),
         Text(hint, style: TextStyle(color: muted, fontSize: 13, height: 1.35)),
+        const SizedBox(height: 12),
+        // Escribir el lugar: salida, paradas y destino, en orden
+        Material(
+          color: Andes.surfaceHigh,
+          borderRadius: BorderRadius.circular(14),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(14),
+            onTap: p.busy ? null : onAddByName,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+              child: Row(
+                children: [
+                  const Icon(Icons.search_rounded, color: Andes.cyan),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      p.waypoints.isEmpty
+                          ? '¿Desde dónde sales? Escribe un lugar'
+                          : 'Agregar parada o destino por nombre',
+                      style: TextStyle(color: muted),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
         const SizedBox(height: 12),
         if (placingPoi != null)
           _Note(

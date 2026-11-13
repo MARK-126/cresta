@@ -95,16 +95,8 @@ class _SosScreenState extends State<SosScreen> with WidgetsBindingObserver {
       return;
     }
     await _sub?.cancel();
-    _sub = _services.location.positions().listen(
-      (p) => _setFix(
-        _Fix(
-          p.latitude,
-          p.longitude,
-          p.altitude == 0 && p.altitudeAccuracy == 0 ? null : p.altitude,
-          p.accuracy,
-          p.timestamp.toLocal(),
-        ),
-      ),
+    _sub = _services.location.watch().listen(
+      (p) => _setFix(_Fix(p.lat, p.lng, p.altitude, p.accuracy, p.time)),
       onError: (_) {},
     );
   }

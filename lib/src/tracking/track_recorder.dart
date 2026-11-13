@@ -212,6 +212,7 @@ class TrackRecorder extends ChangeNotifier {
 
   void pause() {
     if (state != RecorderState.recording) return;
+    _retry?.cancel();
     _sub?.cancel();
     _sub = null;
     _foldActive();
@@ -235,7 +236,7 @@ class TrackRecorder extends ChangeNotifier {
     mode = m;
     if (state == RecorderState.recording) {
       _sub?.cancel();
-      _sub = positions(m).listen(_onFix);
+      _sub = _subscribe(m);
     }
     notifyListeners();
   }
@@ -268,6 +269,9 @@ class TrackRecorder extends ChangeNotifier {
   void _reset() {
     _flush?.cancel();
     _flush = null;
+    _retry?.cancel();
+    _retry = null;
+    gpsError = null;
     _since = null;
     state = RecorderState.idle;
     track = null;
@@ -285,8 +289,7 @@ class TrackRecorder extends ChangeNotifier {
   void _listen() {
     state = RecorderState.recording;
     _since = _clock();
-    _sub = positions(mode)
-        .listen(_onFix, onError: (Object e) => debugPrint('GPS: $e'));
+    _sub = _subscribe(mode);
     // Cada 10 s guarda lo pendiente y refresca la pantalla
     // (la cuenta regresiva de la hora límite avanza aunque no lleguen lecturas)
     _flush ??= Timer.periodic(const Duration(seconds: 10), (_) {
@@ -296,6 +299,31 @@ class TrackRecorder extends ChangeNotifier {
     store.save();
     notifyListeners();
   }
+
+  /// Error del GPS (apagado, sin permiso); null mientras llegan lecturas. Antes se
+  /// ignoraba y la grabación seguía sin un solo punto (12 nov 2026).
+  String? gpsError;
+  Timer? _retry;
+
+  StreamSubscription<GpsFix> _subscribe(RecordingMode m) =>
+      positions(m).listen(_onFix, onError: _onGpsError);
+
+  void _onGpsError(Object e) {
+    debugPrint('GPS: $e');
+    gpsError = '$e';
+    notifyListeners();
+    // Reintenta: la ubicación pudo apagarse un momento o volver el permiso
+    _retry?.cancel();
+    _retry = Timer(retryGpsAfter, () {
+      if (state != RecorderState.recording) return;
+      _sub?.cancel();
+      _sub = _subscribe(mode);
+    });
+  }
+
+  /// Espera antes de volver a abrir el GPS tras un error.
+  @visibleForTesting
+  Duration retryGpsAfter = const Duration(seconds: 15);
 
   @visibleForTesting
   void onFix(GpsFix f) => _onFix(f);
@@ -312,6 +340,7 @@ class TrackRecorder extends ChangeNotifier {
 
   void _accept(GpsFix f, double? altitude) {
     lastFix = f;
+    gpsError = null;
     if (f.accuracy > maxAccuracy) {
       notifyListeners(); // se muestra "buscando señal GPS", pero no se guarda
       return;
@@ -361,6 +390,7 @@ class TrackRecorder extends ChangeNotifier {
   void dispose() {
     _sub?.cancel();
     _flush?.cancel();
+    _retry?.cancel();
     super.dispose();
   }
 }

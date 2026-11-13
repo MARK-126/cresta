@@ -1,7 +1,12 @@
 import 'dart:async';
+import 'dart:convert';
+import 'dart:io';
 import 'dart:math' as math;
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
 import '../app_services.dart';
@@ -14,6 +19,8 @@ import '../location/location_service.dart';
 import '../map/map_bridge.dart';
 import '../map/map_layers.dart';
 import '../offline/tile_math.dart';
+import '../places/places.dart';
+import '../tips/tips.dart';
 import '../routes/planned_route.dart';
 import '../routes/route_planner.dart';
 import '../tracking/track.dart';
@@ -26,10 +33,12 @@ import 'format.dart';
 import 'offline_widgets.dart';
 import 'panels.dart';
 import 'planner_panel.dart';
+import 'place_search_sheet.dart';
 import 'recording_panel.dart';
 import 'route_actions.dart';
 import 'sos_screen.dart';
 import 'theme.dart';
+import 'tip_dialog.dart';
 import 'track_screen.dart';
 
 /// El mapa de una expedición, en 2D o 3D, con lo descargado y (si hay red) lo demás.
@@ -44,6 +53,7 @@ class MapScreen extends StatefulWidget {
     this.showTrackId,
     this.plan = false,
     this.record = false,
+    this.video = false,
   });
   final String? expeditionId;
 
@@ -61,6 +71,9 @@ class MapScreen extends StatefulWidget {
 
   /// Recorrido ya grabado que se muestra al abrir (desde su detalle).
   final String? showTrackId;
+
+  /// Con [showTrackId]: sobrevuelo 3D del recorrido grabado a video, y compartirlo.
+  final bool video;
 
   @override
   State<MapScreen> createState() => _MapScreenState();
@@ -149,6 +162,12 @@ class _MapScreenState extends State<MapScreen> {
   /// Última posición leída en el mapa (para "Mi ubicación" sin grabar).
   (double, double)? _myPos;
   bool _centerOnFix = false;
+
+  /// Lugar elegido en la búsqueda (marcado en el mapa hasta cerrarlo).
+  MapPlace? _found;
+
+  /// Video del recorrido en curso (sobrevuelo grabándose o guardándose).
+  _VideoJob? _video;
   Timer? _paddingTimer;
   bool _started = false;
 
@@ -243,11 +262,28 @@ class _MapScreenState extends State<MapScreen> {
       await _bridge.setFollow(true, zoom: 15);
     } else if (widget.showTrackId != null) {
       final points = await _services.tracks.readPoints(widget.showTrackId!);
-      await _bridge.setTrack(points);
-      if (points.length > 1) await _bridge.fitBounds(_boundsOf(points));
+      await _bridge.setTrack(points, showEnd: true);
+      if (widget.video && points.length > 1) {
+        _startVideo(points);
+      } else if (points.length > 1) {
+        await _bridge.fitBounds(_boundsOf(points));
+      }
     }
     if (widget.plan && mounted) _startPlanning();
     if (widget.record && mounted && !_recordingHere) await _startRecording();
+    if (mounted && !widget.plan && !widget.record && !widget.video) {
+      showTipOnce(context, Tips.map);
+    }
+    if (mounted) {
+      await _autoLocate(
+        center:
+            _free &&
+            _route == null &&
+            widget.showTrackId == null &&
+            !_comparing &&
+            !widget.plan,
+      );
+    }
   }
 
   // ------------------------------------------------------------ Planificar ruta
@@ -290,6 +326,7 @@ class _MapScreenState extends State<MapScreen> {
     _bridge.setRoute(null);
     _pushPlan();
     _moveSheet(_sheetInitial);
+    showTipOnce(context, Tips.plan);
   }
 
   void _onPlanner() {
@@ -457,6 +494,8 @@ class _MapScreenState extends State<MapScreen> {
       messenger.showSnackBar(_permissionSnack(status));
       return;
     }
+    await showTipOnce(context, Tips.record);
+    if (!mounted) return;
     final mode = await askRecordingMode(context);
     if (mode == null || !mounted) return;
     // Si lo niega se graba igual, pero avisamos del riesgo
@@ -521,7 +560,10 @@ class _MapScreenState extends State<MapScreen> {
       builder: (context) => AlertDialog(
         title: const Text('Terminar recorrido'),
         content: Text(
-          '${fmtKm(_recorder.stats.meters, decimals: 2)} km · +${fmtInt(_recorder.stats.gain)} m · ${fmtClock(_recorder.activeTime)} en total, ${fmtDuration(_recorder.stats.moving)} en movimiento',
+          _recorder.points.isEmpty
+              // Sin puntos no hay nada que guardar: mejor decirlo que dejar un recorrido vacío
+              ? 'No se grabó ningún punto: el GPS no entregó tu posición. Puedes descartarlo o seguir grabando.'
+              : '${fmtKm(_recorder.stats.meters, decimals: 2)} km · +${fmtInt(_recorder.stats.gain)} m · ${fmtClock(_recorder.activeTime)} en total, ${fmtDuration(_recorder.stats.moving)} en movimiento',
         ),
         actions: [
           TextButton(
@@ -532,10 +574,11 @@ class _MapScreenState extends State<MapScreen> {
             onPressed: () => Navigator.pop(context),
             child: const Text('Seguir grabando'),
           ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, 'save'),
-            child: const Text('Guardar'),
-          ),
+          if (_recorder.points.isNotEmpty)
+            FilledButton(
+              onPressed: () => Navigator.pop(context, 'save'),
+              child: const Text('Guardar'),
+            ),
         ],
       ),
     );
@@ -607,7 +650,15 @@ class _MapScreenState extends State<MapScreen> {
         setState(() => _cursor = (e.data['meters'] as num).toDouble());
       case 'flyEnd':
         setState(() => _flying = false);
-        _moveSheet(_sheetInitial);
+        if (_video == null) _moveSheet(_sheetInitial);
+      case 'videoChunk':
+        _video?.chunks[(e.data['i'] as num).toInt()] = e.data['data'] as String;
+      case 'videoEnd':
+        _saveVideo(e.data['mime'] as String);
+      case 'videoError':
+        setState(() => _video = null);
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(e.data['message'] as String)));
       case 'followOff':
         setState(() => _following = false);
       case 'markerTap':
@@ -689,6 +740,130 @@ class _MapScreenState extends State<MapScreen> {
     }
   }
 
+  /// Busca en los mapas descargados; mide distancias desde tu posición o, si no se
+  /// conoce, desde el centro del mapa. El lugar elegido queda marcado.
+  Future<void> _searchPlaces() async {
+    final fix = _services.recorder.lastFix;
+    final me = _myPos ?? (fix == null ? null : (fix.lng, fix.lat));
+    final from = me ?? await _bridge.center();
+    if (!mounted) return;
+    final p = await showPlaceSearch(
+      context,
+      lng: from?.$1,
+      lat: from?.$2,
+      fromMe: me != null,
+    );
+    if (p == null || !mounted) return;
+    setState(() => _found = p);
+    await _bridge.setFound(p);
+    await _bridge.flyTo(p.lng, p.lat, zoom: 14, pitch: null);
+  }
+
+  /// Trazar ruta: agrega el siguiente punto (salida, parada o destino) escribiendo su
+  /// nombre. Busca en los mapas descargados y, con conexión, en todo el mundo.
+  Future<void> _addPointByName() async {
+    final planner = _planner;
+    if (planner == null) return;
+    final fix = _services.recorder.lastFix;
+    final me = _myPos ?? (fix == null ? null : (fix.lng, fix.lat));
+    final from = me ?? await _bridge.center();
+    if (!mounted) return;
+    final p = await showPlaceSearch(
+      context,
+      lng: from?.$1,
+      lat: from?.$2,
+      fromMe: me != null,
+      title: planner.waypoints.isEmpty
+          ? '¿Desde dónde sales?'
+          : 'Agregar parada o destino',
+      offerMe: true,
+      online: true,
+    );
+    if (p == null || !mounted || _planner != planner) return;
+    await planner.addPoint(LngLat(p.lng, p.lat));
+    if (!mounted) return;
+    // Encuadra lo trazado; con un solo punto, ve a él
+    if (planner.waypoints.length > 1) {
+      final pts = planner.line.isEmpty ? planner.waypoints : planner.line;
+      await _bridge.fitBounds(
+        BBox(
+          pts.map((e) => e.lng).reduce(math.min) - 0.002,
+          pts.map((e) => e.lat).reduce(math.min) - 0.002,
+          pts.map((e) => e.lng).reduce(math.max) + 0.002,
+          pts.map((e) => e.lat).reduce(math.max) + 0.002,
+        ),
+      );
+    } else {
+      await _bridge.flyTo(p.lng, p.lat, zoom: 14, pitch: null);
+    }
+  }
+
+  /// Graba el sobrevuelo del recorrido a video. El mapa queda a pantalla completa y sin
+  /// tocar (un toque detendría el vuelo).
+  void _startVideo(List<TrackPoint> points) {
+    setState(() {
+      _video = _VideoJob();
+      _flying = true;
+      _is3d = true;
+    });
+    // Después del cuadro: al abrir, el panel aún no está listo para moverse
+    WidgetsBinding.instance.addPostFrameCallback((_) => _moveSheet(_sheetMin));
+    final t = _services.tracks.byId(widget.showTrackId!);
+    final s = t?.summary;
+    _bridge.flyTrack(
+      points,
+      record: true,
+      title: t?.name,
+      detail: s == null
+          ? null
+          : '${fmtKm(s.meters, decimals: 2)} km · +${fmtInt(s.gain)} m · ${fmtDuration(s.moving)} en movimiento',
+    );
+  }
+
+  Future<void> _saveVideo(String type) async {
+    final job = _video;
+    if (job == null) return;
+    setState(() => job.saving = true);
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      final bytes = BytesBuilder(copy: false);
+      for (final c in [
+        for (final k in job.chunks.keys.toList()..sort()) job.chunks[k]!,
+      ]) {
+        bytes.add(base64Decode(c));
+      }
+      final ext = type.contains('mp4') ? 'mp4' : 'webm';
+      final dir = await getTemporaryDirectory();
+      final t = _services.tracks.byId(widget.showTrackId!);
+      final safe = (t?.name ?? 'recorrido')
+          .replaceAll(RegExp(r'[^\w\- áéíóúñÁÉÍÓÚÑ]'), '')
+          .trim();
+      final file = File(
+        '${dir.path}/${safe.isEmpty ? 'recorrido' : safe}.$ext',
+      );
+      await file.writeAsBytes(bytes.takeBytes(), flush: true);
+      if (!mounted) return;
+      setState(() => _video = null);
+      _moveSheet(_sheetInitial);
+      await SharePlus.instance.share(
+        ShareParams(
+          files: [XFile(file.path, mimeType: 'video/$ext')],
+          subject: t?.name,
+        ),
+      );
+    } on Object catch (e) {
+      if (mounted) setState(() => _video = null);
+      messenger.showSnackBar(
+        SnackBar(content: Text('No se pudo guardar el video: $e')),
+      );
+    }
+  }
+
+  void _clearFound() {
+    setState(() => _found = null);
+    _bridge.setFound(null);
+  }
+
   Future<void> _locateMe() async {
     if (_recordingHere) {
       // Mientras se graba, el botón vuelve a centrar y seguir tu posición
@@ -702,32 +877,58 @@ class _MapScreenState extends State<MapScreen> {
       ScaffoldMessenger.of(context).showSnackBar(_permissionSnack(status));
       return;
     }
-    // Cada toque vuelve a centrar (antes solo el primero: luego no hacía nada)
+    await _follow();
+  }
+
+  /// Centra en tu posición y la sigue mientras te mueves, hasta que muevas el mapa con
+  /// el dedo (antes había que tocar "Mi ubicación" cada vez para ver dónde estabas).
+  Future<void> _follow() async {
+    _watchMe();
+    setState(() => _following = true);
     final known = _myPos;
     if (known != null) {
-      _centerOn(known);
-    } else {
-      // Sin lectura aún: centra en la última conocida y otra vez al llegar la nueva
-      _centerOnFix = true;
-      final last = await _location.lastKnown();
-      if (!mounted) return;
-      if (last != null && _myPos == null) {
-        _bridge.setMyLocation(last.longitude, last.latitude);
-        _centerOn((last.longitude, last.latitude));
-      }
+      await _bridge.setFollow(true, zoom: 15);
+      return;
     }
+    // Sin lectura aún: centra en la última conocida y otra vez al llegar la nueva
+    _centerOnFix = true;
+    final last = await _location.lastKnown();
+    if (!mounted) return;
+    if (last != null && _myPos == null) {
+      _bridge.setMyLocation(last.longitude, last.latitude);
+      _centerOn((last.longitude, last.latitude));
+    }
+  }
+
+  /// Muestra tu posición en el mapa en vivo (sin pedir permiso: solo si ya lo diste).
+  void _watchMe() {
     if (_locating) return;
     setState(() => _locating = true);
     _subs.add(
-      _location.positions().listen((p) {
-        _myPos = (p.longitude, p.latitude);
-        _bridge.setMyLocation(p.longitude, p.latitude);
+      _location.watch().listen((p) {
+        _myPos = (p.lng, p.lat);
+        // Grabando, la posición la pone el grabador
+        if (_recordingHere) return;
+        _bridge.setMyLocation(p.lng, p.lat);
         if (_centerOnFix) {
           _centerOnFix = false;
-          _centerOn(_myPos!);
+          _bridge.setFollow(_following, zoom: 15);
+          if (!_following) _centerOn(_myPos!);
         }
-      }),
+      }, onError: (_) {}),
     );
+  }
+
+  /// Al abrir el mapa: si ya hay permiso, muestra tu posición; en el mapa libre sin nada
+  /// que encuadrar (ruta, recorrido), además te centra y te sigue.
+  Future<void> _autoLocate({required bool center}) async {
+    if (_recordingHere || !await _location.isGranted()) return;
+    if (!mounted) return;
+    if (center) {
+      await _follow();
+    } else {
+      _watchMe();
+    }
   }
 
   /// Centra en tu posición sin cambiar la inclinación ni el giro que tenga el mapa.
@@ -879,53 +1080,63 @@ class _MapScreenState extends State<MapScreen> {
                               ),
                             )
                           else
-                            Flexible(
-                              child: Glass(
-                                child: Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 14,
-                                    vertical: 8,
-                                  ),
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Text(
-                                        _planner != null
-                                            ? 'PLANEANDO RUTA'
-                                            : _recordingHere
-                                            ? 'GRABANDO'
-                                            : _comparing
-                                            ? 'COMPARAR'
-                                            : _free
-                                            ? 'EXPLORAR'
-                                            : 'EXPEDICIÓN',
-                                        style: labelStyle(
-                                          context,
-                                          color: _recordingHere
-                                              ? recordColor
-                                              : Andes.gold,
-                                        ).copyWith(fontSize: 9.5),
-                                      ),
-                                      Text(
-                                        _comparing
-                                            ? 'Rutas'
-                                            : _free
-                                            ? (_savedRoute?.name ??
-                                                  'Mapa libre')
-                                            : _expedition.name,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: const TextStyle(
-                                          fontWeight: FontWeight.w800,
-                                          fontSize: 15,
+                            Expanded(
+                              child: Align(
+                                alignment: Alignment.centerLeft,
+                                heightFactor: 1,
+                                child: Glass(
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 14,
+                                      vertical: 8,
+                                    ),
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Text(
+                                          _planner != null
+                                              ? 'PLANEANDO RUTA'
+                                              : _recordingHere
+                                              ? 'GRABANDO'
+                                              : _comparing
+                                              ? 'COMPARAR'
+                                              : _free
+                                              ? 'EXPLORAR'
+                                              : 'EXPEDICIÓN',
+                                          style: labelStyle(
+                                            context,
+                                            color: _recordingHere
+                                                ? recordColor
+                                                : Andes.gold,
+                                          ).copyWith(fontSize: 9.5),
                                         ),
-                                      ),
-                                    ],
+                                        Text(
+                                          _comparing
+                                              ? 'Rutas'
+                                              : _free
+                                              ? (_savedRoute?.name ??
+                                                    'Mapa libre')
+                                              : _expedition.name,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.w800,
+                                            fontSize: 15,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
                                   ),
                                 ),
                               ),
                             ),
+                          const SizedBox(width: 8),
+                          _MapButton(
+                            icon: Icons.search_rounded,
+                            tooltip: 'Buscar en tus mapas',
+                            onPressed: _searchPlaces,
+                          ),
                         ],
                       ),
                     ),
@@ -950,12 +1161,12 @@ class _MapScreenState extends State<MapScreen> {
                         ),
                         const SizedBox(height: 8),
                         _MapButton(
-                          icon: (_recordingHere ? _following : _locating)
+                          icon: _following
                               ? Icons.my_location_rounded
                               : Icons.location_searching_rounded,
-                          tooltip: _recordingHere && !_following
-                              ? 'Seguir mi posición'
-                              : 'Mi ubicación',
+                          tooltip: _following
+                              ? 'Siguiendo tu posición'
+                              : 'Seguir mi posición',
                           onPressed: _locateMe,
                         ),
                         if (!_comparing) ...[
@@ -995,6 +1206,67 @@ class _MapScreenState extends State<MapScreen> {
                       ],
                     ),
                   ),
+                  if (_video != null)
+                    Positioned.fill(
+                      child: AbsorbPointer(
+                        child: Align(
+                          alignment: Alignment.topCenter,
+                          child: Padding(
+                            padding: EdgeInsets.only(
+                              top: MediaQuery.paddingOf(context).top + 76,
+                              left: 16,
+                              right: 80,
+                            ),
+                            child: Glass(
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                  vertical: 12,
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const SizedBox.square(
+                                      dimension: 18,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Flexible(
+                                      child: Text(
+                                        _video!.saving ? 'Guardando el video…' : 'Grabando el video del recorrido… no toques el mapa',
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  if (_found != null)
+                    Positioned(
+                      left: 8,
+                      right: 76,
+                      top: MediaQuery.paddingOf(context).top + 70,
+                      child: Align(
+                        alignment: Alignment.centerLeft,
+                        heightFactor: 1,
+                        child: _FoundCard(
+                          place: _found!,
+                          from: _myPos,
+                          onTap: () => _bridge.flyTo(
+                            _found!.lng,
+                            _found!.lat,
+                            zoom: 14,
+                            pitch: null,
+                          ),
+                          onClose: _clearFound,
+                        ),
+                      ),
+                    ),
                   NotificationListener<DraggableScrollableNotification>(
                     onNotification: _onSheet,
                     child: DraggableScrollableSheet(
@@ -1036,6 +1308,7 @@ class _MapScreenState extends State<MapScreen> {
                             if (_planner != null)
                               PlannerPanel(
                                 planner: _planner!,
+                                onAddByName: _addPointByName,
                                 placingPoi: _placingPoi,
                                 onPlacePoi: (k) {
                                   setState(() => _placingPoi = k);
@@ -1291,6 +1564,79 @@ class _OfflineSummary extends StatelessWidget {
           ],
         ),
       ],
+    );
+  }
+}
+
+/// Video del recorrido: los pedazos que manda el mapa (base64) hasta 'videoEnd'.
+class _VideoJob {
+  final chunks = <int, String>{};
+  bool saving = false;
+}
+
+/// Lugar elegido en la búsqueda: nombre, tipo y, si se sabe dónde estás, distancia.
+class _FoundCard extends StatelessWidget {
+  const _FoundCard({
+    required this.place,
+    required this.from,
+    required this.onTap,
+    required this.onClose,
+  });
+  final MapPlace place;
+  final (double, double)? from;
+  final VoidCallback onTap;
+  final VoidCallback onClose;
+
+  @override
+  Widget build(BuildContext context) {
+    final p = place, f = from;
+    final detail = [
+      placeDetail(p),
+      if (f != null)
+        placeDistance(p, haversine(f.$2, f.$1, p.lat, p.lng), f.$2, f.$1),
+    ].join(' · ');
+    return Glass(
+      opacity: .9,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(12, 6, 0, 6),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(placeIcon(p.kind), color: Andes.gold, size: 22),
+              const SizedBox(width: 10),
+              Flexible(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      p.name,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(fontWeight: FontWeight.w800),
+                    ),
+                    Text(
+                      detail,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              IconButton(
+                tooltip: 'Quitar del mapa',
+                icon: const Icon(Icons.close_rounded, size: 20),
+                onPressed: onClose,
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/painting.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
+import '../places/places.dart';
 import '../data/trail_route.dart';
 import '../offline/offline_region.dart';
 import '../offline/tile_math.dart';
@@ -91,8 +92,9 @@ class MapBridge {
   Future<void> setExaggeration(double x) => _call('setExaggeration', [x]);
   Future<void> setPickerMode(bool on) => _call('setPickerMode', [on]);
 
-  /// Dibuja un recorrido grabado; cada pausa empieza un tramo nuevo.
-  Future<void> setTrack(List<TrackPoint> points) {
+  /// Dibuja un recorrido grabado; cada pausa empieza un tramo nuevo. Marca el inicio y,
+  /// con [showEnd] (recorrido terminado), el fin.
+  Future<void> setTrack(List<TrackPoint> points, {bool showEnd = false}) {
     final segments = <List<List<double>>>[];
     int? seg;
     for (final p in points) {
@@ -102,7 +104,7 @@ class MapBridge {
       }
       segments.last.add([p.lng, p.lat]);
     }
-    return _call('setTrack', [segments]);
+    return _call('setTrack', [segments, showEnd]);
   }
 
   Future<void> setRoute(Map<String, dynamic>? route) =>
@@ -171,10 +173,58 @@ class MapBridge {
         {'name': r.name, 'bbox': r.bbox.toJson(), 'complete': r.isComplete},
     ],
   ]);
+
+  /// Marca el lugar encontrado con la búsqueda (null lo quita).
+  Future<void> setFound(MapPlace? p) => _call('setFound', [
+    if (p == null)
+      null
+    else
+      {
+        'name': p.name,
+        'at': [p.lng, p.lat],
+      },
+  ]);
+
+  /// Centro del mapa (lng, lat), o null si el mapa aún no responde.
+  Future<(double, double)?> center() async {
+    try {
+      final v = await _query('getView');
+      if (v is! Map) return null;
+      return ((v['lng'] as num).toDouble(), (v['lat'] as num).toDouble());
+    } catch (_) {
+      return null;
+    }
+  }
+
   Future<void> fitBounds(BBox b) =>
       _call('fitBounds', [b.west, b.south, b.east, b.north]);
   Future<void> fitRoute() => _call('fitRoute');
   Future<void> flyRoute() => _call('flyRoute');
+
+  /// Sobrevuelo 3D de un recorrido grabado; con [record], lo graba a video (llega en
+  /// eventos 'videoChunk' y 'videoEnd').
+  Future<void> flyTrack(
+    List<TrackPoint> points, {
+    bool record = false,
+    String? title,
+    String? detail,
+  }) {
+    final segments = <List<List<double>>>[];
+    int? seg;
+    for (final p in points) {
+      if (p.segment != seg) {
+        segments.add([]);
+        seg = p.segment;
+      }
+      segments.last.add([p.lng, p.lat]);
+    }
+    return _call('flyTrack', [
+      segments,
+      record,
+      if (title != null) {'title': title, 'detail': detail ?? ''},
+    ]);
+  }
+
   Future<void> stopFly() => _call('stopFly');
   Future<void> flyTo(
     double lng,

@@ -11,6 +11,8 @@ import 'expeditions/expedition_store.dart';
 import 'gear/gear.dart';
 import 'location/location_service.dart';
 import 'offline/map_sources.dart';
+import 'places/place_index.dart';
+import 'tips/tips.dart';
 import 'offline/offline_maps.dart';
 import 'offline/region_downloader.dart';
 import 'offline/sample_data.dart';
@@ -60,6 +62,8 @@ class AppServices {
     this.references,
     this.trails,
     this.overland,
+    this.places,
+    this.tips,
   );
 
   final TileServer server;
@@ -95,6 +99,12 @@ class AppServices {
 
   /// Camino a campo traviesa sobre el relieve guardado, donde no hay sendero.
   final TerrainRouter overland;
+
+  /// Lugares con nombre de las zonas descargadas, para buscar sin señal.
+  final PlaceIndex places;
+
+  /// Qué indicaciones de la primera vez ya vio el usuario.
+  final TipStore tips;
 
   static Future<AppServices> start() async {
     final support = await getApplicationSupportDirectory();
@@ -155,6 +165,8 @@ class AppServices {
       JsonStore(File('${support.path}/profile.json')),
     );
     await profile.load();
+    final tips = TipStore(JsonStore(File('${support.path}/tips.json')));
+    await tips.load();
     final weather = WeatherService(
       client: client,
       file: JsonStore(File('${support.path}/weather.json')),
@@ -192,6 +204,12 @@ class AppServices {
       references,
       TrailRouter.fromStores([offline, cache], dem: terrain.grid),
       TerrainRouter(terrain.grid),
+      PlaceIndex(
+        regions: () => maps.regions,
+        topoDir: '${offline.root.path}/${MapSource.topo.name}',
+        file: File('${support.path}/places.json'),
+      ),
+      tips,
     );
   }
 }

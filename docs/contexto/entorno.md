@@ -66,6 +66,9 @@ Cuidado:
   van siempre en coordenadas del teléfono (720 × 1544).
 - `ui.sh [acciones...]`: textos visibles en pantalla (uiautomator), uno por línea. Preferirlo a las
   capturas para revisar qué dice una pantalla: gasta mucho menos.
+- `tap.sh "TEXTO" [SEGUNDOS]`: toca el primer elemento cuyo texto o descripción contiene TEXTO (sin buscar
+  coordenadas a mano) y espera. P. ej. `tool/dev/tap.sh "Mapa libre" 5`.
+- `adb shell cmd location is-location-enabled`: si la ubicación del teléfono está apagada, el GPS no da nada.
 - `cdp.py 'expresión JS'`: evalúa JavaScript en el WebView del mapa (p. ej.
   `window.cresta.jumpTo(-98.64, 19.15, 14)` o `window.cresta.snapLeg([...], [...])`). Requiere
   `adb forward tcp:9333 localabstract:webview_devtools_remote_$(adb shell pidof com.cresta.cresta)`.

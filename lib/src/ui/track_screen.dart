@@ -151,16 +151,51 @@ class _TrackScreenState extends State<TrackScreen> {
               ),
           ],
           const SizedBox(height: 24),
-          GlowButton(
-            onPressed: () => Navigator.push(
-              context,
-              MaterialPageRoute<void>(
-                builder: (_) =>
-                    MapScreen(expeditionId: t.expeditionId, showTrackId: t.id),
+          if (_points != null && _points!.isEmpty) ...[
+            TonalCard(
+              accent: recordColor,
+              child: Text(
+                'Este recorrido no tiene ningún punto: el GPS no entregó tu posición mientras '
+                'grababa. No hay nada que ver en el mapa ni que exportar. Puedes borrarlo desde el menú.',
+                style: TextStyle(color: muted, height: 1.35),
               ),
             ),
+            const SizedBox(height: 12),
+          ],
+          GlowButton(
+            onPressed: _points == null || _points!.isEmpty
+                ? null
+                : () => Navigator.push(
+                    context,
+                    MaterialPageRoute<void>(
+                      builder: (_) => MapScreen(
+                        expeditionId: t.expeditionId,
+                        showTrackId: t.id,
+                      ),
+                    ),
+                  ),
             icon: Icons.map_outlined,
             label: 'Ver en el mapa',
+          ),
+          const SizedBox(height: 8),
+          OutlinedButton.icon(
+            onPressed: _points == null || _points!.length < 2
+                ? null
+                : () => Navigator.push(
+                    context,
+                    MaterialPageRoute<void>(
+                      builder: (_) => MapScreen(
+                        expeditionId: t.expeditionId,
+                        showTrackId: t.id,
+                        video: true,
+                      ),
+                    ),
+                  ),
+            icon: const Icon(Icons.movie_outlined),
+            label: const Text('Video del recorrido en 3D'),
+            style: OutlinedButton.styleFrom(
+              minimumSize: const Size.fromHeight(52),
+            ),
           ),
           const SizedBox(height: 8),
           OutlinedButton.icon(

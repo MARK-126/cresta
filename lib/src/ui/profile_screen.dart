@@ -238,6 +238,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
               icon: Icons.check_rounded,
               onPressed: _save,
             ),
+            const SizedBox(height: 12),
+            TextButton.icon(
+              icon: const Icon(Icons.lightbulb_outline_rounded),
+              label: const Text('Volver a ver las indicaciones'),
+              onPressed: () async {
+                final messenger = ScaffoldMessenger.of(context);
+                await AppScope.of(context).tips.reset();
+                messenger.showSnackBar(
+                  const SnackBar(
+                    content: Text(
+                      'Listo: verás las indicaciones al abrir el mapa, trazar una ruta y grabar.',
+                    ),
+                  ),
+                );
+              },
+            ),
           ],
         ),
       ),

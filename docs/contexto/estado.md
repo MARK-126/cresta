@@ -210,6 +210,50 @@ Actualizado: 12 nov 2026 · avisos al acercarse a los puntos de interés de la r
   Se corren con `dart tool/dev/spike_ruta.dart CARPETA_CON_topo/ assets/data/arista_del_sol.json`; variables:
   `Z` (zoom), `CLIP`, `MODE` (`ends`, `border`), `TAU`, `LINK`, `DUMP`.
 
+### Buscar sin señal (`lib/src/places/`, `ui/place_search_sheet.dart`)
+- `placesInTile` lee de cada mosaico topográfico (solo las capas `mountain_peak`, `place`, `poi`, `water_name`,
+  `waterway`, `transportation_name`, `park`; `decodeMvt(keep:)` no decodifica las demás) los lugares con nombre:
+  cumbre/volcán/collado (con `ele`), refugio (`alpine_hut`, `shelter`, `wilderness_hut`), agua (`drinking_water`,
+  `spring`), laguna, campamento, mirador, pueblo, paraje, sendero (`path`/`track` con nombre), río o arroyo, parque,
+  policía, salud, estacionamiento. De una línea, su punto de en medio; lo que cae fuera del mosaico se ignora.
+  `mergePlaces`: mismo nombre y tipo a < 300 m (2 km si es línea) es uno solo.
+- `PlaceIndex` (en `AppServices.places`): con las zonas completas, mosaicos del zoom más alto de cada una, en un
+  isolate; se guarda en `places.json` con una clave (versión, id, zoom y `topoDate` de cada zona) y se rehace solo si
+  cambia. Vallecitos (210 mosaicos z14): 100 lugares en ~45 ms en la PC.
+- `searchPlaces`: sin acentos ni mayúsculas, todas las palabras en el nombre; orden: empieza así, alguna palabra
+  empieza así, contiene, coincide por tipo ("agua", "cumbre"); luego distancia (sin posición, el tipo). Sin texto:
+  lo más cercano de cumbres, refugios, agua y campamentos. De ríos y senderos, solo el tramo más cercano.
+- Mapa: botón de lupa arriba a la derecha → hoja "Buscar en tus mapas" (distancia y dirección desde tu posición o el
+  centro del mapa) → vuela al lugar (zoom 14), lo marca (`setFound` en `map.js`, capas `found-*`) y muestra una tarjeta
+  con nombre, tipo, altura y distancia; la ✕ lo quita.
+
+### GPS, posición en vivo y correcciones de la salida del 12 nov 2026 (`feat/gps-grabacion`)
+- `LocationService`: un solo flujo de GPS para toda la app. `watch()` (vista: mapa, SOS) y `recording(mode)`
+  (grabar, con servicio en primer plano); se abre uno a la vez en `_restart()` y la vista recibe las lecturas de la
+  grabación. Android con `forceLocationManager: true` (proveedor `fused` del sistema, sin el aviso de Wi-Fi de Google
+  Play). `isGranted()` revisa sin preguntar.
+- `TrackRecorder.gpsError` + reintento cada 15 s (`retryGpsAfter`); el panel lo avisa en rojo.
+- Mapa: `_watchMe` (posición en vivo si ya hay permiso), `_follow` (centrar y seguir; se deja al arrastrar,
+  evento `followOff`), `_autoLocate` al abrir (en el mapa libre sin nada que encuadrar, además centra y sigue).
+- Recorrido sin puntos: el detalle lo explica y desactiva mapa, video y GPX; al terminar una grabación sin puntos solo
+  se ofrece descartar.
+- Colores: ruta (planeada y guardada) en teal `#46eae5`; recorrido grabado en coral `#ffa089` con marcas "Inicio"
+  (dorado) y "Fin" (`track-ends`, `setTrack(showEnd:)`); paradas del planificador claras.
+- Indicaciones de la primera vez (`lib/src/tips/tips.dart`, `ui/tip_dialog.dart`): `Tips.map`, `Tips.plan`,
+  `Tips.record`; vistas en `tips.json` (`TipStore`); "Volver a ver las indicaciones" en el perfil.
+- Trazar por nombre: campo en `PlannerPanel` (`onAddByName`) → `showPlaceSearch(offerMe:, online:)` ("Tu ubicación",
+  mapas descargados y "EN TODO EL MUNDO" con Nominatim al confirmar) → `planner.addPoint`. `PlaceKind.other` para lo
+  que no viene de los mapas.
+- Mapa: capa `poi-icons` (emoji del sistema en un círculo de color, dibujado en `styleimagemissing`; desde z13 lo de
+  montaña, desde z15 lo demás; sin nombre solo agua, baños, estacionamiento, refugio, camping y salud). Sobre el
+  satélite los nombres pasan a blanco con borde oscuro (`paintNames`). Nombres de calles con
+  `text-pitch-alignment: viewport` en 3D.
+- Video del recorrido (`MapScreen(video: true)`, botón en el detalle): `flyTrack` en `map.js` (línea que se dibuja,
+  punto que avanza, ~6 s/km entre 12 y 45 s, altura de cámara corregida en cada cuadro); `startCapture` graba una copia
+  de 720 px de ancho en `render` con título, distancia y "CRESTA"; `MediaRecorder` MP4 (o WebM); se manda en pedazos
+  base64 de 256 KB (`videoChunk`, `videoEnd` con `mime`) y se comparte con `share_plus`.
+- `tool/dev/tap.sh "TEXTO"`: toca un elemento por su texto.
+
 ### Interfaz
 - Botones secundarios (`OutlinedButton`, 23 en la app): tonales `surfaceHighest` sin borde, desde el tema.
 - Pestaña Mapas: "Descargar una zona" abre `AreaPickerScreen()` sin expedición (zona suelta, centrada en la última

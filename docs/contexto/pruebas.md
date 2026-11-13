@@ -6,6 +6,9 @@ Teléfono de pruebas: Samsung Galaxy S23 Ultra (SM-S918B), Android 16, salvo que
 
 ## Sin probar todavía (revisar antes de dar por hecho)
 
+- **Buscar sin señal en el teléfono** (12 nov 2026): botón, hoja, tiempo de la primera vez con las 3 zonas, vuelo,
+  marca y tarjeta.
+
 - **Avisos de puntos de interés en una salida** (12 nov 2026): instalado y la app arranca. El canal sigue como
   "Hora límite de regreso" hasta el próximo aviso (Android lo renombra al volver a registrarlo). Falta, con una ruta
   con puntos, recibir la notificación al acercarse y ver "Próximo:" en el panel (la "Ruta de Salto" no tiene puntos).
@@ -22,6 +25,60 @@ Teléfono de pruebas: Samsung Galaxy S23 Ultra (SM-S918B), Android 16, salvo que
 - Descargas de mapas en Android con conexión móvil (opción "solo Wi-Fi").
 
 ## 2026-11-12
+
+**Salida del usuario al Parque General San Martín (Mendoza), con pantalla bloqueada** · `main` + `feat/buscar-lugares`
+- Observaciones del usuario: al grabar "desde aquí" no se actualizaba la posición ni se guardaba el recorrido; pedía
+  encender el Wi-Fi para mejorar la ubicación cada vez; no se pudo exportar ni ver el recorrido; "Ver en el mapa"
+  llevaba a una zona descargada; con la pantalla bloqueada el recorrido salía en línea recta; había que tocar
+  "Mi ubicación" para ver dónde estaba; la traza no mostraba inicio ni fin; letras difíciles de leer sobre el satélite.
+- Datos del teléfono: "Recorrido 1" 28 min y **0 puntos**; "Recorrido 2" un punto cada ~8 s con la pantalla encendida y
+  huecos de **314 s y 228 s** (los tramos rectos). Permiso de ubicación "mientras se usa" (correcto) y la app ya exenta
+  de la optimización de batería.
+- Causas (código de `geolocator_android` 5.2.1):
+  1. El plugin reutiliza el flujo de posiciones que ya esté abierto e **ignora la configuración nueva**. Con
+     "Mi ubicación" abierto en el mapa (sin servicio en primer plano), la grabación recibía ese flujo: sin servicio, al
+     bloquear la pantalla dejaban de llegar puntos.
+  2. El cliente "fusionado" de Google revisa los ajustes y muestra "mejorar la precisión (Wi-Fi)" en cada inicio; si se
+     rechaza, **corta el flujo con un error**. El grabador ignoraba el error y seguía "grabando" sin puntos.
+  3. Recorrido sin puntos: no hay nada que ver ni exportar, y el mapa se quedaba en la zona descargada.
+- Corrección (`feat/gps-grabacion`): un solo flujo de GPS en `LocationService` (`watch()` para la vista y
+  `recording()` para grabar; se abre uno a la vez, la grabación con el servicio en primer plano), `forceLocationManager`
+  en Android (el proveedor "fused" del sistema, sin el aviso de Wi-Fi), aviso y reintento cada 15 s si el GPS falla,
+  posición en vivo y seguir al abrir el mapa libre, y no guardar ni mostrar como normal un recorrido sin puntos.
+- **Segundo plano (13 nov 2026, de madrugada):** grabando con "Mi ubicación" ya abierto, app en segundo plano (botón de
+  inicio, para que no se cayera la depuración inalámbrica como al bloquear) y posiciones simuladas con el proveedor de
+  prueba `fused` (`cmd location providers add-test-provider`): **un punto cada 5 s** durante 1 minuto con la app fuera
+  de la vista. Al quitar el proveedor de prueba: el panel avisó "El GPS no está entregando tu posición…" y a los 15 s
+  se recuperó solo (GPS ±16 m). Grabación de prueba descartada. **OK**. Falta: caminar con la pantalla bloqueada.
+- Falla mía en la prueba: la barra de arriba del mapa quedó a media pantalla (el `Align` que separa el título de la
+  lupa se estiraba a todo el alto) → `heightFactor: 1`. **OK**.
+- Indicaciones de la primera vez: mapa, trazar ruta y grabar salen una vez. **OK**.
+- Íconos de lugares en el Parque San Martín: agua, museo, colectivo, hotel, comida, deportes, estacionamiento. Falla:
+  muchos íconos de "cultura" sin nombre (estatuas) → sin nombre solo lo útil. Satélite: nombres blancos con borde
+  oscuro legibles. **OK**.
+- Trazar por nombre: "Tu ubicación" como salida + "Museo Moyano" buscado en línea ("EN TODO EL MUNDO") → ruta de 5.4 km
+  por calles, en teal. No se guardó. **OK**.
+- Video del recorrido con el "Recorrido 2" del usuario. Fallas en orden: (1) el codificador por hardware falló con el
+  lienzo completo → copia de 720 px; (2) la copia salía vacía fuera de `render` → copiar en `render`; (3) los pedazos
+  llegaban pero no el final: `type` pisaba el nombre del evento → `mime`; (4) a mitad del vuelo la cámara se veía
+  lejísimos (altura del terreno del lugar anterior) → altura corregida en cada cuadro y esperar a que cargue el inicio.
+  Resultado: MP4 de 4.4 MB que abre el reproductor del teléfono, con título y distancia; se abre compartir (cerrado
+  sin compartir; video temporal borrado). **OK**.
+- En el teléfono: con la ubicación del teléfono apagada, el mapa no centra (correcto). Encendida: el mapa libre se
+  centra solo en tu posición y queda "Siguiendo tu posición", sin el aviso de Wi-Fi. Al grabar con "Mi ubicación"
+  abierto: se cierra ese flujo y se abre el de grabación con servicio en primer plano (`isForeground=true`, tipo
+  ubicación).
+
+**Buscar sin señal · `feat/buscar-lugares`**
+- Con los 210 mosaicos z14 de Vallecitos copiados del teléfono: 100 lugares en 42 ms (31 cumbres, 3 refugios, 11
+  campamentos, 1 agua, 29 tramos de río…). "arenales" → Cerro Arenales (3,460 m, 7.7 km); "cerro adolfo" → Cerro Adolfo
+  Calle (4,227 m) y su sendero de descenso; "refugio" → Mausy, UNCuyo, San Bernardo. Fallas: "arroyo blanco" salía
+  5 veces (un tramo por mosaico) → solo el tramo más cercano; "agua" no encontraba "punto 3" (agua potable) → también
+  coincide por tipo, después de los nombres. **OK**.
+- Pruebas automáticas: 178 en verde (10 nuevas en `places_test.dart`, con 4 mosaicos reales del Cordón del Plata en
+  `test/fixtures/topo/`: tipos y altura, sin repetir un sendero de dos mosaicos, juntar repetidos, orden de la
+  búsqueda, sin acentos, por tipo, tramo más cercano, búsqueda vacía, índice guardado y rehecho al actualizar la zona).
+- En el teléfono: pendiente (se desconectó al instalar).
 
 **Pasar un recorrido libre a una expedición · `feat/recorrido-a-expedicion`** (S23)
 - Recorrido libre de prueba ("Prueba Cerro", 8 dic 2024, 30 puntos) cargado con `run-as`. Detalle: "RECORRIDO LIBRE";

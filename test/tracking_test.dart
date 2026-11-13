@@ -247,6 +247,33 @@ void main() {
       expect(again.byId(t.id), isNotNull);
     });
 
+    test('si el GPS falla lo avisa, reintenta y se recupera', () async {
+      var opened = 0;
+      final rec2 = TrackRecorder(
+        store: store,
+        positions: (_) {
+          opened++;
+          gps = StreamController<GpsFix>();
+          return gps.stream;
+        },
+        clock: () => now,
+      )..retryGpsAfter = const Duration(milliseconds: 10);
+      addTearDown(rec2.dispose);
+      await rec2.start(name: 'x');
+      expect(opened, 1);
+      gps.addError('Location services disabled');
+      await Future<void>.delayed(Duration.zero);
+      expect(rec2.gpsError, contains('disabled'));
+      // Reintenta solo: abre el GPS otra vez y, al llegar una lectura, el aviso se quita
+      await Future<void>.delayed(const Duration(milliseconds: 30));
+      expect(opened, 2);
+      gps.add(_walk(1).first);
+      await Future<void>.delayed(Duration.zero);
+      expect(rec2.gpsError, isNull);
+      expect(rec2.points, hasLength(1));
+      await rec2.discard();
+    });
+
     test(
       'un recorrido libre se pasa a una expedición y vuelve a ser libre',
       () async {

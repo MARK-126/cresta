@@ -21,15 +21,16 @@ class MvtLayer {
   final List<MvtFeature> features;
 }
 
-/// Decodifica un mosaico vectorial y devuelve sus capas. Solo lo necesario para leer senderos.
-List<MvtLayer> decodeMvt(Uint8List bytes) {
+/// Decodifica un mosaico vectorial y devuelve sus capas. Solo lo necesario para leer senderos
+/// y nombres. Con [keep], las capas que no pasan el filtro salen vacías (sin decodificar).
+List<MvtLayer> decodeMvt(Uint8List bytes, {bool Function(String)? keep}) {
   final r = _Reader(bytes);
   final layers = <MvtLayer>[];
   while (r.more) {
     final tag = r.varint();
     if (tag >> 3 == 3 && tag & 7 == 2) {
       final len = r.varint();
-      layers.add(_layer(_Reader(bytes, r.pos, r.pos + len)));
+      layers.add(_layer(_Reader(bytes, r.pos, r.pos + len), keep));
       r.pos += len;
     } else {
       r.skip(tag & 7);
@@ -38,7 +39,7 @@ List<MvtLayer> decodeMvt(Uint8List bytes) {
   return layers;
 }
 
-MvtLayer _layer(_Reader r) {
+MvtLayer _layer(_Reader r, bool Function(String)? keep) {
   var name = '';
   var extent = 4096;
   final keys = <String>[];
@@ -68,6 +69,7 @@ MvtLayer _layer(_Reader r) {
       r.skip(wire);
     }
   }
+  if (keep != null && !keep(name)) return MvtLayer(name, extent, const []);
   return MvtLayer(name, extent, [
     for (final f in rawFeatures) _feature(f, keys, values),
   ]);
