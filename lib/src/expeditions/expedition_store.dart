@@ -81,7 +81,9 @@ class ExpeditionStore extends ChangeNotifier {
     String? notes,
     int? turnaroundMinutes,
     bool clearTurnaround = false,
+    DateTime? tripPlanAt,
   }) async {
+    if (tripPlanAt != null) e.tripPlanAt = tripPlanAt;
     if (name != null) e.name = name;
     if (turnaroundMinutes != null || clearTurnaround) {
       e.turnaroundMinutes = turnaroundMinutes;

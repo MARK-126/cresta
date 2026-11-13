@@ -72,6 +72,10 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<key>NSCameraUsageDescription</key>
+	<string>Cresta usa la cámara para tomar fotos durante el recorrido y ubicarlas en el mapa.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Cresta guarda en el recorrido las fotos que tomas, con su ubicación.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>Cresta usa tu ubicación para mostrarte en el mapa y grabar tu recorrido, también sin señal.</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>

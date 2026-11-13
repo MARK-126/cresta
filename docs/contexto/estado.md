@@ -269,6 +269,18 @@ Actualizado: 12 nov 2026 · avisos al acercarse a los puntos de interés de la r
 - Brújula: `map.js` emite `bearing` (cada 120 ms como mucho, si cambió > 1°); con el mapa girado > 2° aparece arriba
   de SOS una aguja que apunta al norte; al tocarla `resetNorth()` (conserva la inclinación).
 
+### Plan de salida y fotos (`feat/plan-y-fotos`, 13 nov 2026)
+- `ui/trip_plan.dart`: `suggestTripTimes` (salida 7:00 del día de la expedición o en media hora; regreso = Naismith
+  ×1.3 de descansos, sin ruta 6 h; alarma = regreso + 2 h), `tripPlanMessage` (lugar, horarios, ruta con km/+m/tiempo
+  y enlace al punto de partida, hora límite, "si a las X no te escribí, llama al 911", datos médicos) y
+  `showTripPlanSheet` (horarios editables, vista previa, SMS a los contactos o compartir con el GPX). Elemento
+  "Plan de salida a un contacto" en "Antes de salir"; `Expedition.tripPlanAt` marca el envío.
+- Fotos: `photos/photo_store.dart` (`TrackPhoto` con lat/lng/altitud/hora; archivos en `photos/`, índice
+  `photos.json`; `TrackStore(onDeleted:)` las borra con su recorrido). Botón de cámara al grabar (`image_picker`,
+  cámara del sistema; `retrieveLostData` si Android cerró la app); capa `photos` en `map.js` (ícono 📷, `photoTap`);
+  `ui/photo_screen.dart` (pantalla completa con zoom, deslizar, compartir, borrar); miniaturas en el detalle.
+  iOS: `NSCameraUsageDescription` y `NSPhotoLibraryUsageDescription`.
+
 ### Interfaz
 - Botones secundarios (`OutlinedButton`, 23 en la app): tonales `surfaceHighest` sin borde, desde el tema.
 - Pestaña Mapas: "Descargar una zona" abre `AreaPickerScreen()` sin expedición (zona suelta, centrada en la última

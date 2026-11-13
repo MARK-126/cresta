@@ -57,6 +57,11 @@ Lo que se corrigió a partir de tus observaciones en el Parque San Martín, y c�
 - **Brújula**: al girar el mapa con dos dedos aparece una aguja arriba de SOS que apunta al norte; tocarla deja el
   norte arriba.
 
+- **Plan de salida** (13 nov 2026): en una expedición, "Antes de salir" → "Plan de salida a un contacto". Revisa los
+  horarios y el mensaje; mándalo por SMS o compártelo por WhatsApp (va con el GPX de la ruta).
+- **Fotos al grabar**: botón de cámara bajo el de grabar. La foto aparece en el mapa con un ícono 📷 y en el detalle
+  del recorrido.
+
 ## En casa (con el teléfono conectado a la computadora)
 
 Para estas basta con que el teléfono esté en la misma red Wi-Fi con **depuración inalámbrica** activa: pasarle a
