@@ -57,6 +57,7 @@ Detalles técnicos en `estado.md`; qué se probó en `pruebas.md`.
 - Expedición de ejemplo con sus mapas incluidos, que no se pueden borrar por error.
 - Modo protección civil (datos de demostración, no oficiales).
 - Diseño "Andes Industrial", solo oscuro; splash e ícono propios.
+- Barra de datos al grabar (altitud, velocidad y distancia arriba del mapa) y brújula al girar el mapa.
 - Video del recorrido en 3D: sobrevuelo con la línea que se va dibujando, título y distancia; MP4 para compartir.
 - Indicaciones la primera vez que se abre el mapa, se traza una ruta o se graba (se pueden volver a ver desde el
   perfil).
@@ -83,7 +84,6 @@ De la revisión del 12 nov 2026 (detalle en `pendientes.md`):
 - Notificación de la hora límite también en iPhone (falta el código nativo).
 - Descargas de mapas que sigan con la app cerrada (hoy necesitan la pantalla encendida).
 - Altímetro barométrico como complemento del relieve y del GPS.
-- Brújula y rumbo de regreso al punto de salida.
 - Fotos geolocalizadas durante el recorrido, visibles en el mapa.
 - Ajuste a senderos que tome en cuenta el desnivel, no solo la distancia.
 

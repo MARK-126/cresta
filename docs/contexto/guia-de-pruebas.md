@@ -52,6 +52,11 @@ Lo que se corrigió a partir de tus observaciones en el Parque San Martín, y c�
   descargada) y en una zona que nunca se vio (los mosaicos bajan de internet: tarda más en generarse, pero debe salir
   igual de fluido).
 
+- **Barra de datos al grabar** (13 nov 2026): arriba del mapa, altitud, velocidad y distancia mientras grabas
+  (tocarla abre el panel). Caminando, la velocidad debe rondar 3–5 km/h y quedar en 0 al detenerte.
+- **Brújula**: al girar el mapa con dos dedos aparece una aguja arriba de SOS que apunta al norte; tocarla deja el
+  norte arriba.
+
 ## En casa (con el teléfono conectado a la computadora)
 
 Para estas basta con que el teléfono esté en la misma red Wi-Fi con **depuración inalámbrica** activa: pasarle a

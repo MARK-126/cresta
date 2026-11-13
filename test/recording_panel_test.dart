@@ -87,4 +87,61 @@ void main() {
     expect(find.text('GRABANDO'), findsOneWidget);
     expect(find.text('Volver al inicio por mi traza'), findsOneWidget);
   });
+
+  testWidgets('la barra de arriba muestra altitud, velocidad y distancia', (
+    tester,
+  ) async {
+    final t0 = DateTime.now();
+    final rec = TrackRecorder(
+      store: TrackStore(Directory.systemTemp),
+      positions: (_) => const Stream.empty(),
+      clock: () => t0,
+    )..state = RecorderState.recording;
+    for (var i = 0; i < 11; i++) {
+      final p = TrackPoint(
+        time: t0.subtract(Duration(seconds: 100 - 10 * i)),
+        lng: -98.65,
+        lat: 19.10 + i * 12.5 / 111195,
+        altitude: 3700,
+        accuracy: 5,
+      );
+      rec.points.add(p);
+      rec.stats.add(p);
+    }
+    rec.lastFix = GpsFix(
+      time: t0,
+      lng: -98.65,
+      lat: 19.10 + 125 / 111195,
+      altitude: 3700,
+      accuracy: 5,
+      speed: 1.25,
+    );
+    var taps = 0;
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: crestaTheme(),
+        home: Scaffold(
+          body: RecordingBar(recorder: rec, onTap: () => taps++),
+        ),
+      ),
+    );
+    expect(find.text('ALTITUD'), findsOneWidget);
+    expect(find.text('VELOCIDAD'), findsOneWidget);
+    expect(find.text('DISTANCIA'), findsOneWidget);
+    expect(find.textContaining('3,700'), findsOneWidget);
+    expect(find.textContaining('4.5'), findsOneWidget);
+    // 125 m (124.99 con el radio de la Tierra de la app)
+    expect(find.textContaining(RegExp(r'^0\.1[23] km$')), findsOneWidget);
+    await tester.tap(find.text('ALTITUD'));
+    expect(taps, 1);
+    // En pausa, sin velocidad
+    rec.state = RecorderState.paused;
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: crestaTheme(),
+        home: Scaffold(body: RecordingBar(recorder: rec)),
+      ),
+    );
+    expect(find.text('EN PAUSA'), findsOneWidget);
+  });
 }
