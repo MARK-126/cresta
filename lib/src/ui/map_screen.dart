@@ -248,11 +248,21 @@ class _MapScreenState extends State<MapScreen> {
       await _bridge.setFollow(true, zoom: 15);
     } else if (widget.showTrackId != null) {
       final points = await _services.tracks.readPoints(widget.showTrackId!);
-      await _bridge.setTrack(points);
+      await _bridge.setTrack(points, showEnd: true);
       if (points.length > 1) await _bridge.fitBounds(_boundsOf(points));
     }
     if (widget.plan && mounted) _startPlanning();
     if (widget.record && mounted && !_recordingHere) await _startRecording();
+    if (mounted) {
+      await _autoLocate(
+        center:
+            _free &&
+            _route == null &&
+            widget.showTrackId == null &&
+            !_comparing &&
+            !widget.plan,
+      );
+    }
   }
 
   // ------------------------------------------------------------ Planificar ruta
@@ -526,7 +536,10 @@ class _MapScreenState extends State<MapScreen> {
       builder: (context) => AlertDialog(
         title: const Text('Terminar recorrido'),
         content: Text(
-          '${fmtKm(_recorder.stats.meters, decimals: 2)} km · +${fmtInt(_recorder.stats.gain)} m · ${fmtClock(_recorder.activeTime)} en total, ${fmtDuration(_recorder.stats.moving)} en movimiento',
+          _recorder.points.isEmpty
+              // Sin puntos no hay nada que guardar: mejor decirlo que dejar un recorrido vacío
+              ? 'No se grabó ningún punto: el GPS no entregó tu posición. Puedes descartarlo o seguir grabando.'
+              : '${fmtKm(_recorder.stats.meters, decimals: 2)} km · +${fmtInt(_recorder.stats.gain)} m · ${fmtClock(_recorder.activeTime)} en total, ${fmtDuration(_recorder.stats.moving)} en movimiento',
         ),
         actions: [
           TextButton(
@@ -537,10 +550,11 @@ class _MapScreenState extends State<MapScreen> {
             onPressed: () => Navigator.pop(context),
             child: const Text('Seguir grabando'),
           ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, 'save'),
-            child: const Text('Guardar'),
-          ),
+          if (_recorder.points.isNotEmpty)
+            FilledButton(
+              onPressed: () => Navigator.pop(context, 'save'),
+              child: const Text('Guardar'),
+            ),
         ],
       ),
     );
@@ -731,32 +745,58 @@ class _MapScreenState extends State<MapScreen> {
       ScaffoldMessenger.of(context).showSnackBar(_permissionSnack(status));
       return;
     }
-    // Cada toque vuelve a centrar (antes solo el primero: luego no hacía nada)
+    await _follow();
+  }
+
+  /// Centra en tu posición y la sigue mientras te mueves, hasta que muevas el mapa con
+  /// el dedo (antes había que tocar "Mi ubicación" cada vez para ver dónde estabas).
+  Future<void> _follow() async {
+    _watchMe();
+    setState(() => _following = true);
     final known = _myPos;
     if (known != null) {
-      _centerOn(known);
-    } else {
-      // Sin lectura aún: centra en la última conocida y otra vez al llegar la nueva
-      _centerOnFix = true;
-      final last = await _location.lastKnown();
-      if (!mounted) return;
-      if (last != null && _myPos == null) {
-        _bridge.setMyLocation(last.longitude, last.latitude);
-        _centerOn((last.longitude, last.latitude));
-      }
+      await _bridge.setFollow(true, zoom: 15);
+      return;
     }
+    // Sin lectura aún: centra en la última conocida y otra vez al llegar la nueva
+    _centerOnFix = true;
+    final last = await _location.lastKnown();
+    if (!mounted) return;
+    if (last != null && _myPos == null) {
+      _bridge.setMyLocation(last.longitude, last.latitude);
+      _centerOn((last.longitude, last.latitude));
+    }
+  }
+
+  /// Muestra tu posición en el mapa en vivo (sin pedir permiso: solo si ya lo diste).
+  void _watchMe() {
     if (_locating) return;
     setState(() => _locating = true);
     _subs.add(
-      _location.positions().listen((p) {
-        _myPos = (p.longitude, p.latitude);
-        _bridge.setMyLocation(p.longitude, p.latitude);
+      _location.watch().listen((p) {
+        _myPos = (p.lng, p.lat);
+        // Grabando, la posición la pone el grabador
+        if (_recordingHere) return;
+        _bridge.setMyLocation(p.lng, p.lat);
         if (_centerOnFix) {
           _centerOnFix = false;
-          _centerOn(_myPos!);
+          _bridge.setFollow(_following, zoom: 15);
+          if (!_following) _centerOn(_myPos!);
         }
-      }),
+      }, onError: (_) {}),
     );
+  }
+
+  /// Al abrir el mapa: si ya hay permiso, muestra tu posición; en el mapa libre sin nada
+  /// que encuadrar (ruta, recorrido), además te centra y te sigue.
+  Future<void> _autoLocate({required bool center}) async {
+    if (_recordingHere || !await _location.isGranted()) return;
+    if (!mounted) return;
+    if (center) {
+      await _follow();
+    } else {
+      _watchMe();
+    }
   }
 
   /// Centra en tu posición sin cambiar la inclinación ni el giro que tenga el mapa.
@@ -988,12 +1028,12 @@ class _MapScreenState extends State<MapScreen> {
                         ),
                         const SizedBox(height: 8),
                         _MapButton(
-                          icon: (_recordingHere ? _following : _locating)
+                          icon: _following
                               ? Icons.my_location_rounded
                               : Icons.location_searching_rounded,
-                          tooltip: _recordingHere && !_following
-                              ? 'Seguir mi posición'
-                              : 'Mi ubicación',
+                          tooltip: _following
+                              ? 'Siguiendo tu posición'
+                              : 'Seguir mi posición',
                           onPressed: _locateMe,
                         ),
                         if (!_comparing) ...[

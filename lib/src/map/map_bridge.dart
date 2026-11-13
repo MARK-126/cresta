@@ -92,8 +92,9 @@ class MapBridge {
   Future<void> setExaggeration(double x) => _call('setExaggeration', [x]);
   Future<void> setPickerMode(bool on) => _call('setPickerMode', [on]);
 
-  /// Dibuja un recorrido grabado; cada pausa empieza un tramo nuevo.
-  Future<void> setTrack(List<TrackPoint> points) {
+  /// Dibuja un recorrido grabado; cada pausa empieza un tramo nuevo. Marca el inicio y,
+  /// con [showEnd] (recorrido terminado), el fin.
+  Future<void> setTrack(List<TrackPoint> points, {bool showEnd = false}) {
     final segments = <List<List<double>>>[];
     int? seg;
     for (final p in points) {
@@ -103,7 +104,7 @@ class MapBridge {
       }
       segments.last.add([p.lng, p.lat]);
     }
-    return _call('setTrack', [segments]);
+    return _call('setTrack', [segments, showEnd]);
   }
 
   Future<void> setRoute(Map<String, dynamic>? route) =>

@@ -97,7 +97,13 @@ class RecordingPanel extends StatelessWidget {
         ),
         // Bajo techo el GPS no logra la precisión mínima y no se guardan puntos:
         // sin este aviso parece que la grabación no arrancó
-        if (gpsWeak && r.points.isEmpty)
+        if (r.gpsError != null)
+          const _Banner(
+            color: recordColor,
+            icon: Icons.location_disabled_rounded,
+            text: 'El GPS no está entregando tu posición. Revisa que la ubicación del teléfono esté encendida; Cresta vuelve a intentarlo sola.',
+          )
+        else if (gpsWeak && r.points.isEmpty)
           const _Banner(
             color: warnColor,
             icon: Icons.satellite_alt_outlined,

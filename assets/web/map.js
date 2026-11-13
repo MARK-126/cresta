@@ -172,6 +172,7 @@
         pois: { type: 'geojson', data: empty },
         found: { type: 'geojson', data: empty },
         track: { type: 'geojson', data: empty },
+        'track-ends': { type: 'geojson', data: empty },
         regions: { type: 'geojson', data: empty },
         zones: { type: 'geojson', data: empty },
         ash: { type: 'geojson', data: empty },
@@ -225,22 +226,22 @@
           paint: { 'text-color': ['match', ['get', 'class'], 'path', '#8f2a24', 'track', '#6b4a2b', '#4a4540'], 'text-halo-color': C.halo, 'text-halo-width': 1.4 } },
         { id: 'regions-line', type: 'line', source: 'regions', paint: { 'line-color': ['case', ['get', 'complete'], '#00a8a3', '#c99630'], 'line-width': 2, 'line-dasharray': [4, 2] } },
         { id: 'route-casing', type: 'line', source: 'route', layout: { 'line-join': 'round', 'line-cap': 'round' }, paint: { 'line-color': '#0e1416', 'line-width': 7, 'line-opacity': 0.75 } },
-        { id: 'route', type: 'line', source: 'route', filter: ['!=', ['get', 'snapped'], false], layout: { 'line-join': 'round', 'line-cap': 'round' }, paint: { 'line-color': '#f0bf63', 'line-width': 4 } },
+        { id: 'route', type: 'line', source: 'route', filter: ['!=', ['get', 'snapped'], false], layout: { 'line-join': 'round', 'line-cap': 'round' }, paint: { 'line-color': '#46eae5', 'line-width': 4 } },
         // Tramos sin sendero (línea recta): punteados y con etiqueta
-        { id: 'route-straight', type: 'line', source: 'route', filter: ['==', ['get', 'snapped'], false], layout: { 'line-join': 'round' }, paint: { 'line-color': '#f0bf63', 'line-width': 3.5, 'line-dasharray': [1.6, 1.2] } },
+        { id: 'route-straight', type: 'line', source: 'route', filter: ['==', ['get', 'snapped'], false], layout: { 'line-join': 'round' }, paint: { 'line-color': '#46eae5', 'line-width': 3.5, 'line-dasharray': [1.6, 1.2] } },
         { id: 'route-straight-label', type: 'symbol', source: 'route', filter: ['==', ['get', 'snapped'], false], layout: {
           'symbol-placement': 'line', 'symbol-spacing': 260, 'text-field': 'sin sendero', 'text-font': font(), 'text-size': 11 },
           paint: { 'text-color': '#ffa089', 'text-halo-color': '#0e1416', 'text-halo-width': 1.6 } },
         // Comparar rutas: varias líneas, cada una con su color
         { id: 'compare-casing', type: 'line', source: 'compare', layout: { 'line-join': 'round', 'line-cap': 'round' }, paint: { 'line-color': '#0e1416', 'line-width': 8, 'line-opacity': 0.75 } },
         { id: 'compare', type: 'line', source: 'compare', layout: { 'line-join': 'round', 'line-cap': 'round' }, paint: { 'line-color': ['get', 'color'], 'line-width': 4.5 } },
-        // Planificador: tramos ajustados a sendero en oro continuo; los rectos, punteados
+        // Planificador: tramos ajustados a sendero en teal continuo (el color de la app); los rectos, punteados
         { id: 'plan-casing', type: 'line', source: 'plan', layout: { 'line-join': 'round', 'line-cap': 'round' }, paint: { 'line-color': '#0e1416', 'line-width': 7, 'line-opacity': 0.75 } },
-        { id: 'plan-snapped', type: 'line', source: 'plan', filter: ['==', ['get', 'snapped'], true], layout: { 'line-join': 'round', 'line-cap': 'round' }, paint: { 'line-color': '#f0bf63', 'line-width': 4 } },
-        { id: 'plan-straight', type: 'line', source: 'plan', filter: ['==', ['get', 'snapped'], false], layout: { 'line-join': 'round' }, paint: { 'line-color': '#f0bf63', 'line-width': 3.5, 'line-dasharray': [1.6, 1.2] } },
+        { id: 'plan-snapped', type: 'line', source: 'plan', filter: ['==', ['get', 'snapped'], true], layout: { 'line-join': 'round', 'line-cap': 'round' }, paint: { 'line-color': '#46eae5', 'line-width': 4 } },
+        { id: 'plan-straight', type: 'line', source: 'plan', filter: ['==', ['get', 'snapped'], false], layout: { 'line-join': 'round' }, paint: { 'line-color': '#46eae5', 'line-width': 3.5, 'line-dasharray': [1.6, 1.2] } },
         { id: 'plan-pts', type: 'circle', source: 'plan-pts', paint: {
           'circle-radius': ['match', ['get', 'role'], 'start', 7, 'end', 7, 5],
-          'circle-color': ['match', ['get', 'role'], 'start', '#46eae5', 'end', '#ffa089', '#f0bf63'],
+          'circle-color': ['match', ['get', 'role'], 'start', '#f0bf63', 'end', '#ffa089', '#e8f1f7'],
           'circle-stroke-color': '#0e1416', 'circle-stroke-width': 2.5 } },
         // Puntos de interés de la ruta (agua, campamento, punto de no retorno…)
         { id: 'pois-dot', type: 'circle', source: 'pois', paint: {
@@ -249,9 +250,17 @@
         { id: 'pois-label', type: 'symbol', source: 'pois', layout: {
           'text-field': ['get', 'name'], 'text-font': font('bold'), 'text-size': 11.5, 'text-offset': [0, 1.2], 'text-anchor': 'top', 'text-optional': true },
           paint: { 'text-color': '#0e1416', 'text-halo-color': 'rgba(255,255,255,0.92)', 'text-halo-width': 1.4 } },
-        // Recorrido grabado (azul, encima de la ruta planeada)
+        // Recorrido grabado (coral, el color de grabar; encima de la ruta planeada, que es teal)
         { id: 'track-casing', type: 'line', source: 'track', layout: { 'line-join': 'round', 'line-cap': 'round' }, paint: { 'line-color': '#0e1416', 'line-width': 8, 'line-opacity': 0.8 } },
-        { id: 'track', type: 'line', source: 'track', layout: { 'line-join': 'round', 'line-cap': 'round' }, paint: { 'line-color': '#46eae5', 'line-width': 4.5 } },
+        { id: 'track', type: 'line', source: 'track', layout: { 'line-join': 'round', 'line-cap': 'round' }, paint: { 'line-color': '#ffa089', 'line-width': 4.5 } },
+        // Inicio y fin del recorrido (el fin, solo al verlo terminado: grabando, el fin eres tú)
+        { id: 'track-ends', type: 'circle', source: 'track-ends', paint: {
+          'circle-radius': 7, 'circle-color': ['match', ['get', 'role'], 'start', '#f0bf63', '#ffa089'],
+          'circle-stroke-color': '#0e1416', 'circle-stroke-width': 2.5 } },
+        { id: 'track-ends-label', type: 'symbol', source: 'track-ends', layout: {
+          'text-field': ['match', ['get', 'role'], 'start', 'Inicio', 'Fin'], 'text-font': font('bold'), 'text-size': 12,
+          'text-offset': [0, 1.3], 'text-anchor': 'top', 'text-allow-overlap': true },
+          paint: { 'text-color': '#0e1416', 'text-halo-color': 'rgba(255,255,255,0.95)', 'text-halo-width': 1.6 } },
         { id: 'evac', type: 'line', source: 'evac', layout: { visibility: 'none', 'line-cap': 'round' }, paint: { 'line-color': '#22c06a', 'line-width': 4, 'line-dasharray': [1.5, 1] } },
         // Nombres
         { id: 'water-names', type: 'symbol', source: 'topo', 'source-layer': 'water_name', layout: { 'text-field': ['get', 'name'], 'text-font': font('italic'), 'text-size': 11 },
@@ -574,8 +583,14 @@
       });
     },
     /// Tramos del recorrido: lista de listas de [lng, lat] (una por cada tramo entre pausas).
-    setTrack(segments) {
-      whenReady(() => map.getSource('track').setData({ type: 'Feature', properties: {}, geometry: { type: 'MultiLineString', coordinates: segments } }));
+    setTrack(segments, showEnd = false) {
+      const all = segments.flat();
+      whenReady(() => {
+        map.getSource('track').setData({ type: 'Feature', properties: {}, geometry: { type: 'MultiLineString', coordinates: segments } });
+        const ends = all.length ? [pointFeature(all[0], { role: 'start' })] : [];
+        if (showEnd && all.length > 1) ends.push(pointFeature(all[all.length - 1], { role: 'end' }));
+        map.getSource('track-ends').setData({ type: 'FeatureCollection', features: ends });
+      });
     },
     setRegions(list) {
       whenReady(() => map.getSource('regions').setData({

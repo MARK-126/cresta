@@ -26,6 +26,30 @@ Teléfono de pruebas: Samsung Galaxy S23 Ultra (SM-S918B), Android 16, salvo que
 
 ## 2026-11-12
 
+**Salida del usuario al Parque General San Martín (Mendoza), con pantalla bloqueada** · `main` + `feat/buscar-lugares`
+- Observaciones del usuario: al grabar "desde aquí" no se actualizaba la posición ni se guardaba el recorrido; pedía
+  encender el Wi-Fi para mejorar la ubicación cada vez; no se pudo exportar ni ver el recorrido; "Ver en el mapa"
+  llevaba a una zona descargada; con la pantalla bloqueada el recorrido salía en línea recta; había que tocar
+  "Mi ubicación" para ver dónde estaba; la traza no mostraba inicio ni fin; letras difíciles de leer sobre el satélite.
+- Datos del teléfono: "Recorrido 1" 28 min y **0 puntos**; "Recorrido 2" un punto cada ~8 s con la pantalla encendida y
+  huecos de **314 s y 228 s** (los tramos rectos). Permiso de ubicación "mientras se usa" (correcto) y la app ya exenta
+  de la optimización de batería.
+- Causas (código de `geolocator_android` 5.2.1):
+  1. El plugin reutiliza el flujo de posiciones que ya esté abierto e **ignora la configuración nueva**. Con
+     "Mi ubicación" abierto en el mapa (sin servicio en primer plano), la grabación recibía ese flujo: sin servicio, al
+     bloquear la pantalla dejaban de llegar puntos.
+  2. El cliente "fusionado" de Google revisa los ajustes y muestra "mejorar la precisión (Wi-Fi)" en cada inicio; si se
+     rechaza, **corta el flujo con un error**. El grabador ignoraba el error y seguía "grabando" sin puntos.
+  3. Recorrido sin puntos: no hay nada que ver ni exportar, y el mapa se quedaba en la zona descargada.
+- Corrección (`feat/gps-grabacion`): un solo flujo de GPS en `LocationService` (`watch()` para la vista y
+  `recording()` para grabar; se abre uno a la vez, la grabación con el servicio en primer plano), `forceLocationManager`
+  en Android (el proveedor "fused" del sistema, sin el aviso de Wi-Fi), aviso y reintento cada 15 s si el GPS falla,
+  posición en vivo y seguir al abrir el mapa libre, y no guardar ni mostrar como normal un recorrido sin puntos.
+- En el teléfono: con la ubicación del teléfono apagada, el mapa no centra (correcto). Encendida: el mapa libre se
+  centra solo en tu posición y queda "Siguiendo tu posición", sin el aviso de Wi-Fi. Al grabar con "Mi ubicación"
+  abierto: se cierra ese flujo y se abre el de grabación con servicio en primer plano (`isForeground=true`, tipo
+  ubicación).
+
 **Buscar sin señal · `feat/buscar-lugares`**
 - Con los 210 mosaicos z14 de Vallecitos copiados del teléfono: 100 lugares en 42 ms (31 cumbres, 3 refugios, 11
   campamentos, 1 agua, 29 tramos de río…). "arenales" → Cerro Arenales (3,460 m, 7.7 km); "cerro adolfo" → Cerro Adolfo
