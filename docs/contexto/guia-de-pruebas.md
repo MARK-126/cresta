@@ -62,6 +62,11 @@ Lo que se corrigió a partir de tus observaciones en el Parque San Martín, y c�
 - **Fotos al grabar**: botón de cámara bajo el de grabar. La foto aparece en el mapa con un ícono 📷 y en el detalle
   del recorrido.
 
+- **Mapa limpio** (13 nov 2026): el mapa ocupa toda la pantalla. Abajo: Capas (mapa base, relieve, capas), Grabar
+  (el botón rojo grande) y Ruta. Con una ruta aparece una tarjeta encima: tócala para ver el perfil. Grabando: arriba
+  altitud, velocidad y distancia; abajo el tiempo, los avisos y Pausar/Terminar/Foto; la flecha ⌃ abre todo lo demás.
+  Trazando: el buscador va arriba. Revisa que en la montaña se lea bien y que los botones se usen con guantes.
+
 ## En casa (con el teléfono conectado a la computadora)
 
 Para estas basta con que el teléfono esté en la misma red Wi-Fi con **depuración inalámbrica** activa: pasarle a

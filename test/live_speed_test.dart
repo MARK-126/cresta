@@ -5,11 +5,15 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   final now = DateTime(2026, 11, 13, 10);
-  GpsFix fix({double? speed, Duration ago = Duration.zero}) => GpsFix(
+  GpsFix fix({
+    double? speed,
+    Duration ago = Duration.zero,
+    double accuracy = 5,
+  }) => GpsFix(
     time: now.subtract(ago),
     lng: -68.86,
     lat: -32.89,
-    accuracy: 5,
+    accuracy: accuracy,
     speed: speed,
   );
   TrackPoint pt(double metersNorth, int secondsAgo, {int segment = 0}) =>
@@ -47,5 +51,10 @@ void main() {
       isNull,
     );
     expect(liveSpeedKmh(null, const [], now), isNull);
+  });
+
+  test('con mala precisión no se cree la velocidad del GPS', () {
+    // Bajo techo, ±16 m: el teléfono decía 1.1 m/s estando quieto
+    expect(liveSpeedKmh(fix(speed: 1.1, accuracy: 16), const [], now), isNull);
   });
 }

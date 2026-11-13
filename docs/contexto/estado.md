@@ -281,6 +281,21 @@ Actualizado: 12 nov 2026 · avisos al acercarse a los puntos de interés de la r
   `ui/photo_screen.dart` (pantalla completa con zoom, deslizar, compartir, borrar); miniaturas en el detalle.
   iOS: `NSCameraUsageDescription` y `NSPhotoLibraryUsageDescription`.
 
+### Mapa limpio (`feat/mapa-limpio`, 13 nov 2026)
+- Sin panel fijo: el mapa a pantalla completa. Abajo, según el modo (`_bottomChrome` en `map_screen.dart`):
+  explorar → `MapDock` (Capas, Grabar al centro, Ruta/Editar ruta; en `ui/map_chrome.dart`); con ruta, protección civil
+  o comparando → además una `PeekCard` (una línea; tocarla abre el detalle); grabando → `RecordingStrip` (tiempo, el
+  aviso más urgente o `recordingSummary`, Pausar/Terminar/Foto/Más); trazando → `PlannerStrip` (cifras + aviso,
+  Deshacer/Más/Guardar) y el buscador arriba (`_SearchPill`).
+- Detalles en hojas a pedido (`showMapSheet`): Capas (`_openLayers`: zonas de la expedición, vista, capas y
+  créditos), ruta (`RouteCard` + grupo), protección civil, comparar, grabación (`RecordingPanel` completo) y
+  planificador (`PlannerPanel`, ya sin el campo de búsqueda).
+- Avisos de la grabación en `recordingAlerts()` (los usan el panel y la tira).
+- Columna derecha: brújula (si el mapa está girado), SOS, ubicación, 2D/3D. Grabar, trazar y la cámara pasaron abajo.
+- El padding del mapa se mide (`_bottomKey`, `_syncPadding`) en vez de seguir la altura del panel.
+- Se quitó `_FreeMapCard` (su texto está en la indicación de la primera vez).
+- Velocidad en vivo: la del GPS solo con precisión ≤ 15 m (`liveSpeedMaxAccuracy`).
+
 ### Interfaz
 - Botones secundarios (`OutlinedButton`, 23 en la app): tonales `surfaceHighest` sin borde, desde el tema.
 - Pestaña Mapas: "Descargar una zona" abre `AreaPickerScreen()` sin expedición (zona suelta, centrada en la última
