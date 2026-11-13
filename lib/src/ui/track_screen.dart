@@ -13,6 +13,7 @@ import 'format.dart';
 import 'map_screen.dart';
 import 'offline_widgets.dart';
 import 'panels.dart';
+import 'photo_screen.dart';
 import 'recording_panel.dart';
 import 'route_destination.dart';
 import 'theme.dart';
@@ -151,6 +152,7 @@ class _TrackScreenState extends State<TrackScreen> {
               ),
           ],
           const SizedBox(height: 24),
+          _Photos(trackId: t.id),
           if (_points != null && _points!.isEmpty) ...[
             TonalCard(
               accent: recordColor,
@@ -411,6 +413,65 @@ class TrackList extends StatelessWidget {
                   ),
                 ),
               ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+/// Fotos del recorrido en miniatura; tocar una la abre a pantalla completa.
+class _Photos extends StatelessWidget {
+  const _Photos({required this.trackId});
+  final String trackId;
+
+  @override
+  Widget build(BuildContext context) {
+    final store = AppScope.of(context).photos;
+    return ListenableBuilder(
+      listenable: store,
+      builder: (context, _) {
+        final photos = store.forTrack(trackId);
+        if (photos.isEmpty) return const SizedBox.shrink();
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            SectionTitle('Fotos (${photos.length})'),
+            SizedBox(
+              height: 96,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                itemCount: photos.length,
+                separatorBuilder: (_, _) => const SizedBox(width: 8),
+                itemBuilder: (context, i) {
+                  final p = photos[i];
+                  return ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: Material(
+                      child: InkWell(
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute<void>(
+                            builder: (_) =>
+                                PhotoScreen(trackId: trackId, photoId: p.id),
+                          ),
+                        ),
+                        child: Ink.image(
+                          image: ResizeImage(
+                            FileImage(store.fileOf(p)),
+                            width: 300,
+                          ),
+                          width: 96,
+                          height: 96,
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+            const SizedBox(height: 16),
           ],
         );
       },

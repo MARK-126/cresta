@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/painting.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
+import '../photos/photo_store.dart';
 import '../places/places.dart';
 import '../data/trail_route.dart';
 import '../offline/offline_region.dart';
@@ -171,6 +172,18 @@ class MapBridge {
     [
       for (final r in regions)
         {'name': r.name, 'bbox': r.bbox.toJson(), 'complete': r.isComplete},
+    ],
+  ]);
+
+  /// Fotos del recorrido con ubicación (las que no la tienen no se dibujan).
+  Future<void> setPhotos(List<TrackPhoto> photos) => _call('setPhotos', [
+    [
+      for (final p in photos)
+        if (p.located)
+          {
+            'id': p.id,
+            'at': [p.lng, p.lat],
+          },
     ],
   ]);
 

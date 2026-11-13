@@ -5,6 +5,7 @@ import 'dart:math' as math;
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:webview_flutter/webview_flutter.dart';
@@ -33,6 +34,7 @@ import 'format.dart';
 import 'offline_widgets.dart';
 import 'panels.dart';
 import 'planner_panel.dart';
+import 'photo_screen.dart';
 import 'place_search_sheet.dart';
 import 'recording_panel.dart';
 import 'route_actions.dart';
@@ -259,6 +261,8 @@ class _MapScreenState extends State<MapScreen> {
         _recorder.track!.startedAt,
       );
       await _bridge.setTrack(_recorder.points);
+      await _bridge.setPhotos(_services.photos.forTrack(_recorder.track!.id));
+      _recoverPhoto();
       final fix = _recorder.lastFix;
       if (fix != null) await _bridge.setMyLocation(fix.lng, fix.lat);
       _following = _centeredOnFirstFix = true;
@@ -266,6 +270,7 @@ class _MapScreenState extends State<MapScreen> {
     } else if (widget.showTrackId != null) {
       final points = await _services.tracks.readPoints(widget.showTrackId!);
       await _bridge.setTrack(points, showEnd: true);
+      await _bridge.setPhotos(_services.photos.forTrack(widget.showTrackId!));
       if (widget.video && points.length > 1) {
         _startVideo(points);
       } else if (points.length > 1) {
@@ -654,6 +659,22 @@ class _MapScreenState extends State<MapScreen> {
       case 'flyEnd':
         setState(() => _flying = false);
         if (_video == null) _moveSheet(_sheetInitial);
+      case 'photoTap':
+        final photo = _services.photos.byId(e.data['id'] as String);
+        if (photo != null) {
+          Navigator.push(
+            context,
+            MaterialPageRoute<void>(
+              builder: (_) =>
+                  PhotoScreen(trackId: photo.trackId, photoId: photo.id),
+            ),
+          ).then((_) {
+            // Pudo borrarse
+            if (mounted) {
+              _bridge.setPhotos(_services.photos.forTrack(photo.trackId));
+            }
+          });
+        }
       case 'bearing':
         setState(() => _bearing = (e.data['deg'] as num).toDouble());
       case 'videoProgress':
@@ -864,6 +885,66 @@ class _MapScreenState extends State<MapScreen> {
       messenger.showSnackBar(
         SnackBar(content: Text('No se pudo guardar el video: $e')),
       );
+    }
+  }
+
+  /// Foto durante la grabación: abre la cámara del teléfono y la guarda en el recorrido con
+  /// la posición del GPS (la grabación sigue mientras la cámara está abierta).
+  Future<void> _takePhoto() async {
+    final messenger = ScaffoldMessenger.of(context);
+    final XFile? shot;
+    try {
+      shot = await ImagePicker().pickImage(
+        source: ImageSource.camera,
+        maxWidth: 2400,
+        maxHeight: 2400,
+        imageQuality: 85,
+      );
+    } on Object {
+      messenger.showSnackBar(
+        const SnackBar(content: Text('No se pudo abrir la cámara.')),
+      );
+      return;
+    }
+    if (shot != null) await _savePhoto(shot);
+  }
+
+  Future<void> _savePhoto(XFile shot) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final track = _recorder.track;
+    if (track == null) return;
+    final fix = _recorder.lastFix;
+    final fresh =
+        fix != null &&
+        DateTime.now().difference(fix.time) < const Duration(minutes: 2);
+    await _services.photos.add(
+      trackId: track.id,
+      source: File(shot.path),
+      time: DateTime.now(),
+      lat: fresh ? fix.lat : null,
+      lng: fresh ? fix.lng : null,
+      altitude: fresh ? (_recorder.stats.altitude ?? fix.altitude) : null,
+    );
+    await _bridge.setPhotos(_services.photos.forTrack(track.id));
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text(
+          fresh ? 'Foto guardada en el recorrido, en el mapa.' : 'Foto guardada en el recorrido, sin ubicación (el GPS aún no tenía tu posición).',
+        ),
+      ),
+    );
+  }
+
+  /// En Android, si el sistema cerró la app mientras la cámara estaba abierta, la foto
+  /// queda pendiente: se recupera al volver.
+  Future<void> _recoverPhoto() async {
+    if (!Platform.isAndroid) return;
+    try {
+      final lost = await ImagePicker().retrieveLostData();
+      final f = lost.file;
+      if (f != null && mounted) await _savePhoto(f);
+    } on Object {
+      // Nada pendiente
     }
   }
 
@@ -1207,6 +1288,14 @@ class _MapScreenState extends State<MapScreen> {
                                 ? 'Grabando'
                                 : 'Grabar recorrido',
                             onPressed: _recordingHere ? () {} : _startRecording,
+                          ),
+                        ],
+                        if (_recordingHere) ...[
+                          const SizedBox(height: 8),
+                          _MapButton(
+                            icon: Icons.photo_camera_outlined,
+                            tooltip: 'Tomar una foto aquí',
+                            onPressed: _takePhoto,
                           ),
                         ],
                         if (!_recordingHere &&

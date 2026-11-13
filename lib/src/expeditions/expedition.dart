@@ -12,6 +12,7 @@ class Expedition {
     List<String>? regionIds,
     this.routeAsset,
     this.turnaroundMinutes,
+    this.tripPlanAt,
     this.sample = false,
     DateTime? createdAt,
   }) : regionIds = regionIds ?? [],
@@ -27,6 +28,7 @@ class Expedition {
     ],
     routeAsset: j['routeAsset'] as String?,
     turnaroundMinutes: j['turnaroundMinutes'] as int?,
+    tripPlanAt: DateTime.tryParse('${j['tripPlanAt']}'),
     sample: j['sample'] as bool? ?? false,
     createdAt: DateTime.tryParse('${j['createdAt']}'),
   );
@@ -44,6 +46,9 @@ class Expedition {
   /// Hora límite para emprender el regreso, en minutos desde la medianoche (p. ej. 660 = 11:00).
   /// En alta montaña es la regla de seguridad más importante: si no llegaste, regresas.
   int? turnaroundMinutes;
+
+  /// Cuándo se mandó el plan de salida a un contacto (null: aún no).
+  DateTime? tripPlanAt;
 
   /// La hora límite aplicada al día de [day].
   DateTime? turnaroundOn(DateTime day) => turnaroundMinutes == null
@@ -63,6 +68,7 @@ class Expedition {
     'regionIds': regionIds,
     'routeAsset': routeAsset,
     'turnaroundMinutes': turnaroundMinutes,
+    'tripPlanAt': tripPlanAt?.toIso8601String(),
     'sample': sample,
     'createdAt': createdAt.toIso8601String(),
   };

@@ -12,9 +12,13 @@ import 'track.dart';
 /// una línea por punto agregada al final. Así, si la app se cierra o se queda sin batería
 /// a mitad de la grabación, se conserva todo lo grabado hasta ese momento.
 class TrackStore extends ChangeNotifier {
-  TrackStore(this.dir) : _index = JsonStore(File('${dir.path}/tracks.json'));
+  TrackStore(this.dir, {this.onDeleted})
+    : _index = JsonStore(File('${dir.path}/tracks.json'));
 
   final Directory dir;
+
+  /// Se llama al borrar un recorrido (p. ej. para borrar sus fotos).
+  final Future<void> Function(String id)? onDeleted;
   final JsonStore _index;
   final _tracks = <Track>[];
 
@@ -89,6 +93,7 @@ class TrackStore extends ChangeNotifier {
     _tracks.removeWhere((t) => t.id == id);
     final f = _pointsFile(id);
     if (await f.exists()) await f.delete();
+    await onDeleted?.call(id);
     await save();
   }
 

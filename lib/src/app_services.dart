@@ -11,6 +11,7 @@ import 'expeditions/expedition_store.dart';
 import 'gear/gear.dart';
 import 'location/location_service.dart';
 import 'offline/map_sources.dart';
+import 'photos/photo_store.dart';
 import 'places/place_index.dart';
 import 'tips/tips.dart';
 import 'offline/offline_maps.dart';
@@ -64,6 +65,7 @@ class AppServices {
     this.overland,
     this.places,
     this.tips,
+    this.photos,
   );
 
   final TileServer server;
@@ -106,6 +108,9 @@ class AppServices {
   /// Qué indicaciones de la primera vez ya vio el usuario.
   final TipStore tips;
 
+  /// Fotos tomadas durante los recorridos, con su ubicación.
+  final PhotoStore photos;
+
   static Future<AppServices> start() async {
     final support = await getApplicationSupportDirectory();
     final cacheRoot = await getApplicationCacheDirectory();
@@ -144,7 +149,12 @@ class AppServices {
       expeditions: expeditions,
     );
 
-    final tracks = TrackStore(Directory('${support.path}/tracks'));
+    final photos = PhotoStore(Directory('${support.path}/photos'));
+    await photos.load();
+    final tracks = TrackStore(
+      Directory('${support.path}/tracks'),
+      onDeleted: photos.deleteForTrack,
+    );
     await tracks.load();
     final location = LocationService();
     final terrain = TerrainElevation([offline, cache]);
@@ -210,6 +220,7 @@ class AppServices {
         file: File('${support.path}/places.json'),
       ),
       tips,
+      photos,
     );
   }
 }

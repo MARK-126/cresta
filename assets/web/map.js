@@ -150,6 +150,7 @@
     lodging: ['🛏', '#7552b8'], health: ['✚', '#cf3d3d'], police: ['🚓', '#34539c'], parking: ['P', '#2f62c4'],
     toilets: ['🚻', '#56636e'], view: ['🔭', '#22827d'], shop: ['🛒', '#b26f1f'], fuel: ['⛽', '#b8402f'],
     bus: ['🚌', '#2f62c4'], culture: ['🏛', '#8a4fa3'], info: ['ℹ', '#2f62c4'], sport: ['⚽', '#3a8a48'],
+    photo: ['📷', '#00a8a3'], // fotos del recorrido
   };
   // Tipo de ícono según la clase de OpenMapTiles; '' = sin ícono
   const POI_KIND = ['match', ['get', 'subclass'],
@@ -216,6 +217,7 @@
         track: { type: 'geojson', data: empty },
         'track-ends': { type: 'geojson', data: empty },
         'video-track': { type: 'geojson', data: empty, lineMetrics: true },
+        photos: { type: 'geojson', data: empty },
         regions: { type: 'geojson', data: empty },
         zones: { type: 'geojson', data: empty },
         ash: { type: 'geojson', data: empty },
@@ -301,6 +303,8 @@
         // Traza del video: se pinta con un degradado según el avance (sin recalcular la geometría)
         { id: 'video-casing', type: 'line', source: 'video-track', layout: { visibility: 'none', 'line-join': 'round', 'line-cap': 'round' }, paint: { 'line-width': 10, 'line-gradient': ['step', ['line-progress'], 'rgba(0,0,0,0)', 1, 'rgba(0,0,0,0)'] } },
         { id: 'video-line', type: 'line', source: 'video-track', layout: { visibility: 'none', 'line-join': 'round', 'line-cap': 'round' }, paint: { 'line-width': 6, 'line-gradient': ['step', ['line-progress'], 'rgba(0,0,0,0)', 1, 'rgba(0,0,0,0)'] } },
+        // Fotos del recorrido: un ícono de cámara donde se tomó cada una (tocarla la abre)
+        { id: 'photos', type: 'symbol', source: 'photos', layout: { 'icon-image': 'poi-photo', 'icon-size': 1.15, 'icon-allow-overlap': true } },
         // Inicio y fin del recorrido (el fin, solo al verlo terminado: grabando, el fin eres tú)
         { id: 'track-ends', type: 'circle', source: 'track-ends', paint: {
           'circle-radius': ['match', ['get', 'role'], 'head', 8, 7], 'circle-color': ['match', ['get', 'role'], 'start', '#f0bf63', '#ffa089'],
@@ -823,6 +827,7 @@
 
   let planMode = false;
   map.on('click', (e) => { if (planMode) emit('mapTap', { lng: e.lngLat.lng, lat: e.lngLat.lat }); });
+  map.on('click', 'photos', (e) => { if (!planMode && e.features.length) emit('photoTap', { id: e.features[0].properties.id }); });
   const pointFeature = (c, props) => ({ type: 'Feature', properties: props, geometry: { type: 'Point', coordinates: c } });
 
   // --- API pública para Flutter
@@ -945,6 +950,13 @@
       whenReady(() => map.getSource('pois').setData({
         type: 'FeatureCollection',
         features: (list || []).map((p) => pointFeature(p.at, { kind: p.kind, name: p.name })),
+      }));
+    },
+    /// Fotos del recorrido: [{ id, at: [lng, lat] }]
+    setPhotos(list) {
+      whenReady(() => map.getSource('photos').setData({
+        type: 'FeatureCollection',
+        features: (list || []).map((p) => pointFeature(p.at, { id: p.id })),
       }));
     },
     /// Lugar encontrado: { name, at: [lng, lat] } o null para quitarlo.

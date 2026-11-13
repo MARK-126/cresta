@@ -18,6 +18,7 @@ import 'compare_screen.dart';
 import 'sun_card.dart';
 import 'weather_widgets.dart';
 import 'theme.dart';
+import 'trip_plan.dart';
 import 'track_screen.dart';
 
 /// Detalle de una expedición: fecha, notas y sus mapas sin conexión.
@@ -158,6 +159,7 @@ class ExpeditionScreen extends StatelessWidget {
                             : 'Faltan ${gear.length - packed} de ${gear.length} por empacar.',
                       ),
                       _TurnaroundCheck(expedition: e),
+                      _TripPlanCheck(expedition: e),
                     ],
                   ),
                 ),
@@ -442,6 +444,61 @@ class _NotesState extends State<_Notes> {
 }
 
 /// Hora límite de retorno: si a esa hora no llegaste a la cumbre, se regresa.
+/// Plan de salida a un contacto: a dónde vas y a qué hora avisar si no vuelves.
+class _TripPlanCheck extends StatelessWidget {
+  const _TripPlanCheck({required this.expedition});
+  final Expedition expedition;
+
+  @override
+  Widget build(BuildContext context) {
+    final sent = expedition.tripPlanAt;
+    final muted = Theme.of(context).colorScheme.onSurfaceVariant;
+    return InkWell(
+      borderRadius: BorderRadius.circular(8),
+      onTap: () => showTripPlanSheet(context, expedition),
+      child: Padding(
+        padding: const EdgeInsets.only(bottom: 14),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(
+              sent == null
+                  ? Icons.radio_button_unchecked_rounded
+                  : Icons.check_circle_rounded,
+              color: sent == null ? warnColor : okColor,
+              size: 22,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Plan de salida a un contacto',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 15,
+                      color: sent == null ? warnColor : null,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    sent == null
+                        ? 'Toca para mandarle a alguien a dónde vas, cuándo vuelves y a qué hora avisar si no.'
+                        : 'Enviado ${fmtUpdated(sent)}. Toca para mandarlo de nuevo.',
+                    style: TextStyle(fontSize: 12.5, color: muted, height: 1.3),
+                  ),
+                ],
+              ),
+            ),
+            const Icon(Icons.chevron_right_rounded),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _TurnaroundCheck extends StatelessWidget {
   const _TurnaroundCheck({required this.expedition});
   final Expedition expedition;

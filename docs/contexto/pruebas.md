@@ -6,6 +6,8 @@ Teléfono de pruebas: Samsung Galaxy S23 Ultra (SM-S918B), Android 16, salvo que
 
 ## Sin probar todavía (revisar antes de dar por hecho)
 
+- **Plan de salida y fotos en el teléfono** (13 nov 2026): ver la entrada del 13 nov.
+
 - **Buscar sin señal en el teléfono** (12 nov 2026): botón, hoja, tiempo de la primera vez con las 3 zonas, vuelo,
   marca y tarjeta.
 
@@ -25,6 +27,13 @@ Teléfono de pruebas: Samsung Galaxy S23 Ultra (SM-S918B), Android 16, salvo que
 - Descargas de mapas en Android con conexión móvil (opción "solo Wi-Fi").
 
 ## 2026-11-13
+
+**Plan de salida y fotos · `feat/plan-y-fotos`** (solo pruebas automáticas: el teléfono se desconectó)
+- 192 en verde: horarios sugeridos (con fecha, sin fecha, sin ruta), el mensaje completo (ruta, enlace, hora límite,
+  alarma, 911, sangre), regreso otro día; fotos guardadas con ubicación y en orden, recordadas al reabrir, borrar una y
+  todas con su recorrido sin tocar las de otro.
+- Falta en el teléfono: la hoja del plan con la expedición "Salto" (sin enviar), SMS y compartir; tomar una foto
+  grabando, verla en el mapa, en el detalle y a pantalla completa.
 
 **Barra de datos y brújula · `feat/barra-datos`** (S23)
 - Con la ubicación del teléfono apagada, "Grabar" no abre nada y muestra el aviso "Activa la ubicación…" con "Abrir
