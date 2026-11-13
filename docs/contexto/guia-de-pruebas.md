@@ -69,7 +69,8 @@ Lo que se corrigió a partir de tus observaciones en el Parque San Martín, y c�
 - **Ruta hasta aquí** (13 nov 2026): busca un lugar (lupa de arriba) y en su tarjeta toca el botón de flecha: traza la
   ruta desde donde estás. Si ya hay una ruta abierta, el lugar se suma al final ("Agregar a la ruta").
 - **Buscar zona sin conexión**: en Mapas → "Descargar una zona", sin datos ni Wi-Fi, busca un lugar de tus mapas
-  descargados: aparece "SIN CONEXIÓN · EN TUS MAPAS".
+  descargados: aparece "SIN CONEXIÓN · EN TUS MAPAS". Elige uno y revisa que el mapa se vea y que el recuadro diga
+  su tamaño (km y MB): en casa no se pudo probar, porque cortarle la red solo a la app también apaga su mapa.
 
 ## En casa (con el teléfono conectado a la computadora)
 

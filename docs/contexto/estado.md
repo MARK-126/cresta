@@ -336,5 +336,5 @@ lib/src/ui/                    pantallas; theme.dart = paleta y componentes del 
 assets/web/                    map.js, MapLibre, maplibre-contour, tipografías del mapa
 assets/fonts/inter/            tipografía de la app · assets/images/ textura del splash
 tool/                          scripts de datos (Python) e ícono; tool/dev/ herramientas de prueba
-test/                          135 pruebas
+test/                          193 pruebas
 ```
