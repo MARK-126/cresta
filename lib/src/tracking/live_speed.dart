@@ -4,6 +4,9 @@ import 'track_recorder.dart' show GpsFix;
 /// Lecturas más viejas que esto no dicen tu velocidad actual (GPS perdido, en pausa).
 const liveSpeedMaxAge = Duration(seconds: 30);
 
+/// Precisión mínima (m) para creer la velocidad que da el GPS.
+const liveSpeedMaxAccuracy = 15.0;
+
 /// Por debajo de esto el GPS "baila" estando quieto: se muestra 0.
 const _stillKmh = 0.8;
 
@@ -15,7 +18,9 @@ double? liveSpeedKmh(GpsFix? fix, List<TrackPoint> points, DateTime now) {
   if (fix == null || now.difference(fix.time) > liveSpeedMaxAge) return null;
   double? kmh;
   final s = fix.speed;
-  if (s != null && s >= 0) {
+  // Con mala precisión (bajo techo, ubicación por Wi-Fi) la "velocidad" sale de los saltos
+  // de posición: quieto marcaba 4 km/h (13 nov 2026)
+  if (s != null && s >= 0 && fix.accuracy <= liveSpeedMaxAccuracy) {
     kmh = s * 3.6;
   } else if (points.length >= 2) {
     final a = points[points.length - 2], b = points.last;

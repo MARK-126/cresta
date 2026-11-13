@@ -102,6 +102,11 @@
   pide la exención al grabar (no al abrir la app) y se puede rechazar. `REQUEST_IGNORE_BATTERY_OPTIMIZATIONS` lo limita
   Google Play a apps cuyo núcleo lo necesita; para una app personal no aplica, pero revisarlo si se publica. El
   intervalo del GPS ya existía (modos Normal y Ahorro).
+- **Mapa primero** (13 nov 2026, pedido del usuario: el panel ocupaba mucha pantalla): el panel mezclaba estado,
+  contexto, ajustes y ayuda y nunca se ocultaba (mínimo 14 %, al abrir 26–38 %). Ahora cada cosa en su lugar: estado
+  en tiras compactas, contexto en una tarjeta de vistazo, ajustes en la hoja Capas, ayuda en las indicaciones de la
+  primera vez. Acciones principales abajo (pulgar, guantes: 52–56 dp); SOS siempre visible arriba. Las hojas de
+  detalle no oscurecen el mapa (`barrierColor` 15 %).
 - **Un solo flujo de GPS** (12 nov 2026): `geolocator_android` reutiliza el flujo abierto e ignora la configuración
   nueva, así que la app abre uno a la vez en `LocationService`. **`forceLocationManager`**: el cliente de Google Play
   mostraba "mejorar la precisión" en cada inicio y, si se rechazaba, cortaba el GPS; el proveedor `fused` del sistema

@@ -36,7 +36,6 @@ class PlannerPanel extends StatelessWidget {
     required this.onPlacePoi,
     required this.onSave,
     required this.onCancel,
-    required this.onAddByName,
   });
 
   final RoutePlanner planner;
@@ -46,9 +45,6 @@ class PlannerPanel extends StatelessWidget {
   final ValueChanged<PoiKind?> onPlacePoi;
   final VoidCallback onSave;
   final VoidCallback onCancel;
-
-  /// Agrega el siguiente punto escribiendo su nombre (en vez de tocar el mapa).
-  final VoidCallback onAddByName;
 
   @override
   Widget build(BuildContext context) {
@@ -67,33 +63,6 @@ class PlannerPanel extends StatelessWidget {
         Text('PLANEANDO RUTA', style: labelStyle(context, color: Andes.gold)),
         const SizedBox(height: 4),
         Text(hint, style: TextStyle(color: muted, fontSize: 13, height: 1.35)),
-        const SizedBox(height: 12),
-        // Escribir el lugar: salida, paradas y destino, en orden
-        Material(
-          color: Andes.surfaceHigh,
-          borderRadius: BorderRadius.circular(14),
-          child: InkWell(
-            borderRadius: BorderRadius.circular(14),
-            onTap: p.busy ? null : onAddByName,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-              child: Row(
-                children: [
-                  const Icon(Icons.search_rounded, color: Andes.cyan),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      p.waypoints.isEmpty
-                          ? '¿Desde dónde sales? Escribe un lugar'
-                          : 'Agregar parada o destino por nombre',
-                      style: TextStyle(color: muted),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
         const SizedBox(height: 12),
         if (placingPoi != null)
           _Note(
@@ -323,6 +292,211 @@ class _Note extends StatelessWidget {
           if (action != null)
             TextButton(onPressed: onAction, child: Text(action!)),
         ],
+      ),
+    ),
+  );
+}
+
+/// Tira compacta de abajo mientras se traza la ruta: las cifras en vivo (o qué hacer) y
+/// Deshacer, Más y Guardar. El resto (perfil, puntos de interés, invertir, borrar) está en
+/// [onMore]; escribir lugares, en la barra de arriba.
+class PlannerStrip extends StatelessWidget {
+  const PlannerStrip({
+    super.key,
+    required this.planner,
+    required this.placingPoi,
+    required this.onCancelPoi,
+    required this.onSave,
+    required this.onMore,
+  });
+  final RoutePlanner planner;
+  final PoiKind? placingPoi;
+  final VoidCallback onCancelPoi;
+  final VoidCallback onSave;
+  final VoidCallback onMore;
+
+  @override
+  Widget build(BuildContext context) {
+    final p = planner;
+    final route = p.preview;
+    final muted = Theme.of(context).colorScheme.onSurfaceVariant;
+    final Widget top;
+    if (placingPoi != null) {
+      top = Row(
+        children: [
+          Icon(poiIcon(placingPoi!), color: poiColor(placingPoi!), size: 20),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              'Toca el mapa donde está: ${placingPoi!.label}.',
+              style: const TextStyle(fontWeight: FontWeight.w600),
+            ),
+          ),
+          TextButton(onPressed: onCancelPoi, child: const Text('Cancelar')),
+        ],
+      );
+    } else {
+      // Las cifras (o qué hacer) y, debajo, el aviso si lo hay: el aviso no tapa los km
+      top = InkWell(
+        onTap: route == null ? null : onMore,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (route == null)
+              Text(
+                p.waypoints.isEmpty
+                    ? 'Toca el mapa o escribe arriba dónde sales.'
+                    : 'Toca el siguiente punto o escríbelo arriba.',
+                style: TextStyle(color: muted, fontSize: 13),
+              )
+            else
+              Row(
+                children: [
+                  _Num(fmtKm(route.totalMeters), 'km'),
+                  _Num('+${fmtInt(route.gain)}', 'm'),
+                  _Num(fmtDuration(route.estimatedTime), ''),
+                  const Spacer(),
+                  Text(
+                    'Ver perfil',
+                    style: TextStyle(color: muted, fontSize: 12),
+                  ),
+                ],
+              ),
+            if (p.notice != null)
+              Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.alt_route_rounded,
+                      color: Andes.gold,
+                      size: 16,
+                    ),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        p.notice!,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(color: Andes.gold, fontSize: 12),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+          ],
+        ),
+      );
+    }
+    return Glass(
+      opacity: .94,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(14, 10, 10, 10),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            top,
+            SizedBox(
+              height: 6,
+              child: p.busy
+                  ? const Padding(
+                      padding: EdgeInsets.only(top: 3),
+                      child: LinearProgressIndicator(minHeight: 3),
+                    )
+                  : null,
+            ),
+            Row(
+              children: [
+                _StripAction(
+                  icon: Icons.undo_rounded,
+                  tooltip: 'Deshacer',
+                  onPressed: p.canUndo && !p.busy ? p.undo : null,
+                ),
+                const SizedBox(width: 6),
+                _StripAction(
+                  icon: Icons.expand_less_rounded,
+                  tooltip: 'Perfil, puntos de interés y más',
+                  onPressed: onMore,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: GlowButton(
+                    label: 'Guardar ruta',
+                    icon: Icons.check_rounded,
+                    onPressed: p.isEmpty || p.busy ? null : onSave,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _Num extends StatelessWidget {
+  const _Num(this.value, this.unit);
+  final String value;
+  final String unit;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.only(right: 14),
+    child: Text.rich(
+      TextSpan(
+        children: [
+          TextSpan(
+            text: value,
+            style: dataStyle(context, size: 18, weight: FontWeight.w800),
+          ),
+          if (unit.isNotEmpty)
+            TextSpan(
+              text: ' $unit',
+              style: dataStyle(
+                context,
+                size: 11,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ),
+        ],
+      ),
+    ),
+  );
+}
+
+class _StripAction extends StatelessWidget {
+  const _StripAction({
+    required this.icon,
+    required this.tooltip,
+    required this.onPressed,
+  });
+  final IconData icon;
+  final String tooltip;
+  final VoidCallback? onPressed;
+
+  @override
+  Widget build(BuildContext context) => Tooltip(
+    message: tooltip,
+    child: Material(
+      color: Andes.surfaceHighest,
+      borderRadius: BorderRadius.circular(14),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onPressed,
+        child: SizedBox(
+          width: 52,
+          height: 52,
+          child: Icon(
+            icon,
+            size: 22,
+            color: onPressed == null
+                ? Andes.onSurface.withValues(alpha: .35)
+                : Andes.onSurface,
+          ),
+        ),
       ),
     ),
   );

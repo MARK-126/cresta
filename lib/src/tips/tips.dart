@@ -25,13 +25,13 @@ abstract final class Tips {
     ),
     (
       'layers',
-      'En el panel de abajo: satélite o topográfico, 2D o 3D, pendiente del '
-          'terreno y zonas planas.',
+      'Capas (abajo a la izquierda): satélite o topográfico, relieve, '
+          'pendiente del terreno, zonas planas y tus mapas descargados.',
     ),
     (
       'record',
-      'El botón rojo graba tu recorrido. Puedes bloquear la pantalla: sigue '
-          'grabando.',
+      'El botón rojo de abajo graba tu recorrido; "Ruta" traza una. Puedes '
+          'bloquear la pantalla: sigue grabando.',
     ),
   ]);
 
@@ -43,8 +43,8 @@ abstract final class Tips {
     ),
     (
       'search',
-      'O escribe el lugar en el campo del panel: salida, paradas y destino, en '
-          'orden. Busca en tus mapas descargados y, con conexión, en todo el mundo.',
+      'O escríbelo en el buscador de arriba: salida, paradas y destino, en '
+          'orden. Busca en tus mapas y, con conexión, en todo el mundo.',
     ),
     (
       'terrain',
@@ -76,8 +76,8 @@ abstract final class Tips {
     ),
     (
       'back',
-      'Si te pierdes, "Volver al inicio por mi traza" te guía de regreso por '
-          'donde viniste.',
+      'Arriba ves altitud, velocidad y distancia. Toca la tira de abajo para '
+          'ver todo y "Volver al inicio por mi traza".',
     ),
   ]);
 }

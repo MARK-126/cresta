@@ -303,8 +303,6 @@
         // Traza del video: se pinta con un degradado según el avance (sin recalcular la geometría)
         { id: 'video-casing', type: 'line', source: 'video-track', layout: { visibility: 'none', 'line-join': 'round', 'line-cap': 'round' }, paint: { 'line-width': 10, 'line-gradient': ['step', ['line-progress'], 'rgba(0,0,0,0)', 1, 'rgba(0,0,0,0)'] } },
         { id: 'video-line', type: 'line', source: 'video-track', layout: { visibility: 'none', 'line-join': 'round', 'line-cap': 'round' }, paint: { 'line-width': 6, 'line-gradient': ['step', ['line-progress'], 'rgba(0,0,0,0)', 1, 'rgba(0,0,0,0)'] } },
-        // Fotos del recorrido: un ícono de cámara donde se tomó cada una (tocarla la abre)
-        { id: 'photos', type: 'symbol', source: 'photos', layout: { 'icon-image': 'poi-photo', 'icon-size': 1.15, 'icon-allow-overlap': true } },
         // Inicio y fin del recorrido (el fin, solo al verlo terminado: grabando, el fin eres tú)
         { id: 'track-ends', type: 'circle', source: 'track-ends', paint: {
           'circle-radius': ['match', ['get', 'role'], 'head', 8, 7], 'circle-color': ['match', ['get', 'role'], 'start', '#f0bf63', '#ffa089'],
@@ -345,6 +343,9 @@
           'text-field': ['get', 'name'], 'text-font': font('bold'),
           'text-size': ['match', ['get', 'class'], 'city', 15, 'town', 13, 'village', 12, 11] },
           paint: { 'text-color': C.label, 'text-halo-color': C.halo, 'text-halo-width': 1.6 } },
+        // Fotos del recorrido: un ícono de cámara donde se tomó cada una (tocarla la abre);
+        // encima de la traza y de sus marcas de inicio y fin
+        { id: 'photos', type: 'symbol', source: 'photos', layout: { 'icon-image': 'poi-photo', 'icon-size': 1.15, 'icon-allow-overlap': true } },
         // Lugar encontrado con la búsqueda: encima de todo, con su nombre siempre visible
         { id: 'found-ring', type: 'circle', source: 'found', paint: {
           'circle-radius': 15, 'circle-color': 'rgba(240,191,99,0.25)', 'circle-stroke-color': '#f0bf63', 'circle-stroke-width': 2 } },

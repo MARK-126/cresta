@@ -6,7 +6,6 @@ Teléfono de pruebas: Samsung Galaxy S23 Ultra (SM-S918B), Android 16, salvo que
 
 ## Sin probar todavía (revisar antes de dar por hecho)
 
-- **Plan de salida y fotos en el teléfono** (13 nov 2026): ver la entrada del 13 nov.
 
 - **Buscar sin señal en el teléfono** (12 nov 2026): botón, hoja, tiempo de la primera vez con las 3 zonas, vuelo,
   marca y tarjeta.
@@ -27,6 +26,22 @@ Teléfono de pruebas: Samsung Galaxy S23 Ultra (SM-S918B), Android 16, salvo que
 - Descargas de mapas en Android con conexión móvil (opción "solo Wi-Fi").
 
 ## 2026-11-13
+
+**Mapa limpio · `feat/mapa-limpio`** (S23)
+- Falla al quitar el panel: la pila se encogió al alto de la barra de arriba (mapa en una franja, la barra de abajo
+  arriba) → `SizedBox.expand`. **OK**.
+- Explorar: mapa a pantalla completa, barra Capas · Grabar · Ruta. Capas: vista, relieve, capas; satélite aplicado.
+  Expedición "Salto": tarjeta "Ruta de Salto · 3.3 km · +883 m · ≈ 3 h 02" y "Editar ruta"; detalle con perfil,
+  "Recorrer en 3D" y "Ver ruta completa". Trazar (mapa libre, sin guardar): buscador arriba, tira con cifras; falla: el
+  aviso de campo traviesa tapaba los km → cifras y aviso en dos líneas. Grabar (ubicación encendida para la prueba y
+  apagada al final): barra de datos arriba, tira abajo; "Más" abre el panel completo. **OK**.
+- Foto grabando (cámara de Samsung, Aceptar): guardada con lat/lng y 738 m; "Fotos (1)" en el detalle; pantalla
+  completa con fecha, hora y altitud. Recorrido borrado → índice vacío y archivo borrado. El ícono 📷 quedaba bajo la
+  marca de inicio y tu posición → la capa de fotos va encima de la traza. **OK**.
+- Plan de salida con "Salto" (sin enviar): horarios sugeridos y mensaje completo; sin contactos el SMS se desactiva.
+  Expediciones sin cambios. **OK**. Nota: el perfil del usuario tiene un celular en "Número de emergencias".
+- Velocidad en la barra: quieto bajo techo marcaba 4.0 km/h (GPS por Wi-Fi, ±16 m) → solo con precisión ≤ 15 m.
+- 193 pruebas automáticas en verde.
 
 **Plan de salida y fotos · `feat/plan-y-fotos`** (solo pruebas automáticas: el teléfono se desconectó)
 - 192 en verde: horarios sugeridos (con fecha, sin fecha, sin ruta), el mensaje completo (ruta, enlace, hora límite,
