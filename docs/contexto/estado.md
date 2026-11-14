@@ -327,6 +327,13 @@ Actualizado: 14 nov 2026 · opciones del video del recorrido, mapa Noche y edifi
   `render_height`), apagada de inicio, en General.
 
 ### Interfaz
+- **Noche de inicio** (`feat/noche-por-defecto`, 14 nov 2026): `MapBaseStore` (`map/map_prefs.dart`, `map.json`,
+  `services.mapBase`) recuerda la base; sin archivo, Noche. `MapBase` en orden Noche · Claro (antes "Topográfico") ·
+  Satélite · Relieve. El selector de zonas ofrece Noche · Claro · Satélite y comparte la preferencia (Relieve ahí
+  abre en Noche). El video también empieza en Noche.
+- `Glass` sobre mapa oscuro (`feat/contorno-mapa-oscuro`, 14 nov 2026): con `DarkMapScope(dark:)` (en `MapScreen`
+  con Noche o Satélite; en `AreaPickerScreen` con Satélite) usa `surfaceHighest` al ≥ 92 % y un aro de 1.5 px
+  `outline` al 55 %. Barra de abajo, título, botones laterales, tiras de grabar y trazar.
 - Botones secundarios (`OutlinedButton`, 23 en la app): tonales `surfaceHighest` sin borde, desde el tema.
 - Pestaña Mapas: "Descargar una zona" abre `AreaPickerScreen()` sin expedición (zona suelta, centrada en la última
   descargada); la lista escucha también a `maps`.
@@ -356,5 +363,5 @@ lib/src/ui/                    pantallas; theme.dart = paleta y componentes del 
 assets/web/                    map.js, MapLibre, maplibre-contour, tipografías del mapa
 assets/fonts/inter/            tipografía de la app · assets/images/ textura del splash
 tool/                          scripts de datos (Python) e ícono; tool/dev/ herramientas de prueba
-test/                          197 pruebas
+test/                          201 pruebas
 ```

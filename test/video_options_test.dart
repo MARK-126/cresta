@@ -6,7 +6,7 @@ import 'package:cresta/src/storage/json_store.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  test('de inicio: calles y edificios sí; senderos y curvas no', () {
+  test('de inicio: Noche, calles y edificios sí; senderos y curvas no', () {
     const o = VideoOptions();
     expect(o.streets, isTrue);
     expect(o.buildings, isTrue);
@@ -14,7 +14,7 @@ void main() {
     expect(o.contours, isFalse);
     expect(o.caption, isTrue);
     expect(o.fast, isFalse);
-    expect(o.base, MapBase.topo);
+    expect(o.base, MapBase.night);
   });
 
   test('ida y vuelta a JSON', () {
@@ -34,7 +34,7 @@ void main() {
 
   test('JSON viejo o dañado: valores de inicio', () {
     final o = VideoOptions.fromJson({'base': 'marte', 'fast': 'sí'});
-    expect(o.base, MapBase.topo);
+    expect(o.base, MapBase.night);
     expect(o.fast, isFalse);
     expect(o.streets, isTrue);
   });

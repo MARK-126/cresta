@@ -161,7 +161,7 @@ class _MapScreenState extends State<MapScreen> {
 
   AppMode _mode = AppMode.mountain;
   late Map<String, bool> _layers = layerPreset(_mode);
-  MapBase _base = MapBase.topo;
+  MapBase _base = MapBase.night;
   bool _is3d = true;
   double _exaggeration = 1.4;
   bool _flying = false;
@@ -188,6 +188,7 @@ class _MapScreenState extends State<MapScreen> {
     if (_started) return;
     _started = true;
     _services = AppScope.of(context);
+    _base = _services.mapBase.value;
     _routeId = widget.routeId;
     _expedition = _free
         ? Expedition(
@@ -1139,6 +1140,7 @@ class _MapScreenState extends State<MapScreen> {
                 setState(() => _base = b);
                 setSheet(() {});
                 _bridge.setBase(b);
+                _services.mapBase.save(b);
               },
               on3d: (v) {
                 _set3d(v);
@@ -1493,236 +1495,241 @@ class _MapScreenState extends State<MapScreen> {
             },
             child: Scaffold(
               // A todo el alto: sin el panel fijo, nada estira la pila
-              body: SizedBox.expand(
-                child: Stack(
-                  children: [
-                    Positioned.fill(
-                      child: WebViewWidget(controller: _bridge.controller),
-                    ),
-                    SafeArea(
-                      child: Padding(
-                        padding: const EdgeInsets.fromLTRB(8, 8, 12, 0),
-                        child: Row(
-                          children: [
-                            _MapButton(
-                              icon: Icons.arrow_back_rounded,
-                              tooltip: 'Regresar',
-                              onPressed: () => Navigator.maybePop(context),
-                            ),
-                            const SizedBox(width: 8),
-                            if (_civil != null)
-                              Expanded(
-                                child: Glass(
-                                  child: SegmentedButton<AppMode>(
-                                    segments: const [
-                                      ButtonSegment(
-                                        value: AppMode.mountain,
-                                        label: Text('Montaña'),
-                                        icon: Icon(Icons.terrain_rounded),
-                                      ),
-                                      ButtonSegment(
-                                        value: AppMode.civil,
-                                        label: Text('Prot. civil'),
-                                        icon: Icon(Icons.shield_outlined),
-                                      ),
-                                    ],
-                                    selected: {_mode},
-                                    showSelectedIcon: false,
-                                    onSelectionChanged: (s) =>
-                                        _setMode(s.first),
-                                  ),
-                                ),
-                              )
-                            else if (_planner != null)
-                              // Trazando: arriba se escribe la salida, las paradas y el destino
-                              Expanded(
-                                child: _SearchPill(
-                                  text: _planner!.waypoints.isEmpty
-                                      ? '¿Desde dónde sales?'
-                                      : 'Agregar parada o destino',
-                                  onTap: _planner!.busy
-                                      ? null
-                                      : _addPointByName,
-                                ),
-                              )
-                            else if (_recordingHere)
-                              Expanded(
-                                child: RecordingBar(
-                                  recorder: _recorder,
-                                  onTap: _openRecording,
-                                ),
-                              )
-                            else
-                              Expanded(
-                                child: Align(
-                                  alignment: Alignment.centerLeft,
-                                  heightFactor: 1,
+              body: DarkMapScope(
+                dark: _base == MapBase.night || _base == MapBase.sat,
+                child: SizedBox.expand(
+                  child: Stack(
+                    children: [
+                      Positioned.fill(
+                        child: WebViewWidget(controller: _bridge.controller),
+                      ),
+                      SafeArea(
+                        child: Padding(
+                          padding: const EdgeInsets.fromLTRB(8, 8, 12, 0),
+                          child: Row(
+                            children: [
+                              _MapButton(
+                                icon: Icons.arrow_back_rounded,
+                                tooltip: 'Regresar',
+                                onPressed: () => Navigator.maybePop(context),
+                              ),
+                              const SizedBox(width: 8),
+                              if (_civil != null)
+                                Expanded(
                                   child: Glass(
-                                    child: Padding(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 14,
-                                        vertical: 8,
-                                      ),
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          Text(
-                                            _planner != null
-                                                ? 'PLANEANDO RUTA'
-                                                : _recordingHere
-                                                ? 'GRABANDO'
-                                                : _comparing
-                                                ? 'COMPARAR'
-                                                : _free
-                                                ? 'EXPLORAR'
-                                                : 'EXPEDICIÓN',
-                                            style: labelStyle(
-                                              context,
-                                              color: _recordingHere
-                                                  ? recordColor
-                                                  : Andes.gold,
-                                            ).copyWith(fontSize: 9.5),
-                                          ),
-                                          Text(
-                                            _comparing
-                                                ? 'Rutas'
-                                                : _free
-                                                ? (_savedRoute?.name ??
-                                                      'Mapa libre')
-                                                : _expedition.name,
-                                            overflow: TextOverflow.ellipsis,
-                                            style: const TextStyle(
-                                              fontWeight: FontWeight.w800,
-                                              fontSize: 15,
+                                    child: SegmentedButton<AppMode>(
+                                      segments: const [
+                                        ButtonSegment(
+                                          value: AppMode.mountain,
+                                          label: Text('Montaña'),
+                                          icon: Icon(Icons.terrain_rounded),
+                                        ),
+                                        ButtonSegment(
+                                          value: AppMode.civil,
+                                          label: Text('Prot. civil'),
+                                          icon: Icon(Icons.shield_outlined),
+                                        ),
+                                      ],
+                                      selected: {_mode},
+                                      showSelectedIcon: false,
+                                      onSelectionChanged: (s) =>
+                                          _setMode(s.first),
+                                    ),
+                                  ),
+                                )
+                              else if (_planner != null)
+                                // Trazando: arriba se escribe la salida, las paradas y el destino
+                                Expanded(
+                                  child: _SearchPill(
+                                    text: _planner!.waypoints.isEmpty
+                                        ? '¿Desde dónde sales?'
+                                        : 'Agregar parada o destino',
+                                    onTap: _planner!.busy
+                                        ? null
+                                        : _addPointByName,
+                                  ),
+                                )
+                              else if (_recordingHere)
+                                Expanded(
+                                  child: RecordingBar(
+                                    recorder: _recorder,
+                                    onTap: _openRecording,
+                                  ),
+                                )
+                              else
+                                Expanded(
+                                  child: Align(
+                                    alignment: Alignment.centerLeft,
+                                    heightFactor: 1,
+                                    child: Glass(
+                                      child: Padding(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 14,
+                                          vertical: 8,
+                                        ),
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Text(
+                                              _planner != null
+                                                  ? 'PLANEANDO RUTA'
+                                                  : _recordingHere
+                                                  ? 'GRABANDO'
+                                                  : _comparing
+                                                  ? 'COMPARAR'
+                                                  : _free
+                                                  ? 'EXPLORAR'
+                                                  : 'EXPEDICIÓN',
+                                              style: labelStyle(
+                                                context,
+                                                color: _recordingHere
+                                                    ? recordColor
+                                                    : Andes.gold,
+                                              ).copyWith(fontSize: 9.5),
                                             ),
-                                          ),
-                                        ],
+                                            Text(
+                                              _comparing
+                                                  ? 'Rutas'
+                                                  : _free
+                                                  ? (_savedRoute?.name ??
+                                                        'Mapa libre')
+                                                  : _expedition.name,
+                                              overflow: TextOverflow.ellipsis,
+                                              style: const TextStyle(
+                                                fontWeight: FontWeight.w800,
+                                                fontSize: 15,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
                                       ),
                                     ),
                                   ),
                                 ),
-                              ),
-                            if (_planner == null) ...[
-                              const SizedBox(width: 8),
-                              _MapButton(
-                                icon: Icons.search_rounded,
-                                tooltip: 'Buscar en tus mapas',
-                                onPressed: _searchPlaces,
-                              ),
-                            ],
-                          ],
-                        ),
-                      ),
-                    ),
-                    if (_video == null)
-                      Positioned(
-                        right: 12,
-                        top: MediaQuery.paddingOf(context).top + 70,
-                        child: Column(
-                          children: [
-                            // Brújula: solo con el mapa girado; la aguja apunta al norte y al
-                            // tocarla el mapa vuelve a quedar con el norte arriba
-                            if (_bearing.abs() > 2) ...[
-                              _MapButton(
-                                icon: Icons.navigation_rounded,
-                                iconAngle: -_bearing * math.pi / 180,
-                                color: Andes.terracottaContainer,
-                                tooltip: 'Norte arriba',
-                                onPressed: _bridge.resetNorth,
-                              ),
-                              const SizedBox(height: 8),
-                            ],
-                            _MapButton(
-                              icon: Icons.sos_rounded,
-                              color: Andes.terracottaContainer,
-                              tooltip:
-                                  'SOS: tu ubicación y llamar a emergencias',
-                              onPressed: () => Navigator.push(
-                                context,
-                                MaterialPageRoute<void>(
-                                  builder: (_) => SosScreen(
-                                    expeditionName: _free
-                                        ? null
-                                        : _expedition.name,
-                                  ),
+                              if (_planner == null) ...[
+                                const SizedBox(width: 8),
+                                _MapButton(
+                                  icon: Icons.search_rounded,
+                                  tooltip: 'Buscar en tus mapas',
+                                  onPressed: _searchPlaces,
                                 ),
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            _MapButton(
-                              icon: _following
-                                  ? Icons.my_location_rounded
-                                  : Icons.location_searching_rounded,
-                              tooltip: _following
-                                  ? 'Siguiendo tu posición'
-                                  : 'Seguir mi posición',
-                              onPressed: _locateMe,
-                            ),
-                            const SizedBox(height: 8),
-                            _MapButton(
-                              label: _is3d ? '2D' : '3D',
-                              tooltip: _is3d ? 'Cambiar a 2D' : 'Cambiar a 3D',
-                              onPressed: () => _set3d(!_is3d),
-                            ),
-                          ],
-                        ),
-                      ),
-                    if (_found != null)
-                      Positioned(
-                        left: 8,
-                        right: 76,
-                        top: MediaQuery.paddingOf(context).top + 70,
-                        child: Align(
-                          alignment: Alignment.centerLeft,
-                          heightFactor: 1,
-                          child: _FoundCard(
-                            place: _found!,
-                            from: _myPos,
-                            // Con una ruta abierta o trazando, el lugar se suma al final
-                            routeLabel:
-                                _planner != null ||
-                                    _route != null ||
-                                    _savedRoute != null
-                                ? 'Agregar a la ruta'
-                                : 'Ruta hasta aquí',
-                            onRoute:
-                                _recordingHere ||
-                                    _comparing ||
-                                    widget.video ||
-                                    civil
-                                ? null
-                                : _routeToFound,
-                            onTap: () => _bridge.flyTo(
-                              _found!.lng,
-                              _found!.lat,
-                              zoom: 14,
-                              pitch: null,
-                            ),
-                            onClose: _clearFound,
+                              ],
+                            ],
                           ),
                         ),
                       ),
-                    // Abajo solo lo que hace falta: la barra flotante al explorar, una
-                    // tarjeta de vistazo si hay ruta, o la tira de control al grabar o trazar
-                    if (!widget.video)
-                      Positioned(
-                        left: 12,
-                        right: 12,
-                        bottom: 12 + MediaQuery.paddingOf(context).bottom,
-                        child: KeyedSubtree(
-                          key: _bottomKey,
-                          child: _bottomChrome(civil),
+                      if (_video == null)
+                        Positioned(
+                          right: 12,
+                          top: MediaQuery.paddingOf(context).top + 70,
+                          child: Column(
+                            children: [
+                              // Brújula: solo con el mapa girado; la aguja apunta al norte y al
+                              // tocarla el mapa vuelve a quedar con el norte arriba
+                              if (_bearing.abs() > 2) ...[
+                                _MapButton(
+                                  icon: Icons.navigation_rounded,
+                                  iconAngle: -_bearing * math.pi / 180,
+                                  color: Andes.terracottaContainer,
+                                  tooltip: 'Norte arriba',
+                                  onPressed: _bridge.resetNorth,
+                                ),
+                                const SizedBox(height: 8),
+                              ],
+                              _MapButton(
+                                icon: Icons.sos_rounded,
+                                color: Andes.terracottaContainer,
+                                tooltip:
+                                    'SOS: tu ubicación y llamar a emergencias',
+                                onPressed: () => Navigator.push(
+                                  context,
+                                  MaterialPageRoute<void>(
+                                    builder: (_) => SosScreen(
+                                      expeditionName: _free
+                                          ? null
+                                          : _expedition.name,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              _MapButton(
+                                icon: _following
+                                    ? Icons.my_location_rounded
+                                    : Icons.location_searching_rounded,
+                                tooltip: _following
+                                    ? 'Siguiendo tu posición'
+                                    : 'Seguir mi posición',
+                                onPressed: _locateMe,
+                              ),
+                              const SizedBox(height: 8),
+                              _MapButton(
+                                label: _is3d ? '2D' : '3D',
+                                tooltip: _is3d
+                                    ? 'Cambiar a 2D'
+                                    : 'Cambiar a 3D',
+                                onPressed: () => _set3d(!_is3d),
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
-                    if (_video != null)
-                      _VideoOverlay(
-                        job: _video!,
-                        onShare: _shareVideo,
-                        onClose: () => setState(() => _video = null),
-                      ),
-                  ],
+                      if (_found != null)
+                        Positioned(
+                          left: 8,
+                          right: 76,
+                          top: MediaQuery.paddingOf(context).top + 70,
+                          child: Align(
+                            alignment: Alignment.centerLeft,
+                            heightFactor: 1,
+                            child: _FoundCard(
+                              place: _found!,
+                              from: _myPos,
+                              // Con una ruta abierta o trazando, el lugar se suma al final
+                              routeLabel:
+                                  _planner != null ||
+                                      _route != null ||
+                                      _savedRoute != null
+                                  ? 'Agregar a la ruta'
+                                  : 'Ruta hasta aquí',
+                              onRoute:
+                                  _recordingHere ||
+                                      _comparing ||
+                                      widget.video ||
+                                      civil
+                                  ? null
+                                  : _routeToFound,
+                              onTap: () => _bridge.flyTo(
+                                _found!.lng,
+                                _found!.lat,
+                                zoom: 14,
+                                pitch: null,
+                              ),
+                              onClose: _clearFound,
+                            ),
+                          ),
+                        ),
+                      // Abajo solo lo que hace falta: la barra flotante al explorar, una
+                      // tarjeta de vistazo si hay ruta, o la tira de control al grabar o trazar
+                      if (!widget.video)
+                        Positioned(
+                          left: 12,
+                          right: 12,
+                          bottom: 12 + MediaQuery.paddingOf(context).bottom,
+                          child: KeyedSubtree(
+                            key: _bottomKey,
+                            child: _bottomChrome(civil),
+                          ),
+                        ),
+                      if (_video != null)
+                        _VideoOverlay(
+                          job: _video!,
+                          onShare: _shareVideo,
+                          onClose: () => setState(() => _video = null),
+                        ),
+                    ],
+                  ),
                 ),
               ),
             ),

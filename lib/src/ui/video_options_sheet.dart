@@ -26,14 +26,6 @@ class _VideoOptionsSheet extends StatefulWidget {
 class _VideoOptionsSheetState extends State<_VideoOptionsSheet> {
   late VideoOptions _o = widget.initial;
 
-  // Nombres cortos: cuatro opciones caben en una fila del teléfono
-  static const _baseLabels = {
-    MapBase.topo: 'Mapa',
-    MapBase.sat: 'Satélite',
-    MapBase.relief: 'Relieve',
-    MapBase.night: 'Noche',
-  };
-
   Widget _switch(
     String title,
     String? subtitle,
@@ -75,7 +67,7 @@ class _VideoOptionsSheetState extends State<_VideoOptionsSheet> {
             SegmentedButton<MapBase>(
               segments: [
                 for (final b in MapBase.values)
-                  ButtonSegment(value: b, label: Text(_baseLabels[b]!)),
+                  ButtonSegment(value: b, label: Text(b.label)),
               ],
               selected: {o.base},
               showSelectedIcon: false,

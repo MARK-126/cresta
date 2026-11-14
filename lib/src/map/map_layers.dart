@@ -3,12 +3,13 @@ import 'package:flutter/material.dart';
 enum AppMode { mountain, civil }
 
 enum MapBase {
-  topo('Topográfico'),
-  sat('Satélite'),
-  relief('Relieve'),
+  /// El topográfico con colores oscuros (mismos datos; nada que descargar). El de inicio.
+  night('Noche'),
 
-  /// El topográfico con colores oscuros (mismos datos; nada que descargar).
-  night('Noche');
+  /// El topográfico claro.
+  topo('Claro'),
+  sat('Satélite'),
+  relief('Relieve');
 
   const MapBase(this.label);
   final String label;

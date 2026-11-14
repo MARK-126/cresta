@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
@@ -543,14 +544,49 @@ class Glass extends StatelessWidget {
   final double opacity;
 
   @override
-  Widget build(BuildContext context) => ClipRRect(
-    borderRadius: BorderRadius.circular(radius),
-    child: BackdropFilter(
-      filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-      child: ColoredBox(
-        color: Andes.surfaceContainer.withValues(alpha: opacity),
-        child: child,
+  Widget build(BuildContext context) {
+    // Sobre un mapa oscuro el vidrio se confundía con el mapa: tono más claro y opaco y un aro
+    // gris discreto (excepción a "sin bordes", solo para lo que flota sobre un mapa oscuro)
+    final dark = DarkMapScope.of(context);
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(radius),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            color: dark
+                ? Andes.surfaceHighest.withValues(alpha: math.max(opacity, .92))
+                : Andes.surfaceContainer.withValues(alpha: opacity),
+          ),
+          position: DecorationPosition.background,
+          child: dark
+              ? DecoratedBox(
+                  position: DecorationPosition.foreground,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(radius),
+                    border: Border.all(
+                      color: Andes.outline.withValues(alpha: .55),
+                      width: 1.5,
+                    ),
+                  ),
+                  child: child,
+                )
+              : child,
+        ),
       ),
-    ),
-  );
+    );
+  }
+}
+
+/// Avisa a lo que flota sobre el mapa ([Glass]) que el mapa de abajo es oscuro (Noche o
+/// Satélite) y necesita más contraste.
+class DarkMapScope extends InheritedWidget {
+  const DarkMapScope({super.key, required this.dark, required super.child});
+  final bool dark;
+
+  static bool of(BuildContext context) =>
+      context.dependOnInheritedWidgetOfExactType<DarkMapScope>()?.dark ?? false;
+
+  @override
+  bool updateShouldNotify(DarkMapScope old) => old.dark != dark;
 }

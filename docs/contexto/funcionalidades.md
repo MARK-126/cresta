@@ -65,7 +65,9 @@ Detalles técnicos en `estado.md`; qué se probó en `pruebas.md`.
   galería (álbum Cresta) y se comparte. Antes se eligen fondo (Mapa, Satélite, Relieve, Noche), velocidad y capas
   (nombres de las calles cercanas, edificios 3D, senderos, curvas de nivel, título); mientras se genera se ve igual
   que el video.
-- Mapa Noche (oscuro, con los colores de Cresta) y edificios en 3D.
+- Mapa Noche (oscuro, con los colores de Cresta), el de inicio; el claro se elige en Capas y se recuerda. Edificios
+  en 3D. Sobre Noche y Satélite, los botones y la barra
+  llevan un contorno para no confundirse con el mapa.
 - Indicaciones la primera vez que se abre el mapa, se traza una ruta o se graba (se pueden volver a ver desde el
   perfil).
 - Trazar rutas escribiendo la salida, las paradas y el destino (tu ubicación, tus mapas o, con conexión, todo el

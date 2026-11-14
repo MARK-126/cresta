@@ -4,7 +4,7 @@ import 'map_layers.dart';
 /// Qué se ve en el video del recorrido. Se recuerda la última elección.
 class VideoOptions {
   const VideoOptions({
-    this.base = MapBase.topo,
+    this.base = MapBase.night,
     this.streets = true,
     this.trails = false,
     this.contours = false,

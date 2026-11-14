@@ -10,6 +10,7 @@ import 'package:wakelock_plus/wakelock_plus.dart';
 import 'expeditions/expedition_store.dart';
 import 'gear/gear.dart';
 import 'location/location_service.dart';
+import 'map/map_prefs.dart';
 import 'map/video_options.dart';
 import 'offline/map_sources.dart';
 import 'photos/photo_store.dart';
@@ -68,6 +69,7 @@ class AppServices {
     this.tips,
     this.photos,
     this.video,
+    this.mapBase,
   );
 
   final TileServer server;
@@ -115,6 +117,9 @@ class AppServices {
 
   /// Opciones del último video del recorrido.
   final VideoOptionsStore video;
+
+  /// Mapa base elegido (Noche de inicio).
+  final MapBaseStore mapBase;
 
   static Future<AppServices> start() async {
     final support = await getApplicationSupportDirectory();
@@ -186,6 +191,8 @@ class AppServices {
       JsonStore(File('${support.path}/video.json')),
     );
     await video.load();
+    final mapBase = MapBaseStore(JsonStore(File('${support.path}/map.json')));
+    await mapBase.load();
     final weather = WeatherService(
       client: client,
       file: JsonStore(File('${support.path}/weather.json')),
@@ -231,6 +238,7 @@ class AppServices {
       tips,
       photos,
       video,
+      mapBase,
     );
   }
 }
