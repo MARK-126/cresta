@@ -178,7 +178,9 @@
 - Inter incluida en la app (OFL). Mapa base claro (topográfico) a propósito, por legibilidad del relieve.
 - Solo se adaptan pantallas de Stitch con equivalente real en Cresta: nada de logística, metas ni rankings.
 - Splash: Android 12+ muestra **siempre** su pantalla con el ícono (no se puede quitar; el usuario eligió
-  dejarla). Su montaña coincide en tamaño y lugar con la del splash de Flutter. Mínimo 2 s, "BY FRUTAL".
+  dejarla). Su montaña coincide en tamaño y lugar con la del splash de Flutter. Mínimo 2 s, "BY FRUTAL". Desde el
+  14 nov 2026 la montaña va 64 dp arriba del centro en los dos (`SplashScreen.lift`, `translateY` 18 en
+  `splash_icon.xml`): centrada, con la marca debajo, el conjunto se veía caído (observación del usuario).
 - Ícono generado con `tool/make_icon.py`; adaptativo y monocromático en Android 8+/13.
 
 ## Errores resueltos (síntoma → causa → solución)

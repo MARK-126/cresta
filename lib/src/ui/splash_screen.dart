@@ -5,14 +5,18 @@ import 'theme.dart';
 /// Arranque cinematográfico (diseño "Cinematic Splash" de Stitch): placas oscuras con un
 /// resplandor cian arriba, la placa de vidrio con la montaña y la marca.
 ///
-/// La montaña queda en el centro exacto de la pantalla y del mismo tamaño que la del
-/// splash de Android 12+ (`drawable/splash_icon.xml`): así el paso de uno a otro se ve
-/// como una sola pantalla que "se enciende".
+/// La montaña queda [lift] arriba del centro de la pantalla y del mismo tamaño que la del
+/// splash de Android 12+ (`drawable/splash_icon.xml`, subida lo mismo): así el paso de uno a
+/// otro se ve como una sola pantalla que "se enciende".
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
 
   static const tile = 136.0;
   static const icon = 64.0;
+
+  /// Cuánto sube la montaña sobre el centro: centrada, con la marca debajo, el conjunto se
+  /// veía caído hacia abajo (14 nov 2026). Igual en `splash_icon.xml` (24 unidades = 64 dp).
+  static const lift = 64.0;
 
   @override
   State<SplashScreen> createState() => _SplashScreenState();
@@ -56,12 +60,17 @@ class _SplashScreenState extends State<SplashScreen>
       resizeToAvoidBottomInset: false,
       body: LayoutBuilder(
         builder: (context, box) {
-          final center = box.maxHeight / 2;
+          final center = box.maxHeight / 2 - SplashScreen.lift;
           return Stack(
             fit: StackFit.expand,
             children: [
               FadeTransition(opacity: glow, child: const _Backdrop()),
-              Center(child: _LogoTile(glow: glow)),
+              Positioned(
+                left: 0,
+                right: 0,
+                top: center - SplashScreen.tile / 2,
+                child: Center(child: _LogoTile(glow: glow)),
+              ),
               Positioned(
                 left: 24,
                 right: 24,
@@ -137,7 +146,8 @@ class _Backdrop extends StatelessWidget {
       DecoratedBox(
         decoration: BoxDecoration(
           gradient: RadialGradient(
-            center: Alignment(0, -.5),
+            // Detrás de la placa de la montaña (que está 64 dp arriba del centro)
+            center: Alignment(0, -.35),
             radius: .95,
             colors: [
               Color(0xE600BCD4),
