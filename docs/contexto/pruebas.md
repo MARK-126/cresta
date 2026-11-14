@@ -27,6 +27,10 @@ Teléfono de pruebas: Samsung Galaxy S23 Ultra (SM-S918B), Android 16, salvo que
 
 ## 2026-11-14
 
+**Degradados y aros teal · `fix/degradado-barra`** (S23) — barra del mapa con degradado lineal → el usuario lo quería
+circular con el centro claro → `RadialGradient`, luego más oscuro. Aros teal en regresar, título, lupa, SOS, centrar y
+3D. Inicio: tarjetas de expedición oscuro → teal, "EJEMPLO" legible. **OK**.
+
 **Ajustes de mapa e imagen · `feat/ajustes-mapa-imagen`** (S23) — mapa libre en 2D (el botón ofrece "3D"); barra
 de acciones con degradado teal; "Ver en el mapa" del recorrido 3 con la traza teal; imagen con mapa sin senderos, con
 las capas elegibles y tamaños 9:16 · 1:1 · 4:5. **OK**.

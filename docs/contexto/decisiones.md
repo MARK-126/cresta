@@ -173,6 +173,9 @@
 
 ## Diseño (UI)
 
+- **Aros teal y degradados** (14 nov 2026, pedido del usuario): excepción a "sin bordes" para lo que flota sobre el
+  mapa (aro teal en botones y título) y degradados teal en la barra del mapa (circular, claro al centro) y en las
+  tarjetas de expedición (oscuro → teal). Teal es la identidad de la app.
 - **Recorrido en teal y mapa en 2D** (14 nov 2026, pedido del usuario; reemplaza "lo grabado en coral"): teal es el
   color de la app. Para no confundir el recorrido con la ruta planeada (también teal), la ruta se atenúa cuando hay
   recorrido. 2D de inicio: se lee mejor; el 3D queda a un toque.

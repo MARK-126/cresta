@@ -22,16 +22,18 @@ class MapDock extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Degradado de teal a oscuro (pedido del usuario, 14 nov 2026): se distingue del mapa con
-    // cualquier fondo, también con Noche
+    // Degradado circular: teal claro al centro (detrás de Grabar) que se oscurece hacia los
+    // extremos (pedido del usuario, 14 nov 2026; primero fue lineal). El radio es relativo al
+    // lado corto (64 px): 3 llega a las puntas de la barra
     return ClipRRect(
       borderRadius: BorderRadius.circular(22),
       child: DecoratedBox(
         decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xF2117572), Color(0xF20E1416)],
+          gradient: RadialGradient(
+            radius: 3,
+            // Un poco más oscuro (pedido del usuario)
+            colors: [Color(0xF2178E89), Color(0xF20D5C59), Color(0xF20A1012)],
+            stops: [0, .4, 1],
           ),
         ),
         child: SizedBox(
