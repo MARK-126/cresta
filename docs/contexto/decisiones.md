@@ -185,6 +185,11 @@
 
 ## Errores resueltos (síntoma → causa → solución)
 
+- **"Grabar · Desde aquí" mostraba una zona descargada** (14 nov 2026, usuario) → el mapa libre encuadraba siempre la
+  última zona descargada y, al grabar, no buscaba tu posición (esperaba la del grabador): se veía la zona durante los
+  avisos y hasta la primera lectura del GPS → abre directo en la última posición conocida del teléfono (al instante,
+  sin señal); la zona solo si no se sabe dónde estás.
+
 - **"Textos grises con poco contraste" (revisión del 12 nov 2026)** → no era cierto: medido, `onSurfaceVariant`
   da 7.3–10.9:1 sobre los fondos (AAA) y `outline` 3.9–5.9:1; la impresión venía de capturas a la mitad → no se
   cambió. Si con sol cuesta leer, lo que pesa es el tamaño (etiquetas de 10–11 px), no el color.

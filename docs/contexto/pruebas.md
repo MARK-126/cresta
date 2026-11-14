@@ -27,6 +27,10 @@ Teléfono de pruebas: Samsung Galaxy S23 Ultra (SM-S918B), Android 16, salvo que
 
 ## 2026-11-14
 
+**Abrir en tu posición · `fix/grabar-en-tu-posicion`** (S23, en Mendoza) — Inicio → "Grabar · Desde aquí": con la hoja
+"Grabar recorrido" abierta el mapa ya está en tu posición (antes, la última zona descargada). Se cerró sin grabar: sin
+recorrido nuevo, datos iguales. **OK**.
+
 **Splash más arriba · `fix/splash-arriba`** (S23) — capturas cada 0.4 s al abrir: la montaña de Android y la de Flutter
 en el mismo lugar (~43 % del alto), sin salto; la marca debajo deja el conjunto centrado. **OK**.
 
