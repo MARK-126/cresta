@@ -19,9 +19,10 @@ enum ImageBackground {
 }
 
 enum ImageAspect {
-  story('Historia', 9 / 16),
-  square('Cuadrado', 1),
-  post('Publicación', 4 / 5);
+  // Se muestran como proporción (pedido del usuario): historia, cuadrado y publicación
+  story('9:16', 9 / 16),
+  square('1:1', 1),
+  post('4:5', 4 / 5);
 
   const ImageAspect(this.label, this.ratio);
   final String label;
@@ -115,7 +116,8 @@ class TrackImagePainter extends CustomPainter {
   /// Cuánto se oscurece la foto de fondo (0–1), para que la traza y las cifras resalten.
   final double dim;
 
-  static const coral = Color(0xFFFFA089);
+  /// La traza en teal, como en el mapa (antes coral).
+  static const lineColor = Color(0xFF46EAE5);
   static const cyan = Color(0xFF46EAE5);
 
   bool get _darkText => background == ImageBackground.color && swatch.darkText;
@@ -340,11 +342,11 @@ class TrackImagePainter extends CustomPainter {
       ..lineTo(r.right, r.bottom)
       ..lineTo(r.left, r.bottom)
       ..close();
-    canvas.drawPath(area, Paint()..color = coral.withValues(alpha: .28));
+    canvas.drawPath(area, Paint()..color = lineColor.withValues(alpha: .28));
     canvas.drawPath(
       line,
       Paint()
-        ..color = coral
+        ..color = lineColor
         ..style = PaintingStyle.stroke
         ..strokeWidth = 4 * u
         ..strokeJoin = StrokeJoin.round,
@@ -413,7 +415,7 @@ class TrackImagePainter extends CustomPainter {
     if (background != ImageBackground.transparent) {
       canvas.drawPath(path, stroke(const Color(0xB3080F11), 18 * u));
     }
-    canvas.drawPath(path, stroke(coral, 9 * u));
+    canvas.drawPath(path, stroke(lineColor, 9 * u));
     void dot(Offset o, Color c) {
       canvas.drawCircle(o, 13 * u, Paint()..color = c);
       canvas.drawCircle(o, 13 * u, stroke(const Color(0xFFFFFFFF), 4 * u));

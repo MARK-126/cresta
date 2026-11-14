@@ -112,7 +112,7 @@
   mostraba "mejorar la precisión" en cada inicio y, si se rechazaba, cortaba el GPS; el proveedor `fused` del sistema
   (Android 12+) combina GPS y red sin ese aviso. En la montaña no hay Wi-Fi ni antenas de todos modos.
 - **Colores de líneas** (pedido del usuario): la ruta a seguir en teal (el color de la app); lo grabado en coral (el
-  color de grabar), como el naranja de Wikiloc. Inicio dorado, fin coral, en rutas y recorridos.
+  color de grabar), como el naranja de Wikiloc. **Reemplazado el 14 nov 2026:** lo grabado también es teal (ver arriba). Inicio dorado, fin coral, en rutas y recorridos.
 - **Íconos de lugares con emoji del sistema** dibujados en el teléfono: MapLibre necesita imágenes (sprite) y no hay
   sprite descargado; el emoji del sistema funciona sin señal. Sin nombre se ocultan estatuas y monumentos (ensuciaban).
 - **Video generado, no grabado** (13 nov 2026): con `MediaRecorder` cada cuadro lleva la hora real, así que si el mapa
@@ -120,6 +120,8 @@
   cada cuadro espera a que el mapa esté listo y lleva su tiempo exacto: siempre 30 cuadros/s; tarda unos segundos más.
   Carteles y punto dibujados sobre el cuadro (no como capas del mapa): no compiten por espacio con las etiquetas ni
   parpadean. 9:16 para redes y teléfonos.
+- **Ícono del perfil = persona** (14 nov 2026, pedido del usuario): es lo que se reconoce como "tu cuenta"; la
+  credencial no se entendía.
 - **Imagen del recorrido** (14 nov 2026, pedidos del usuario): de inicio solo la traza sobre un color; siempre
   vertical (la traza se gira: se pierde el norte arriba pero ocupa todo el alto); "desde dónde hasta dónde" con el
   lugar o la calle de cada extremo, sacado del mapa sin señal (no comercios); sin título y con la fecha vertical en
@@ -170,6 +172,15 @@
   `CLAUDE.md`.
 
 ## Diseño (UI)
+
+- **Recorrido en teal y mapa en 2D** (14 nov 2026, pedido del usuario; reemplaza "lo grabado en coral"): teal es el
+  color de la app. Para no confundir el recorrido con la ruta planeada (también teal), la ruta se atenúa cuando hay
+  recorrido. 2D de inicio: se lee mejor; el 3D queda a un toque.
+- **Rediseño del 14 nov 2026** (crítica con dos referencias del usuario, pantallas de producto con tipografía
+  gigante): se toma su lenguaje, no su tema claro ni su tono de vitrina. Un protagonista por pantalla en Barlow
+  Condensed (inicio, expedición, recorrido, resumen, bitácora); en el mapa y al grabar no. Barra de acción fija abajo
+  con dato al lado. Un acento por pantalla (las cifras ya no llevan barras de colores). Menos texto de ayuda. La forma
+  del recorrido como "producto" al centro.
 
 - Sistema **"Andes Industrial"** (Google Stitch del usuario, proyecto "Live Geolocation Tracking"; la
   exportación está en el escritorio del usuario: `stitch_live_geolocation_tracking.zip`).

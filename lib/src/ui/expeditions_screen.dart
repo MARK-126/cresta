@@ -37,7 +37,7 @@ class ExpeditionsScreen extends StatelessWidget {
             actions: [
               IconButton(
                 tooltip: 'Perfil de emergencia',
-                icon: const Icon(Icons.badge_outlined),
+                icon: const Icon(Icons.person_outline_rounded),
                 onPressed: () => openProfile(context),
               ),
               Padding(
@@ -59,10 +59,12 @@ class ExpeditionsScreen extends StatelessWidget {
             child: ListView(
               padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
               children: [
-                Text('BITÁCORA DE MONTAÑA', style: labelStyle(context)),
-                const SizedBox(height: 6),
-                Text('¿Qué quieres hacer?', style: signage(context, size: 30)),
-                const SizedBox(height: 20),
+                // Arriba solo la fecha (decía "Bitácora de montaña", que es otra pestaña)
+                Text(
+                  fmtDate(DateTime.now()).toUpperCase(),
+                  style: labelStyle(context),
+                ),
+                const SizedBox(height: 12),
                 if (services.recorder.isActive) ...[
                   _RecordingBanner(services: services),
                   const SizedBox(height: 12),
@@ -78,8 +80,11 @@ class ExpeditionsScreen extends StatelessWidget {
                     children: [
                       Text('TUS EXPEDICIONES', style: labelStyle(context)),
                       const Spacer(),
+                      // Solo se avisa lo que falta: "lista sin conexión" en cada una era ruido
                       Text(
-                        '${items.length} · $ready ${ready == 1 ? 'lista' : 'listas'} sin conexión',
+                        ready == items.length
+                            ? '${items.length}'
+                            : '${items.length} · ${items.length - ready} sin mapas listos',
                         style: dataStyle(
                           context,
                           size: 12,
@@ -192,9 +197,8 @@ class _ExpeditionCard extends StatelessWidget {
     final tracks = services.tracks.forExpedition(e.id).length;
     return TonalCard(
       accent: switch (status.readiness) {
-        Readiness.ready => okColor,
         Readiness.downloading || Readiness.incomplete => warnColor,
-        Readiness.noMaps => null,
+        Readiness.ready || Readiness.noMaps => null,
       },
       padding: const EdgeInsets.fromLTRB(18, 16, 16, 16),
       onTap: () => Navigator.push(
@@ -224,20 +228,21 @@ class _ExpeditionCard extends StatelessWidget {
                 : '${fmtDate(e.date!)} · ${fmtRelativeDay(e.date!)}',
             style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 13),
           ),
-          const SizedBox(height: 14),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            children: [
-              ReadinessChip(status),
-              if (status.bytes > 0) _Telemetry(fmtBytes(status.bytes)),
-              if (tracks > 0)
-                _Telemetry(
-                  '$tracks ${tracks == 1 ? 'recorrido' : 'recorridos'}',
-                ),
-            ],
-          ),
+          if (status.readiness != Readiness.ready || tracks > 0) ...[
+            const SizedBox(height: 14),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                if (status.readiness != Readiness.ready) ReadinessChip(status),
+                if (tracks > 0)
+                  _Telemetry(
+                    '$tracks ${tracks == 1 ? 'recorrido' : 'recorridos'}',
+                  ),
+              ],
+            ),
+          ],
           if (status.readiness == Readiness.downloading) ...[
             const SizedBox(height: 12),
             LinearProgressIndicator(
@@ -271,9 +276,8 @@ class _Telemetry extends StatelessWidget {
   );
 }
 
-/// La acción principal del inicio, como la tarjeta "Start new route" del diseño.
-/// Abre el mapa sin expedición, para navegarlo y verlo en 2D o 3D.
-/// Las cuatro cosas que se pueden hacer desde el inicio, de lo inmediato a lo planeado.
+/// Lo que se puede hacer desde el inicio. Grabar es la protagonista (es lo que se usa en
+/// el terreno), enorme y en terracota; las otras tres, chicas y sin frases de ayuda.
 class _Actions extends StatelessWidget {
   const _Actions({required this.services});
   final AppServices services;
@@ -286,47 +290,27 @@ class _Actions extends StatelessWidget {
     final recording = services.recorder.isActive;
     return Column(
       children: [
-        Row(
-          children: [
-            Expanded(
-              child: _ActionTile(
-                icon: Icons.fiber_manual_record_rounded,
-                color: recordColor,
-                onColor: Andes.onTerracotta,
-                label: 'Grabar',
-                title: 'Desde aquí',
-                body: 'Graba tu recorrido ya, sin preparar nada.',
-                // Con uno en curso, el banner de arriba lleva a él
-                onTap: recording
-                    ? null
-                    : () => _openMap(context, const MapScreen(record: true)),
-              ),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: _ActionTile(
-                icon: Icons.map_rounded,
-                color: Andes.cyan,
-                onColor: Andes.onCyan,
-                label: 'Explorar',
-                title: 'Mapa libre',
-                body: 'Navega en 2D o 3D y mira tus mapas descargados.',
-                onTap: () => _openMap(context, const MapScreen()),
-              ),
-            ),
-          ],
+        _RecordHero(
+          // Con uno en curso, el banner de arriba lleva a él
+          onTap: recording
+              ? null
+              : () => _openMap(context, const MapScreen(record: true)),
         ),
         const SizedBox(height: 10),
         Row(
           children: [
             Expanded(
               child: _ActionTile(
+                icon: Icons.map_rounded,
+                label: 'Explorar',
+                onTap: () => _openMap(context, const MapScreen()),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: _ActionTile(
                 icon: Icons.route_rounded,
-                color: Andes.gold,
-                onColor: Andes.onGold,
                 label: 'Trazar ruta',
-                title: 'De A a B',
-                body: 'Marca puntos en el mapa; se ajusta a los senderos.',
                 onTap: recording
                     ? null
                     : () => _openMap(context, const MapScreen(plan: true)),
@@ -336,11 +320,7 @@ class _Actions extends StatelessWidget {
             Expanded(
               child: _ActionTile(
                 icon: Icons.add_location_alt_rounded,
-                color: Andes.cyanContainer,
-                onColor: Andes.onCyan,
-                label: 'Planear',
-                title: 'Expedición',
-                body: 'Zona, mapas sin señal, clima, equipo y hora límite.',
+                label: 'Expedición',
                 onTap: () => startNewExpedition(context),
               ),
             ),
@@ -351,70 +331,61 @@ class _Actions extends StatelessWidget {
   }
 }
 
-class _ActionTile extends StatelessWidget {
-  const _ActionTile({
-    required this.icon,
-    required this.color,
-    required this.onColor,
-    required this.label,
-    required this.title,
-    required this.body,
-    required this.onTap,
-  });
-  final IconData icon;
-  final Color color;
-  final Color onColor;
-  final String label;
-  final String title;
-  final String body;
+/// "GRABAR" en grande sobre terracota, como el botón de llamar del SOS.
+class _RecordHero extends StatelessWidget {
+  const _RecordHero({required this.onTap});
   final VoidCallback? onTap;
 
   @override
-  Widget build(BuildContext context) {
-    final muted = Theme.of(context).colorScheme.onSurfaceVariant;
-    final enabled = onTap != null;
-    return Opacity(
-      opacity: enabled ? 1 : .45,
+  Widget build(BuildContext context) => Opacity(
+    opacity: onTap == null ? .45 : 1,
+    child: Semantics(
+      button: true,
+      label: 'Grabar recorrido desde aquí',
       child: Material(
-        borderRadius: BorderRadius.circular(16),
+        color: recordColor,
+        borderRadius: BorderRadius.circular(20),
         clipBehavior: Clip.antiAlias,
-        color: Andes.surfaceContainer,
         child: InkWell(
           onTap: onTap,
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 14, 16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            padding: const EdgeInsets.fromLTRB(22, 18, 18, 18),
+            child: Row(
               children: [
-                Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: color,
-                    borderRadius: BorderRadius.circular(12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'GRABAR',
+                        style: display(
+                          context,
+                          size: 76,
+                          color: Andes.onTerracotta,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'DESDE AQUÍ · SIN SEÑAL',
+                        style: labelStyle(
+                          context,
+                          color: Andes.onTerracotta.withValues(alpha: .75),
+                        ),
+                      ),
+                    ],
                   ),
-                  child: Icon(icon, color: onColor, size: 22),
                 ),
-                const SizedBox(height: 14),
-                Text(
-                  label.toUpperCase(),
-                  style: labelStyle(context, color: color),
-                ),
-                const SizedBox(height: 2),
-                Text(title, style: signage(context, size: 19)),
-                const SizedBox(height: 6),
-                SizedBox(
-                  // Misma altura en las cuatro aunque el texto ocupe 2 o 3 líneas
-                  height: 52,
-                  child: Text(
-                    body,
-                    maxLines: 3,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: muted,
-                      fontSize: 12.5,
-                      height: 1.35,
-                    ),
+                Container(
+                  width: 64,
+                  height: 64,
+                  decoration: const BoxDecoration(
+                    color: Andes.onTerracotta,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.fiber_manual_record_rounded,
+                    color: recordColor,
+                    size: 34,
                   ),
                 ),
               ],
@@ -422,8 +393,43 @@ class _ActionTile extends StatelessWidget {
           ),
         ),
       ),
-    );
-  }
+    ),
+  );
+}
+
+class _ActionTile extends StatelessWidget {
+  const _ActionTile({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
+  final IconData icon;
+  final String label;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) => Opacity(
+    opacity: onTap != null ? 1 : .45,
+    child: Material(
+      borderRadius: BorderRadius.circular(16),
+      clipBehavior: Clip.antiAlias,
+      color: Andes.surfaceContainer,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(14, 16, 10, 16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(icon, color: Andes.cyan, size: 26),
+              const SizedBox(height: 12),
+              Text(label, style: signage(context, size: 16)),
+            ],
+          ),
+        ),
+      ),
+    ),
+  );
 }
 
 class _Tag extends StatelessWidget {

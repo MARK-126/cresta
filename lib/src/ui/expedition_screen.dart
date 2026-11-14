@@ -14,6 +14,7 @@ import 'panels.dart';
 import 'references_section.dart';
 import 'route_actions.dart';
 import 'route_screen.dart';
+import 'route_silhouette.dart';
 import 'compare_screen.dart';
 import 'sun_card.dart';
 import 'weather_widgets.dart';
@@ -79,39 +80,56 @@ class ExpeditionScreen extends StatelessWidget {
             child: ListView(
               padding: const EdgeInsets.fromLTRB(20, 0, 20, 32),
               children: [
+                // Metadatos chiquitos arriba y el nombre enorme (como "AURA"), con la forma
+                // de la ruta al lado si la hay
                 Text(
-                  e.sample ? 'EXPEDICIÓN DE EJEMPLO' : 'EXPEDICIÓN',
+                  [
+                    e.sample ? 'EXPEDICIÓN DE EJEMPLO' : 'EXPEDICIÓN',
+                    if (e.date == null)
+                      'SIN FECHA'
+                    else ...[
+                      fmtDate(e.date!).toUpperCase(),
+                      fmtRelativeDay(e.date!).toUpperCase(),
+                    ],
+                  ].join(' · '),
                   style: labelStyle(context, color: Andes.gold),
                 ),
-                const SizedBox(height: 6),
-                Text(e.name, style: signage(context, size: 32)),
                 const SizedBox(height: 8),
                 Row(
+                  crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    Icon(
-                      Icons.event_rounded,
-                      size: 16,
-                      color: scheme.onSurfaceVariant,
+                    Expanded(
+                      child: Text(
+                        e.name.toUpperCase(),
+                        maxLines: 3,
+                        overflow: TextOverflow.ellipsis,
+                        style: display(
+                          context,
+                          size: e.name.length <= 10
+                              ? 96
+                              : e.name.length <= 18
+                              ? 68
+                              : 52,
+                        ),
+                      ),
                     ),
-                    const SizedBox(width: 8),
-                    Text(
-                      e.date == null
-                          ? 'Sin fecha de salida'
-                          : '${fmtDate(e.date!)} · ${fmtRelativeDay(e.date!)}',
-                      style: TextStyle(color: scheme.onSurfaceVariant),
-                    ),
+                    if (route != null &&
+                        route.profile.coordinates.length > 1) ...[
+                      const SizedBox(width: 8),
+                      SizedBox(
+                        width: 80,
+                        height: 120,
+                        child: RouteSilhouette(
+                          points: [
+                            for (final c in route.profile.coordinates)
+                              (c.lng, c.lat),
+                          ],
+                          color: Andes.cyan,
+                          strokeWidth: 3,
+                        ),
+                      ),
+                    ],
                   ],
-                ),
-                const SizedBox(height: 20),
-                GlowButton(
-                  onPressed: () => Navigator.push(
-                    context,
-                    MaterialPageRoute<void>(
-                      builder: (_) => MapScreen(expeditionId: e.id),
-                    ),
-                  ),
-                  icon: Icons.terrain_rounded,
-                  label: 'Abrir mapa',
                 ),
                 const SectionTitle('Antes de salir'),
                 TonalCard(
@@ -149,7 +167,14 @@ class ExpeditionScreen extends StatelessWidget {
                             ? 'Pronóstico guardado ${fmtUpdated(weather.fetchedAt)}.'
                             : 'Consultado ${fmtUpdated(weather.fetchedAt)}: actualízalo antes de salir.',
                       ),
+                      // Abre la lista (la sección "Equipo" de abajo repetía lo mismo)
                       _Check(
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute<void>(
+                            builder: (_) => GearScreen(expeditionId: e.id),
+                          ),
+                        ),
                         done: gear.isNotEmpty && packed == gear.length,
                         title: 'Equipo',
                         detail: gear.isEmpty
@@ -224,8 +249,6 @@ class ExpeditionScreen extends StatelessWidget {
                     ),
                   ],
                 ),
-                const SectionTitle('Equipo'),
-                GearCard(expeditionId: e.id),
                 const SectionTitle('Clima'),
                 WeatherCard(expedition: e, route: route?.profile),
                 SectionTitle(
@@ -268,6 +291,24 @@ class ExpeditionScreen extends StatelessWidget {
                 const SectionTitle('Notas'),
                 _Notes(expedition: e),
               ],
+            ),
+          ),
+          // Barra fija abajo, como "Book a session | from $60": abrir el mapa y, al lado,
+          // las cifras de la ruta
+          bottomNavigationBar: SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+              child: _OpenMapBar(
+                detail: route == null
+                    ? null
+                    : '${fmtKm(route.profile.totalMeters)} km · +${fmtInt(route.profile.gain)} m',
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute<void>(
+                    builder: (_) => MapScreen(expeditionId: e.id),
+                  ),
+                ),
+              ),
             ),
           ),
         );
@@ -349,15 +390,21 @@ class ExpeditionScreen extends StatelessWidget {
 }
 
 class _Check extends StatelessWidget {
-  const _Check({required this.done, required this.title, required this.detail});
+  const _Check({
+    required this.done,
+    required this.title,
+    required this.detail,
+    this.onTap,
+  });
   final bool done;
   final String title;
   final String detail;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     final muted = Theme.of(context).colorScheme.onSurfaceVariant;
-    return Padding(
+    final row = Padding(
       padding: const EdgeInsets.only(bottom: 14),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -390,10 +437,73 @@ class _Check extends StatelessWidget {
               ],
             ),
           ),
+          if (onTap != null)
+            Icon(Icons.chevron_right_rounded, color: muted, size: 22),
         ],
       ),
     );
+    return onTap == null
+        ? row
+        : InkWell(
+            onTap: onTap,
+            borderRadius: BorderRadius.circular(10),
+            child: row,
+          );
   }
+}
+
+/// "ABRIR MAPA" con las cifras de la ruta al lado, en un solo botón ancho.
+class _OpenMapBar extends StatelessWidget {
+  const _OpenMapBar({required this.onTap, this.detail});
+  final VoidCallback onTap;
+  final String? detail;
+
+  @override
+  Widget build(BuildContext context) => Material(
+    borderRadius: BorderRadius.circular(14),
+    clipBehavior: Clip.antiAlias,
+    child: Ink(
+      decoration: const BoxDecoration(gradient: Andes.cyanGlow),
+      child: InkWell(
+        onTap: onTap,
+        child: SizedBox(
+          height: 58,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 18),
+            child: Row(
+              children: [
+                const Icon(Icons.terrain_rounded, color: Andes.onCyan),
+                const SizedBox(width: 10),
+                Text(
+                  'ABRIR MAPA',
+                  style: labelStyle(
+                    context,
+                    color: Andes.onCyan,
+                  ).copyWith(fontSize: 14, fontWeight: FontWeight.w800),
+                ),
+                const Spacer(),
+                if (detail != null)
+                  Text(
+                    detail!,
+                    style: dataStyle(
+                      context,
+                      size: 13,
+                      color: Andes.onCyan.withValues(alpha: .75),
+                    ),
+                  ),
+                const SizedBox(width: 6),
+                Icon(
+                  Icons.arrow_forward_rounded,
+                  color: Andes.onCyan.withValues(alpha: .75),
+                  size: 20,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    ),
+  );
 }
 
 class _Notes extends StatefulWidget {

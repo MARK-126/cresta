@@ -331,6 +331,24 @@ TextStyle signage(BuildContext context, {double size = 20}) => TextStyle(
   color: Theme.of(context).colorScheme.onSurface,
 );
 
+/// Protagonista de la pantalla (nombre de la expedición, km del recorrido, desnivel de la
+/// semana): condensada y enorme, como "AURA" o "MAYA ROSS" de las referencias del usuario
+/// (14 nov 2026). Solo una por pantalla; en el mapa y al grabar no se usa.
+TextStyle display(
+  BuildContext context, {
+  double size = 72,
+  Color? color,
+  FontWeight weight = FontWeight.w800,
+}) => TextStyle(
+  fontFamily: 'BarlowCondensed',
+  fontSize: size,
+  fontWeight: weight,
+  height: .9,
+  letterSpacing: -size * .005,
+  fontFeatures: const [FontFeature.tabularFigures()],
+  color: color ?? Theme.of(context).colorScheme.onSurface,
+);
+
 /// Cifras: Inter con números tabulares para que no "bailen" al cambiar.
 TextStyle dataStyle(
   BuildContext context, {

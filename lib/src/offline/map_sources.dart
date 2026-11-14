@@ -37,7 +37,8 @@ enum MapSource {
   /// Mapa topográfico vectorial de OpenStreetMap servido por OpenFreeMap.
   /// La URL cambia con cada versión semanal; se obtiene de su TileJSON ([TopoTemplate]).
   topo(
-    label: 'Topográfico y senderos',
+    // "Mapa", no "Topográfico": en el mapa la vista se llama Claro o Noche (mismos datos)
+    label: 'Mapa y senderos',
     template: null,
     minZoom: 8,
     maxZoomBasic: 13,

@@ -27,6 +27,20 @@ Teléfono de pruebas: Samsung Galaxy S23 Ultra (SM-S918B), Android 16, salvo que
 
 ## 2026-11-14
 
+**Ajustes de mapa e imagen · `feat/ajustes-mapa-imagen`** (S23) — mapa libre en 2D (el botón ofrece "3D"); barra
+de acciones con degradado teal; "Ver en el mapa" del recorrido 3 con la traza teal; imagen con mapa sin senderos, con
+las capas elegibles y tamaños 9:16 · 1:1 · 4:5. **OK**.
+
+**Rediseño · `feat/rediseno-jerarquia`** (S23, solo vistas; datos iguales)
+- Inicio con "GRABAR" enorme y tres botones; Bitácora con km grandes y la forma de cada recorrido; Resumen "+80 m";
+  Recorrido "6.81" con su forma, cifras parejas, perfil de 700 a 850 m (antes plano de 500 a 1,000) y barra fija;
+  Compartir abre la hoja de cuatro opciones; Expedición "SALTO" con la ruta y "ABRIR MAPA | 3.3 km · +883 m";
+  "IZTACCÍHUATL POR LA ARISTA DEL SOL" en dos líneas. **OK**.
+- Falla: la forma del recorrido junto a los km salía diminuta (sin alto fijo en la fila) → `SizedBox` con alto. **OK**.
+- Mapa de Mendoza a z15: sin comida; las farmacias seguían llenándolo → fuera de "de lejos". **OK**.
+
+**Ícono del perfil · `fix/icono-perfil`** (S23) — en el inicio, junto a SOS, la personita sola. **OK**.
+
 **Imagen del recorrido · `feat/imagen-recorrido`** (S23; recorrido 3 del usuario, solo leído)
 - Mapa de fondo al tamaño del recuadro: nombres enormes → mapa a 400 px lógicos reducido. **OK** después.
 - Fondo liso de inicio: traza vertical, "DESDE Juan Galo de Lavalle" y "HASTA Ciclovía" (antes "Mendoza" y luego
