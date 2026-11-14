@@ -306,6 +306,34 @@ Actualizado: 14 nov 2026 · opciones del video del recorrido, mapa Noche y edifi
 - `showPlaceSearch` acepta `near` (sugerir alrededor de otro lugar, "CERCA DE …") y `me` (tu posición para "Tu
   ubicación"). `fmtKm` separa miles.
 
+### Imagen del recorrido (`feat/imagen-recorrido`, 14 nov 2026)
+- `share/track_image.dart`: `ImageBackground` (mapa, foto, color, sin fondo), `ImageAspect` (historia 9:16, cuadrado,
+  publicación 4:5; 1,080 px de ancho), `ImageStat`, `imageSwatches` y `TrackImagePainter` (el mismo para la vista
+  previa y el archivo). Sin título (al usuario no le gustó "Recorrido 3 · fecha"): fecha vertical en el costado
+  izquierdo, traza girada (`verticalRotation`: inicio abajo, fin arriba; en una vuelta, su eje largo vertical) con
+  "DESDE"/"HASTA" y el lugar de cada extremo, cifras abajo, perfil opcional, "CRESTA" y, con mapa, "© OpenStreetMap".
+  Foto: se puede oscurecer de 0 a 80 % (`dim`, 40 % de inicio).
+- `ui/track_image_screen.dart`: vista previa arriba y opciones abajo. De inicio fondo liso (Pizarra). El mapa es un
+  WebView siempre montado bajo la vista previa, dibujado a 400 px lógicos y reducido (`FittedBox`; al tamaño del
+  recuadro los nombres salían enormes); con otro fondo queda tapado. Foto de la galería (`image_picker`) o del
+  recorrido. PNG (transparente) o JPG (`image` 4.13.1, en otro hilo). Se guarda en la galería (`Gal.putImage`, álbum
+  Cresta) con la hora en el nombre y se ofrece Compartir.
+- `map.js`: `snapshot(width)` (sube `pixelRatio` solo para la captura; eventos `snapChunk`/`snapEnd`), `setClean`
+  (sin íconos, barrios, zonas ni fotos) y `findNames(points)` (se acerca a z15 en cada punto, espera los mosaicos y
+  busca: cumbre ≤ 300 m; lugar de referencia, agua o parque ≤ 150 m —no comercios, `REF_POI`; dentro de un polígono
+  cuenta 0—; calle ≤ 60 m; parque o lago grande ≤ 900 m; barrio o pueblo ≤ 2.5 km; evento `names`).
+- Respeta el recorte para compartir (`forSharing`): la traza y los lugares son los de lo visible.
+
+### Recortar para compartir (`feat/recorte-compartir`, 14 nov 2026)
+- `Track.hideStart`/`hideEnd` (m; `hideStartM`/`hideEndM` en `tracks.json`, solo si hay recorte). `tracking/share_trim.dart`:
+  `cumulativeMeters` (sin contar saltos entre pausas), `splitForSharing` (antes, visible, después; cortes
+  interpolados) y `forSharing(track, points)`.
+- `ui/share_trim_screen.dart`: mapa con lo visible (`setTrack`, Inicio/Fin en los cortes) y lo oculto gris punteado
+  (capa `track-hidden`, `MapBridge.setHidden`); `RangeSlider` con al menos 100 m visibles. Botón "Recortar para
+  compartir" en el detalle del recorrido, con el estado debajo.
+- Se aplica al video (`MapScreen` en modo video) y al GPX exportado. En el video también se ocultan las fotos (capa
+  `photos` en `VIDEO_HIDE`). La app, el SOS y el plan de salida no cambian.
+
 ### Opciones del video (`feat/video-opciones`, 14 nov 2026)
 - `ui/video_options_sheet.dart` (`showVideoOptions`): antes de generar, fondo (Mapa, Satélite, Relieve, Noche),
   velocidad (Normal/Rápido) y nombres de calles cercanas, edificios 3D, senderos, curvas de nivel, título y cifras.
@@ -369,5 +397,5 @@ lib/src/ui/                    pantallas; theme.dart = paleta y componentes del 
 assets/web/                    map.js, MapLibre, maplibre-contour, tipografías del mapa
 assets/fonts/inter/            tipografía de la app · assets/images/ textura del splash
 tool/                          scripts de datos (Python) e ícono; tool/dev/ herramientas de prueba
-test/                          201 pruebas
+test/                          217 pruebas
 ```

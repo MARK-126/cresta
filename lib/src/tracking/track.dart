@@ -61,6 +61,8 @@ class Track {
     this.status = TrackStatus.recording,
     this.active = Duration.zero,
     TrackSummary? summary,
+    this.hideStart = 0,
+    this.hideEnd = 0,
   }) : summary = summary ?? const TrackSummary();
 
   factory Track.fromJson(Map<String, dynamic> j) => Track(
@@ -74,6 +76,8 @@ class Track {
     summary: TrackSummary.fromJson(
       j['summary'] as Map<String, dynamic>? ?? const {},
     ),
+    hideStart: (j['hideStartM'] as num?)?.toDouble() ?? 0,
+    hideEnd: (j['hideEndM'] as num?)?.toDouble() ?? 0,
   );
 
   final String id;
@@ -91,6 +95,12 @@ class Track {
   Duration active;
   TrackSummary summary;
 
+  /// Metros que no se muestran al compartir, al inicio y al final (para no revelar dónde
+  /// empieza: la casa, por ejemplo). Dentro de la app el recorrido se ve completo.
+  double hideStart;
+  double hideEnd;
+  bool get trimmed => hideStart > 0 || hideEnd > 0;
+
   Map<String, dynamic> toJson() => {
     'id': id,
     'expeditionId': expeditionId,
@@ -100,6 +110,8 @@ class Track {
     'status': status.name,
     'activeS': active.inSeconds,
     'summary': summary.toJson(),
+    if (hideStart > 0) 'hideStartM': hideStart.round(),
+    if (hideEnd > 0) 'hideEndM': hideEnd.round(),
   };
 }
 

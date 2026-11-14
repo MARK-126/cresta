@@ -24,6 +24,10 @@ String fmtKm(double meters, {int decimals = 1}) {
   return out.toString();
 }
 
+/// Distancia corta en metros y larga en km: "450 m", "1.2 km".
+String fmtDistance(double meters) =>
+    meters < 1000 ? '${fmtInt(meters.round())} m' : '${fmtKm(meters)} km';
+
 String fmtDuration(Duration d) =>
     '${d.inHours} h ${(d.inMinutes % 60).toString().padLeft(2, '0')}';
 

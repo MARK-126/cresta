@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/painting.dart';
@@ -113,6 +114,83 @@ class MapBridge {
       _call('setRoute', [route]);
 
   /// Varias rutas a la vez para compararlas: cada una `{coordinates, color}`; encuadra todas.
+  /// Nombre de un lugar o calle junto a cada punto (una cumbre, un parque, la calle o el
+  /// barrio), acercándose a cada uno para que carguen los nombres (mueve la cámara y la deja
+  /// como estaba). null donde no hay nada cerca.
+  Future<List<String?>> findNames(List<TrackPoint> points) async {
+    final empty = List<String?>.filled(points.length, null);
+    final done = Completer<List<String?>>();
+    final sub = events.listen((e) {
+      if (e.type != 'names' || done.isCompleted) return;
+      final v = e.data['names'];
+      done.complete(
+        v is List ? [for (final n in v) n is String ? n : null] : empty,
+      );
+    });
+    try {
+      await _call('findNames', [
+        [
+          for (final p in points) [p.lng, p.lat],
+        ],
+      ]);
+      return await done.future.timeout(
+        const Duration(seconds: 15),
+        onTimeout: () => empty,
+      );
+    } finally {
+      await sub.cancel();
+    }
+  }
+
+  /// Sin íconos de lugares, barrios, zonas ni fotos: para la imagen del recorrido.
+  Future<void> setClean(bool on) => _call('setClean', [on]);
+
+  /// El mapa tal como se ve, en PNG de [width] píxeles de ancho (sube la resolución solo
+  /// para la captura). Null si falla o tarda demasiado.
+  Future<Uint8List?> snapshot(int width) async {
+    final chunks = <int, String>{};
+    final done = Completer<Uint8List?>();
+    final sub = events.listen((e) {
+      switch (e.type) {
+        case 'snapChunk':
+          chunks[(e.data['i'] as num).toInt()] = e.data['data'] as String;
+        case 'snapEnd':
+          final n = (e.data['chunks'] as num).toInt();
+          final out = BytesBuilder(copy: false);
+          for (var i = 0; i < n; i++) {
+            final c = chunks[i];
+            if (c == null) {
+              if (!done.isCompleted) done.complete(null);
+              return;
+            }
+            out.add(base64Decode(c));
+          }
+          if (!done.isCompleted) done.complete(out.takeBytes());
+        case 'snapError':
+          if (!done.isCompleted) done.complete(null);
+      }
+    });
+    try {
+      await _call('snapshot', [width]);
+      return await done.future.timeout(
+        const Duration(seconds: 25),
+        onTimeout: () => null,
+      );
+    } finally {
+      await sub.cancel();
+    }
+  }
+
+  /// Partes del recorrido que se ocultan al compartir (grises y punteadas).
+  Future<void> setHidden(List<List<TrackPoint>> parts) => _call('setHidden', [
+    [
+      for (final part in parts)
+        [
+          for (final p in part) [p.lng, p.lat],
+        ],
+    ],
+  ]);
+
   Future<void> setCompare(List<Map<String, Object>> lines) =>
       _call('setCompare', [lines]);
 

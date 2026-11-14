@@ -51,6 +51,13 @@ Lo que se corrigió a partir de tus observaciones en el Parque San Martín, y c�
   Mientras se genera se ve el video tal cual, con el punto que avanza; al terminar dice "Guardado en tu galería,
   álbum Cresta" (revisa que esté en Galería) y ofrece Compartir. Prueba "Noche" y "Rápido", y en la ciudad mira si
   los edificios tapan la línea y si los nombres de calles quedan solo junto al recorrido.
+- **Imagen del recorrido** (14 nov 2026): en el detalle, "Imagen del recorrido". Prueba los fondos (Color, Foto con
+  una tuya y el control Oscurecer, Mapa —muévelo con los dedos— y Sin fondo), los tamaños y los datos; guarda en
+  PNG y JPG y revisa en Galería (álbum Cresta). Pega la de "Sin fondo" como sticker en una historia de Instagram.
+  Mira si los lugares de DESDE y HASTA te parecen buenas referencias.
+- **Recortar para compartir** (14 nov 2026): en el detalle de un recorrido, "Recortar para compartir"; mueve los
+  extremos (lo oculto se ve gris), guarda y genera el video o exporta el GPX: no deben empezar ni terminar en lo
+  oculto. En la app y en "Ver en el mapa" el recorrido se sigue viendo completo.
 - **Grabar desde aquí** (14 nov 2026): al tocarlo, el mapa debe abrir donde estás (no en una zona descargada), también
   con el teléfono en modo avión.
 - **Splash** (14 nov 2026): al abrir la app, la montaña va un poco más arriba del centro y no salta al aparecer el

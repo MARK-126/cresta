@@ -249,6 +249,7 @@
         'track-ends': { type: 'geojson', data: empty },
         'video-track': { type: 'geojson', data: empty, lineMetrics: true },
         'video-streets': { type: 'geojson', data: empty },
+        'track-hidden': { type: 'geojson', data: empty },
         photos: { type: 'geojson', data: empty },
         regions: { type: 'geojson', data: empty },
         zones: { type: 'geojson', data: empty },
@@ -333,6 +334,8 @@
         { id: 'pois-label', type: 'symbol', source: 'pois', layout: {
           'text-field': ['get', 'name'], 'text-font': font('bold'), 'text-size': 11.5, 'text-offset': [0, 1.2], 'text-anchor': 'top', 'text-optional': true },
           paint: { 'text-color': '#0e1416', 'text-halo-color': 'rgba(255,255,255,0.92)', 'text-halo-width': 1.4 } },
+        // Recorte para compartir: lo que no se mostrará, gris y punteado bajo el recorrido
+        { id: 'track-hidden', type: 'line', source: 'track-hidden', layout: { 'line-join': 'round', 'line-cap': 'round' }, paint: { 'line-color': '#9aa5a8', 'line-width': 4, 'line-opacity': 0.85, 'line-dasharray': [1.2, 1.4] } },
         // Recorrido grabado (coral, el color de grabar; encima de la ruta planeada, que es teal)
         { id: 'track-casing', type: 'line', source: 'track', layout: { 'line-join': 'round', 'line-cap': 'round' }, paint: { 'line-color': '#0e1416', 'line-width': 8, 'line-opacity': 0.8 } },
         { id: 'track', type: 'line', source: 'track', layout: { 'line-join': 'round', 'line-cap': 'round' }, paint: { 'line-color': '#ffa089', 'line-width': 4.5 } },
@@ -537,8 +540,121 @@
     reader.readAsDataURL(blob);
   }
   const VIDEO = { w: 720, h: 1280, fps: 30 };
+
+  // Imagen del recorrido con el mapa de fondo: el lienzo del mapa a [width] píxeles de ancho
+  // (sube la resolución solo para la captura), en PNG, por pedazos como el video
+  const CLEAN_HIDE = ['poi-icons', 'places-minor', 'regions-line', 'photos', 'track-hidden', 'found-ring', 'found-dot', 'found-label'];
+  let cleanWas = null;
+  function setClean(on) {
+    whenReady(() => {
+      if (on && !cleanWas) {
+        cleanWas = CLEAN_HIDE.map((id) => [id, map.getLayer(id) && map.getLayoutProperty(id, 'visibility')]);
+        CLEAN_HIDE.forEach((id) => map.getLayer(id) && map.setLayoutProperty(id, 'visibility', 'none'));
+      } else if (!on && cleanWas) {
+        cleanWas.forEach(([id, v]) => map.getLayer(id) && map.setLayoutProperty(id, 'visibility', v || 'visible'));
+        cleanWas = null;
+      }
+    });
+  }
+  // Nombre de referencia junto a cada punto [lng, lat] (imagen del recorrido: "desde dónde hasta
+  // dónde"), con lo que ya cargó el mapa: una cumbre o un lugar con nombre muy cerca; si no, la
+  // calle; si no, el barrio o pueblo. null si no hay nada cerca
+  const REF_POI = ['park', 'garden', 'attraction', 'museum', 'monument', 'castle', 'stadium', 'campsite', 'camp_site', 'shelter',
+    'alpine_hut', 'wilderness_hut', 'viewpoint', 'spring', 'place_of_worship', 'university', 'college', 'zoo', 'golf', 'theatre'];
+  function nearestNames(points) {
+    const feats = (layer) => { try { return map.querySourceFeatures('topo', { sourceLayer: layer }); } catch (_) { return []; } };
+    const groups = [
+      [feats('mountain_peak'), 300],
+      // Lugares que sirven de referencia (no comercios: "Repuestos Renault" no dice nada)
+      [[...feats('poi').filter((f) => f.properties && (REF_POI.includes(f.properties.class) || REF_POI.includes(f.properties.subclass))), ...feats('water_name'), ...feats('park')], 150],
+      [feats('transportation_name'), 60],
+      // Parques y lagos grandes: su nombre está en un solo punto, a veces lejos del borde
+      [[...feats('water_name'), ...feats('poi').filter((f) => f.properties && ['park', 'garden', 'nature_reserve'].includes(f.properties.class))], 900],
+      [feats('place').filter((f) => f.properties && f.properties.class !== 'country' && f.properties.class !== 'state'), 2500],
+    ];
+    const meters = (a, b) => {
+      const k = Math.cos(a[1] * Math.PI / 180);
+      return Math.hypot((a[0] - b[0]) * k, a[1] - b[1]) * 111320;
+    };
+    // Dentro de un polígono (un parque grande): distancia 0
+    const inRing = (pt, ring) => {
+      let inside = false;
+      for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+        const [xi, yi] = ring[i], [xj, yj] = ring[j];
+        if ((yi > pt[1]) !== (yj > pt[1]) && pt[0] < (xj - xi) * (pt[1] - yi) / (yj - yi) + xi) inside = !inside;
+      }
+      return inside;
+    };
+    const polys = (g) => (g.type === 'Polygon' ? [g.coordinates] : g.type === 'MultiPolygon' ? g.coordinates : []);
+    // Distancia del punto a la figura (a sus vértices; las calles cortas de los mosaicos bastan)
+    const dist = (pt, g) => {
+      if (polys(g).some((rings) => inRing(pt, rings[0]))) return 0;
+      const c = g.type === 'Point' ? [g.coordinates] : g.type === 'LineString' || g.type === 'MultiPoint' ? g.coordinates
+        : g.type === 'MultiLineString' || g.type === 'Polygon' ? g.coordinates.flat() : g.type === 'MultiPolygon' ? g.coordinates.flat(2) : [];
+      let best = Infinity;
+      for (const q of c) best = Math.min(best, meters(pt, q));
+      return best;
+    };
+    return points.map((pt) => {
+      for (const [list, max] of groups) {
+        let best = null, bestD = max;
+        for (const f of list) {
+          const p = f.properties || {};
+          const name = p['name:es'] || p.name;
+          if (!name) continue;
+          const dd = dist(pt, f.geometry);
+          if (dd < bestD) { bestD = dd; best = name; }
+        }
+        if (best) return best;
+      }
+      return null;
+    });
+  }
+  // Lo mismo, acercándose a cada punto (a lo lejos los mosaicos no traen parques, lagos ni
+  // calles chicas) y volviendo después; responde con el evento 'names'
+  async function findNames(points) {
+    const cam = { center: map.getCenter(), zoom: map.getZoom(), bearing: map.getBearing(), pitch: map.getPitch() };
+    const names = [];
+    try {
+      for (const pt of points) {
+        map.jumpTo({ center: pt, zoom: 15 });
+        for (let t0 = performance.now(); performance.now() - t0 < 4000;) {
+          await nextRender();
+          if (map.areTilesLoaded()) break;
+          await sleep(60);
+        }
+        names.push(nearestNames([pt])[0]);
+      }
+    } finally {
+      map.jumpTo(cam);
+      emit('names', { names });
+    }
+  }
+  async function snapshot(width) {
+    const c = map.getCanvas();
+    const r0 = map.getPixelRatio();
+    try {
+      map.setPixelRatio(Math.max(r0, width / c.clientWidth));
+      for (let t0 = performance.now(); performance.now() - t0 < 6000;) {
+        await nextRender();
+        if (map.areTilesLoaded()) break;
+        await sleep(60);
+      }
+      // Se copia al terminar de dibujar (sin preserveDrawingBuffer, después ya está borrado)
+      const url = await new Promise((r) => { map.once('render', () => r(c.toDataURL('image/png'))); map.triggerRepaint(); });
+      const b64 = url.split(',')[1] || '';
+      const size = 256 * 1024, n = Math.ceil(b64.length / size);
+      for (let i = 0; i < n; i++) emit('snapChunk', { i, n, data: b64.slice(i * size, (i + 1) * size) });
+      emit('snapEnd', { chunks: n, w: c.width, h: c.height });
+    } catch (e) {
+      emit('snapError', { message: String(e && e.message ? e.message : e) });
+    } finally {
+      map.setPixelRatio(r0);
+    }
+  }
   // Capas que en el video solo estorban: cambian de lugar al girar la cámara y parpadean
-  const VIDEO_HIDE = ['poi-icons', 'road-names', 'places-minor', 'regions-line', 'track', 'track-casing', 'track-ends', 'track-ends-label', 'found-ring', 'found-dot', 'found-label'];
+  // Las fotos también: una tomada en casa mostraría el inicio que el usuario recortó
+  const VIDEO_HIDE = ['poi-icons', 'road-names', 'places-minor', 'regions-line', 'track', 'track-casing', 'track-ends', 'track-ends-label', 'track-hidden', 'photos', 'found-ring', 'found-dot', 'found-label'];
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   const nextRender = () => new Promise((r) => { map.once('render', r); map.triggerRepaint(); });
   const smooth = (x) => x * x * (3 - 2 * x);
@@ -1021,6 +1137,13 @@
       });
     },
     /// Tramos del recorrido: lista de listas de [lng, lat] (una por cada tramo entre pausas).
+    // Partes del recorrido que se ocultan al compartir (cada una, lista de [lng, lat])
+    setHidden(lines) {
+      whenReady(() => map.getSource('track-hidden').setData({
+        type: 'FeatureCollection',
+        features: lines.filter((l) => l.length > 1).map((coordinates) => ({ type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates } })),
+      }));
+    },
     setTrack(segments, showEnd = false) {
       const all = segments.flat();
       whenReady(() => {
@@ -1105,6 +1228,10 @@
     fitRoute,
     flyRoute,
     flyTrack,
+    snapshot,
+    setClean,
+    nearestNames,
+    findNames,
     cancelVideo,
     stopFly,
     flyTo(lng, lat, zoom = 13.5, pitch = 55, bearingDeg) {
