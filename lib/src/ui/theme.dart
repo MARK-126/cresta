@@ -404,11 +404,15 @@ class TonalCard extends StatelessWidget {
     this.color,
     this.padding = const EdgeInsets.all(16),
     this.onTap,
+    this.gradient,
   });
 
   final Widget child;
   final Color? accent;
   final Color? color;
+
+  /// Fondo en degradado en vez de color liso (las tarjetas de expedición).
+  final Gradient? gradient;
   final EdgeInsetsGeometry padding;
   final VoidCallback? onTap;
 
@@ -423,8 +427,17 @@ class TonalCard extends StatelessWidget {
         child: body,
       );
     }
+    if (gradient != null) {
+      // Ink, no DecoratedBox: así el toque se sigue viendo encima del degradado
+      body = Ink(
+        decoration: BoxDecoration(gradient: gradient),
+        child: body,
+      );
+    }
     return Material(
-      color: color ?? Andes.surfaceContainer,
+      color: gradient != null
+          ? Colors.transparent
+          : color ?? Andes.surfaceContainer,
       borderRadius: BorderRadius.circular(16),
       clipBehavior: Clip.antiAlias,
       child: onTap == null ? body : InkWell(onTap: onTap, child: body),
@@ -555,11 +568,16 @@ class Glass extends StatelessWidget {
     required this.child,
     this.radius = 16,
     this.opacity = .72,
+    this.outlined = false,
   });
 
   final Widget child;
   final double radius;
   final double opacity;
+
+  /// Aro teal: los botones y el título que flotan sobre el mapa (pedido del usuario,
+  /// 14 nov 2026), con cualquier mapa de fondo.
+  final bool outlined;
 
   @override
   Widget build(BuildContext context) {
@@ -577,13 +595,15 @@ class Glass extends StatelessWidget {
                 : Andes.surfaceContainer.withValues(alpha: opacity),
           ),
           position: DecorationPosition.background,
-          child: dark
+          child: dark || outlined
               ? DecoratedBox(
                   position: DecorationPosition.foreground,
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(radius),
                     border: Border.all(
-                      color: Andes.outline.withValues(alpha: .55),
+                      color: outlined
+                          ? Andes.cyan.withValues(alpha: .8)
+                          : Andes.outline.withValues(alpha: .55),
                       width: 1.5,
                     ),
                   ),

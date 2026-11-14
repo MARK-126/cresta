@@ -306,6 +306,14 @@ Actualizado: 14 nov 2026 · opciones del video del recorrido, mapa Noche y edifi
 - `showPlaceSearch` acepta `near` (sugerir alrededor de otro lugar, "CERCA DE …") y `me` (tu posición para "Tu
   ubicación"). `fmtKm` separa miles.
 
+### Degradados y aros teal (`fix/degradado-barra`, 14 nov 2026)
+- Barra de acciones del mapa: degradado **circular** (`RadialGradient`, radio 3) de teal claro al centro (detrás de
+  Grabar) a casi negro en las puntas; más oscuro a pedido del usuario.
+- `Glass(outlined: true)`: aro teal de 1.5 px (`Andes.cyan` 80 %); lo usan los botones del mapa (`_MapButton`:
+  regresar, lupa, SOS, centrar, 2D/3D) y el título ("Explorar · Mapa libre").
+- `TonalCard(gradient:)`: las tarjetas de expedición del inicio van de pizarra (izquierda) a teal (derecha); la
+  etiqueta "Ejemplo" con fondo casi negro para leerse sobre el teal.
+
 ### Ajustes de mapa e imagen (`feat/ajustes-mapa-imagen`, 14 nov 2026)
 - El mapa abre en 2D (`_is3d = false` en `MapScreen`; el video y el sobrevuelo siguen pasando a 3D).
 - Barra de acciones del mapa (`map_chrome.dart`): degradado de teal (`#117572`) a pizarra en vez del vidrio.

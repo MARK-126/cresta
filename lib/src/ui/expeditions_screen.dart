@@ -201,6 +201,11 @@ class _ExpeditionCard extends StatelessWidget {
         Readiness.ready || Readiness.noMaps => null,
       },
       padding: const EdgeInsets.fromLTRB(18, 16, 16, 16),
+      // Oscuro a la izquierda y teal a la derecha (pedido del usuario, 14 nov 2026), a juego con
+      // la barra de acciones del mapa
+      gradient: const LinearGradient(
+        colors: [Color(0xFF151C1E), Color(0xFF0F4E4B)],
+      ),
       onTap: () => Navigator.push(
         context,
         MaterialPageRoute<void>(
@@ -441,8 +446,9 @@ class _Tag extends StatelessWidget {
     final scheme = Theme.of(context).colorScheme;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      // Gris oscuro: sobre la parte teal de la tarjeta, el gris claro se perdía
       decoration: BoxDecoration(
-        color: scheme.surfaceContainerHighest,
+        color: Andes.surfaceLowest.withValues(alpha: .85),
         borderRadius: BorderRadius.circular(4),
       ),
       child: Text(

@@ -1583,6 +1583,7 @@ class _MapScreenState extends State<MapScreen> {
                                     alignment: Alignment.centerLeft,
                                     heightFactor: 1,
                                     child: Glass(
+                                      outlined: true,
                                       child: Padding(
                                         padding: const EdgeInsets.symmetric(
                                           horizontal: 14,
@@ -2145,6 +2146,7 @@ class _MapButton extends StatelessWidget {
     return Tooltip(
       message: tooltip,
       child: Glass(
+        outlined: true,
         radius: 14,
         child: Material(
           type: MaterialType.transparency,
