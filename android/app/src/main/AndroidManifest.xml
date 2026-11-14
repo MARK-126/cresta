@@ -9,6 +9,8 @@
     <uses-permission android:name="android.permission.WAKE_LOCK"/>
     <!-- Pedir que Android no "optimice" la batería de la app: si no, puede cortar la grabación con la pantalla apagada -->
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS"/>
+    <!-- Guardar el video en la galería (gal): solo hace falta hasta Android 10 -->
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="29"/>
     <application
         android:label="Cresta"
         android:networkSecurityConfig="@xml/network_security_config"

@@ -10,6 +10,7 @@ import 'package:wakelock_plus/wakelock_plus.dart';
 import 'expeditions/expedition_store.dart';
 import 'gear/gear.dart';
 import 'location/location_service.dart';
+import 'map/video_options.dart';
 import 'offline/map_sources.dart';
 import 'photos/photo_store.dart';
 import 'places/place_index.dart';
@@ -66,6 +67,7 @@ class AppServices {
     this.places,
     this.tips,
     this.photos,
+    this.video,
   );
 
   final TileServer server;
@@ -110,6 +112,9 @@ class AppServices {
 
   /// Fotos tomadas durante los recorridos, con su ubicación.
   final PhotoStore photos;
+
+  /// Opciones del último video del recorrido.
+  final VideoOptionsStore video;
 
   static Future<AppServices> start() async {
     final support = await getApplicationSupportDirectory();
@@ -177,6 +182,10 @@ class AppServices {
     await profile.load();
     final tips = TipStore(JsonStore(File('${support.path}/tips.json')));
     await tips.load();
+    final video = VideoOptionsStore(
+      JsonStore(File('${support.path}/video.json')),
+    );
+    await video.load();
     final weather = WeatherService(
       client: client,
       file: JsonStore(File('${support.path}/weather.json')),
@@ -221,6 +230,7 @@ class AppServices {
       ),
       tips,
       photos,
+      video,
     );
   }
 }

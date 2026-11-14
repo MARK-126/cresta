@@ -193,7 +193,38 @@
     topo: ['bg-topo', 'landcover', 'landuse', 'park', 'water', 'waterway', 'buildings'],
     sat: ['sat'],
     relief: ['bg-relief', 'water', 'waterway'],
+    night: ['bg-topo', 'landcover', 'landuse', 'park', 'water', 'waterway', 'buildings'],
   };
+  // "Noche": el topográfico con los colores oscuros de Cresta (mismos datos, nada que descargar)
+  const NIGHT = {
+    'bg-topo': { 'background-color': '#141c1f' },
+    landcover: { 'fill-color': ['match', ['get', 'class'], 'wood', '#1c2e26', 'grass', '#1f2b25', 'rock', '#262c2e', 'ice', '#33434a', 'sand', '#2e2a20', 'wetland', '#1b2d2e', '#1f2b25'] },
+    landuse: { 'fill-color': '#1d2528' },
+    park: { 'line-color': '#4f7d43' },
+    water: { 'fill-color': '#12313f' },
+    waterway: { 'line-color': '#2b6684' },
+    buildings: { 'fill-color': '#2a3438' },
+    'buildings-3d': { 'fill-extrusion-color': '#33434a' },
+    'roads-case': { 'line-color': '#0a0f11' },
+    roads: { 'line-color': ['match', ['get', 'class'], ['motorway', 'trunk', 'primary', 'secondary'], '#b98d42', '#45535a'] },
+    tracks: { 'line-color': '#9a7650' },
+    trails: { 'line-color': '#e0675d' },
+    contours: { 'line-color': '#8a7458' },
+    'contour-labels': { 'text-color': '#b49f82', 'text-halo-color': 'rgba(8,12,14,0.9)' },
+    hillshade: { 'hillshade-shadow-color': '#020405', 'hillshade-highlight-color': '#5a6a70', 'hillshade-accent-color': '#2a2f28' },
+    boundaries: { 'line-color': '#8e80a0' },
+  };
+  const dayPaint = {};
+  function paintNight(on) {
+    Object.entries(NIGHT).forEach(([id, props]) => {
+      if (!map.getLayer(id)) return;
+      Object.entries(props).forEach(([p, v]) => {
+        const key = `${id}|${p}`;
+        if (!(key in dayPaint)) dayPaint[key] = map.getPaintProperty(id, p);
+        map.setPaintProperty(id, p, on ? v : dayPaint[key]);
+      });
+    });
+  }
 
   const map = new maplibregl.Map({
     container: 'map',
@@ -217,6 +248,7 @@
         track: { type: 'geojson', data: empty },
         'track-ends': { type: 'geojson', data: empty },
         'video-track': { type: 'geojson', data: empty, lineMetrics: true },
+        'video-streets': { type: 'geojson', data: empty },
         photos: { type: 'geojson', data: empty },
         regions: { type: 'geojson', data: empty },
         zones: { type: 'geojson', data: empty },
@@ -263,6 +295,10 @@
           layout: { 'line-join': 'round' }, paint: {
           'line-color': '#7d6f8c', 'line-opacity': 0.75, 'line-dasharray': [4, 2, 1, 2],
           'line-width': ['interpolate', ['linear'], ['zoom'], 3, ['match', ['get', 'admin_level'], 2, 1, 0.5], 10, ['match', ['get', 'admin_level'], 2, 2.2, 1.4]] } },
+        // Edificios en volumen (altura de OpenStreetMap; sin dato, OpenMapTiles pone ~5 m). Solo de cerca
+        { id: 'buildings-3d', type: 'fill-extrusion', source: 'topo', 'source-layer': 'building', minzoom: 14, layout: { visibility: 'none' }, paint: {
+          'fill-extrusion-color': '#ddd3c5', 'fill-extrusion-opacity': 0.85,
+          'fill-extrusion-height': ['coalesce', ['get', 'render_height'], 5], 'fill-extrusion-base': ['coalesce', ['get', 'render_min_height'], 0] } },
         // Nombres de calles, caminos y senderos (a lo largo de la línea). Las grandes desde zoom 12, el resto desde 14
         { id: 'road-names', type: 'symbol', source: 'topo', 'source-layer': 'transportation_name', minzoom: 12,
           filter: ['any', ['match', ['get', 'class'], ['motorway', 'trunk', 'primary', 'secondary'], true, false], ['>=', ['zoom'], 14]],
@@ -303,6 +339,10 @@
         // Traza del video: se pinta con un degradado según el avance (sin recalcular la geometría)
         { id: 'video-casing', type: 'line', source: 'video-track', layout: { visibility: 'none', 'line-join': 'round', 'line-cap': 'round' }, paint: { 'line-width': 10, 'line-gradient': ['step', ['line-progress'], 'rgba(0,0,0,0)', 1, 'rgba(0,0,0,0)'] } },
         { id: 'video-line', type: 'line', source: 'video-track', layout: { visibility: 'none', 'line-join': 'round', 'line-cap': 'round' }, paint: { 'line-width': 6, 'line-gradient': ['step', ['line-progress'], 'rgba(0,0,0,0)', 1, 'rgba(0,0,0,0)'] } },
+        // Nombres de las calles cercanas en el video: solo el pedazo de cada calle a ~200 m del recorrido
+        { id: 'video-streets', type: 'symbol', source: 'video-streets', layout: { visibility: 'none', 'symbol-placement': 'line', 'symbol-spacing': 260,
+          'text-field': ['get', 'name'], 'text-font': font(), 'text-size': 13, 'text-max-angle': 30, 'text-padding': 4, 'text-pitch-alignment': 'viewport' },
+          paint: { 'text-color': '#4a4540', 'text-halo-color': C.halo, 'text-halo-width': 1.4 } },
         // Inicio y fin del recorrido (el fin, solo al verlo terminado: grabando, el fin eres tú)
         { id: 'track-ends', type: 'circle', source: 'track-ends', paint: {
           'circle-radius': ['match', ['get', 'role'], 'head', 8, 7], 'circle-color': ['match', ['get', 'role'], 'start', '#f0bf63', '#ffa089'],
@@ -371,6 +411,7 @@
     route: { layers: ['route', 'route-casing', 'route-straight', 'route-straight-label', 'pois-dot', 'pois-label'] },
     track: { layers: ['track', 'track-casing'] },
     trails: { layers: ['trails', 'tracks'] },
+    buildings3d: { layers: ['buildings-3d'] },
     contours: { layers: ['contours', 'contour-labels'] },
     labels: { layers: ['peaks', 'peaks-dot', 'places', 'places-minor', 'places-region', 'road-names', 'water-names', 'boundaries', 'poi-icons'] },
     hillshade: { layers: ['hillshade'] },
@@ -409,7 +450,7 @@
   const NAME_LAYERS = ['peaks', 'places', 'places-minor', 'places-region', 'road-names', 'water-names', 'poi-icons'];
   const namePaint = {};
   function paintNames() {
-    const sat = base === 'sat';
+    const sat = base === 'sat' || base === 'night';
     NAME_LAYERS.forEach((id) => {
       if (!map.getLayer(id)) return;
       namePaint[id] ??= { color: map.getPaintProperty(id, 'text-color'), halo: map.getPaintProperty(id, 'text-halo-color') };
@@ -424,6 +465,7 @@
     whenReady(() => {
       const all = new Set(Object.values(BASE_LAYERS).flat());
       all.forEach((l) => show(l, BASE_LAYERS[base].includes(l)));
+      paintNight(base === 'night');
       paintNames();
       show('hillshade', base === 'relief' || !!visible.hillshade);
       map.setPaintProperty('hillshade', 'hillshade-exaggeration', base === 'relief' ? 0.85 : 0.5);
@@ -509,9 +551,9 @@
     return null;
   }
   // Un cartel redondeado ("INICIO", "FIN") con una punta hacia el punto
-  function pill(g, x, y, text, color) {
+  function pill(g, x, y, text, color, maxY = VIDEO.h - 200) {
     // Fuera del cuadro o sobre la franja del título, no se dibuja
-    if (x < -60 || x > VIDEO.w + 60 || y < 60 || y > VIDEO.h - 200) return;
+    if (x < -60 || x > VIDEO.w + 60 || y < 60 || y > maxY) return;
     g.font = 'bold 30px sans-serif';
     const w = g.measureText(text).width + 36, h = 50, top = y - h - 26;
     g.fillStyle = 'rgba(0,0,0,0.25)'; g.beginPath(); g.roundRect(x - w / 2 + 2, top + 3, w, h, 25); g.fill();
@@ -521,7 +563,10 @@
     g.beginPath(); g.arc(x, y, 11, 0, Math.PI * 2); g.fillStyle = color; g.fill();
     g.lineWidth = 4; g.strokeStyle = '#ffffff'; g.stroke();
   }
-  async function flyTrack(segments, record, caption) {
+  // opts (todas opcionales): base ('topo', 'sat', 'relief', 'night'), streets (nombres de las calles
+  // a ~200 m del recorrido), trails, contours, buildings (edificios 3D), caption (título y cifras),
+  // fast (más rápido), insetTop/insetBottom (espacio que tapa Flutter sobre la vista previa)
+  async function flyTrack(segments, record, caption, opts = {}) {
     stopFly();
     const coords = segments.flat();
     if (coords.length < 2) return;
@@ -544,14 +589,86 @@
     };
     const zoom = total < 2000 ? 15.6 : total < 8000 ? 14.6 : 13.6;
     const pitch = 60;
-    // Partes: 1 s quieto en el inicio, el vuelo (~6 s por km, 10–40 s) y 4 s alejándose para ver todo
+    const withCaption = opts.caption !== false; // título, cifras y barra de avance
+    // Partes: 1 s quieto en el inicio, el vuelo (~3.5 s por km, 8–25 s; rápido: la mitad, 5–12 s) y
+    // 4 s alejándose para ver todo (el 13 nov era ~6 s por km y se sentía lento)
     const fps = VIDEO.fps;
-    const nIntro = fps, nFly = Math.round(Math.max(10, Math.min(40, total / 1000 * 6)) * fps), nOutro = Math.round(2.5 * fps), nHold = Math.round(1.5 * fps);
+    const fast = !!opts.fast;
+    const flySecs = fast ? Math.max(5, Math.min(12, total / 1000 * 1.75)) : Math.max(8, Math.min(25, total / 1000 * 3.5));
+    const nIntro = Math.round((fast ? 0.6 : 1) * fps), nFly = Math.round(flySecs * fps);
+    const nOutro = Math.round((fast ? 1.8 : 2.5) * fps), nHold = Math.round((fast ? 1 : 1.5) * fps);
     const N = nIntro + nFly + nOutro + nHold;
 
     // Estado del mapa durante el video (se restaura al final)
-    const was = VIDEO_HIDE.map((id) => [id, map.getLayer(id) && map.getLayoutProperty(id, 'visibility')]);
-    VIDEO_HIDE.forEach((id) => map.getLayer(id) && map.setLayoutProperty(id, 'visibility', 'none'));
+    const hide = [...VIDEO_HIDE];
+    if (!opts.trails) hide.push('trails', 'tracks');
+    if (!opts.contours) hide.push('contours', 'contour-labels');
+    if (!opts.buildings) hide.push('buildings-3d');
+    const showIds = [...(opts.streets ? ['video-streets'] : []), ...(opts.buildings ? ['buildings-3d'] : [])];
+    const was = [...hide, ...showIds].map((id) => [id, map.getLayer(id) && map.getLayoutProperty(id, 'visibility')]);
+    hide.forEach((id) => map.getLayer(id) && map.setLayoutProperty(id, 'visibility', 'none'));
+    showIds.forEach((id) => map.getLayer(id) && map.setLayoutProperty(id, 'visibility', 'visible'));
+    const prevBase = base;
+    if (opts.base && opts.base !== base && BASE_LAYERS[opts.base]) setBase(opts.base);
+    // Nombres de calles: solo el pedazo de cada calle que pasa a ~200 m (dos cuadras) del recorrido;
+    // con el nombre de toda la calle, en una ciudad cuadriculada salían todas y en cualquier parte.
+    // Se buscan en los mosaicos ya cargados; conforme avanza la cámara se cargan más y se suman
+    let collectNames = () => {};
+    const streets = [];
+    if (opts.streets) {
+      const cell = 90; // m; la celda del recorrido y dos alrededor ≈ 200 m
+      const ky = 111320 / cell, kx = ky * Math.cos(coords[0][1] * Math.PI / 180);
+      const isNear = (p) => near.has(`${Math.floor(p[0] * kx)},${Math.floor(p[1] * ky)}`);
+      const near = new Set();
+      for (let i = 0; i < coords.length; i++) {
+        const a = coords[Math.max(0, i - 1)], b = coords[i];
+        const steps = Math.max(1, Math.ceil((d[i] - d[Math.max(0, i - 1)]) / (cell / 2)));
+        for (let s = 1; s <= steps; s++) {
+          const x = Math.floor((a[0] + (b[0] - a[0]) * s / steps) * kx), y = Math.floor((a[1] + (b[1] - a[1]) * s / steps) * ky);
+          for (let dx = -2; dx <= 2; dx++) for (let dy = -2; dy <= 2; dy++) near.add(`${x + dx},${y + dy}`);
+        }
+      }
+      const seen = new Set();
+      // Parte la calle (cada ~20 m) en pedazos seguidos que quedan cerca del recorrido
+      const nearRuns = (line) => {
+        const runs = [];
+        let run = null;
+        for (let i = 0; i < line.length; i++) {
+          const pts = [line[i]];
+          if (i > 0) {
+            const [a, b] = [line[i - 1], line[i]];
+            const m = Math.hypot((b[0] - a[0]) * kx, (b[1] - a[1]) * ky) * cell;
+            const n = Math.min(200, Math.ceil(m / 20));
+            pts.length = 0;
+            for (let s = 1; s <= n; s++) pts.push([a[0] + (b[0] - a[0]) * s / n, a[1] + (b[1] - a[1]) * s / n]);
+          }
+          for (const p of pts) {
+            if (isNear(p)) { if (!run) runs.push((run = [])); run.push(p); } else run = null;
+          }
+        }
+        return runs.filter((r) => r.length >= 4); // menos de ~60 m no le cabe el nombre
+      };
+      collectNames = () => {
+        let added = false;
+        for (const f of map.querySourceFeatures('topo', { sourceLayer: 'transportation_name' })) {
+          const name = f.properties && f.properties.name;
+          if (!name) continue;
+          const g = f.geometry;
+          const lines = g.type === 'LineString' ? [g.coordinates] : g.type === 'MultiLineString' ? g.coordinates : [];
+          for (const r of lines.flatMap(nearRuns)) {
+            // El mismo pedazo llega de varios mosaicos y en cada consulta: se guarda una vez
+            const k = `${name}|${r[0][0].toFixed(4)},${r[0][1].toFixed(4)}`;
+            if (seen.has(k)) continue;
+            seen.add(k);
+            streets.push({ type: 'Feature', properties: { name }, geometry: { type: 'LineString', coordinates: r } });
+            added = true;
+          }
+        }
+        if (added) map.getSource('video-streets').setData({ type: 'FeatureCollection', features: streets });
+      };
+      // Mismos colores que los demás nombres (claros sobre satélite y noche)
+      ['text-color', 'text-halo-color', 'text-halo-width'].forEach((p) => map.setPaintProperty('video-streets', p, map.getPaintProperty('road-names', p)));
+    }
     const fade = map._fadeDuration;
     map._fadeDuration = 0; // sin fundido de etiquetas: se veía como parpadeo
     map.getSource('video-track').setData({ type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: coords } });
@@ -585,6 +702,7 @@
       await sleep(60);
     }
     pose(coords[0], zoom, pitch, brg);
+    collectNames();
 
     // Vista final: todo el recorrido
     const bounds = coords.reduce((b, c) => b.extend(c), new maplibregl.LngLatBounds(coords[0], coords[0]));
@@ -597,11 +715,21 @@
     const cropW = Math.min(src.width, src.height * 9 / 16), cropH = cropW * 16 / 9;
     const sx = (src.width - cropW) / 2, sy = (src.height - cropH) / 2, scale = VIDEO.w / cropW;
     const toVideo = (pt) => { const q = map.project(pt); return [(q.x * dpr - sx) * scale, (q.y * dpr - sy) * scale]; };
+    // Vista previa: el mismo cuadro que va al video (con el punto que avanza y los carteles), sobre
+    // el mapa y entre lo que tapa Flutter arriba y abajo
+    Object.assign(c.style, {
+      position: 'fixed', left: '0', right: '0', top: `${opts.insetTop || 0}px`, bottom: `${opts.insetBottom || 0}px`,
+      width: '100%', height: `calc(100% - ${(opts.insetTop || 0) + (opts.insetBottom || 0)}px)`,
+      objectFit: 'contain', background: '#0e1416', zIndex: '5', pointerEvents: 'none',
+    });
+    const page = document.createElement('div');
+    Object.assign(page.style, { position: 'fixed', inset: '0', background: '#0e1416', zIndex: '4', pointerEvents: 'none' });
+    const maxY = withCaption ? VIDEO.h - 200 : VIDEO.h - 40;
     const draw = (state) => {
       g.drawImage(src, sx, sy, cropW, cropH, 0, 0, VIDEO.w, VIDEO.h);
       const [x0, y0] = toVideo(coords[0]);
-      if (state.end) { const [x1, y1] = toVideo(coords[coords.length - 1]); pill(g, x1, y1, '🏁 FIN', '#d64545'); }
-      pill(g, x0, y0, 'INICIO', '#2f9e5f');
+      if (state.end) { const [x1, y1] = toVideo(coords[coords.length - 1]); pill(g, x1, y1, '🏁 FIN', '#d64545', maxY); }
+      pill(g, x0, y0, 'INICIO', '#2f9e5f', maxY);
       if (!state.end) {
         const [hx, hy] = toVideo(state.head);
         g.beginPath(); g.arc(hx, hy, 22, 0, Math.PI * 2); g.fillStyle = 'rgba(255,160,137,0.35)'; g.fill();
@@ -609,6 +737,7 @@
         g.lineWidth = 4; g.strokeStyle = '#ffffff'; g.stroke();
       }
       // Título, cifras y avance
+      if (!withCaption) return;
       const band = g.createLinearGradient(0, VIDEO.h - 190, 0, VIDEO.h);
       band.addColorStop(0, 'rgba(14,20,22,0)'); band.addColorStop(1, 'rgba(14,20,22,0.88)');
       g.fillStyle = band; g.fillRect(0, VIDEO.h - 190, VIDEO.w, 190);
@@ -645,9 +774,12 @@
           flyEnd = { center: head, zoom, pitch, bearing: brg };
         } else {
           if (!overview) {
-            const cam = map.cameraForBounds(bounds, { padding: { top: 220, bottom: 320, left: 120, right: 120 }, bearing: brg, pitch: 45 });
+            // Márgenes dentro del recorte 9:16 (lo de fuera del recorte no sale en el video): espacio para
+            // los carteles arriba y la franja del título abajo. Antes eran fijos y sobraba mucho
+            const mx = (src.width - cropW) / 2 / dpr, my = (src.height - cropH) / 2 / dpr;
+            const cam = map.cameraForBounds(bounds, { padding: { top: my + 70, bottom: my + (withCaption ? 120 : 40), left: mx + 30, right: mx + 30 }, bearing: brg, pitch: 45 });
             // (MapLibre 4 no cuenta la inclinación al calcularlo: un poco más lejos para que quepa)
-            overview = { center: cam.center.toArray(), zoom: Math.min(cam.zoom - 0.4, zoom), pitch: 45, bearing: brg };
+            overview = { center: cam.center.toArray(), zoom: Math.min(cam.zoom - 0.15, zoom), pitch: 45, bearing: brg };
           }
           const f = smooth(Math.min(1, (k - nIntro - nFly) / nOutro));
           const lerp = (a, b) => a + (b - a) * f;
@@ -659,11 +791,13 @@
         // Espera a que cargue lo visible (máx 2.5 s por cuadro) y copia el cuadro al terminar de dibujarlo
         for (let t0 = performance.now(); !map.areTilesLoaded() && performance.now() - t0 < 2500;) { await nextRender(); await sleep(30); }
         await new Promise((r) => { map.once('render', () => { draw(state); r(); }); map.triggerRepaint(); });
+        if (k === 0) document.body.append(page, c);
         const frame = new VideoFrame(c, { timestamp: Math.round(k * 1e6 / fps), duration: Math.round(1e6 / fps) });
         encoder.encode(frame, { keyFrame: k % (fps * 2) === 0 });
         frame.close();
         while (encoder.encodeQueueSize > 4) await sleep(5);
         if (k % 10 === 0) emit('videoProgress', { p: +(k / N).toFixed(3) });
+        if (k % 15 === 0) collectNames();
       }
       await encoder.flush();
       if (failed) throw failed;
@@ -675,6 +809,9 @@
       emit('videoError', { message: `No se pudo generar el video: ${e && e.message ? e.message : e}` });
     } finally {
       try { encoder.close(); } catch (_) { /* ya cerrado */ }
+      page.remove(); c.remove();
+      if (opts.streets) map.getSource('video-streets').setData(empty);
+      if (base !== prevBase) setBase(prevBase);
       ['video-line', 'video-casing'].forEach((id) => map.setLayoutProperty(id, 'visibility', 'none'));
       was.forEach(([id, v]) => map.getLayer(id) && map.setLayoutProperty(id, 'visibility', v || 'visible'));
       map._fadeDuration = fade;

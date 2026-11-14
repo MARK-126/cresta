@@ -5,7 +5,10 @@ enum AppMode { mountain, civil }
 enum MapBase {
   topo('Topográfico'),
   sat('Satélite'),
-  relief('Relieve');
+  relief('Relieve'),
+
+  /// El topográfico con colores oscuros (mismos datos; nada que descargar).
+  night('Noche');
 
   const MapBase(this.label);
   final String label;
@@ -144,6 +147,13 @@ const mapLayers = <MapLayer>[
     LayerGroup.general,
     'Sombreado del relieve',
     Color(0xFF3D4A4F),
+  ),
+  MapLayer(
+    'buildings3d',
+    LayerGroup.general,
+    'Edificios en 3D',
+    Color(0xFFDDD3C5),
+    note: 'de cerca; altura de OpenStreetMap',
   ),
 ];
 

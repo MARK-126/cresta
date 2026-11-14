@@ -25,6 +25,21 @@ Teléfono de pruebas: Samsung Galaxy S23 Ultra (SM-S918B), Android 16, salvo que
 - Exportar GPX (ruta) a otra app.
 - Descargas de mapas en Android con conexión móvil (opción "solo Wi-Fi").
 
+## 2026-11-14
+
+**Opciones del video · `feat/video-opciones`** (S23, desde Mendoza; recorridos 2 y 3 del usuario, solo leídos)
+- Hoja "Opciones del video": fondo de cuatro opciones en una fila, velocidad e interruptores. **OK**.
+- Recorrido 2 (1 km, Mapa, Normal): vista previa con el punto que avanza y FIN; al terminar "Guardado en tu galería,
+  álbum Cresta". Video de 13 s (antes 15 s), 720 × 1280, 30 cuadros/s; calles con nombre, edificios en volumen y
+  alejamiento final que llena el cuadro. **OK**.
+- Recorrido 3 (6.8 km, Noche, Rápido): 15 s de video (antes ~46 s), 19 s en generarse. Falla: en la cuadrícula del
+  centro salían casi todas las calles y su nombre en cualquier parte (cada calle larga cruza el recorrido) → solo
+  el pedazo de calle a ~200 m (`video-streets`). Repetido: nombres solo junto a la traza. **OK**.
+- Mapa libre: "Noche" en Vista (montaña y ciudad) y "Edificios en 3D" en General; en el centro de Mendoza a z16 se
+  ven los edificios en volumen. **OK**.
+- Limpieza: borrados los 3 videos de prueba de `Pictures/Cresta` (sin entradas en la galería) y `video.json`; datos
+  del usuario con md5 iguales.
+
 ## 2026-11-13
 
 **Buscar y trazar · `feat/buscar-y-trazar`** (S23, desde Mendoza)

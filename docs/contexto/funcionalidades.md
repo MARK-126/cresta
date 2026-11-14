@@ -61,7 +61,11 @@ Detalles técnicos en `estado.md`; qué se probó en `pruebas.md`.
   no das señales; por SMS a los contactos del perfil o por WhatsApp.
 - Fotos durante el recorrido con su ubicación, en el mapa y en el detalle del recorrido.
 - Barra de datos al grabar (altitud, velocidad y distancia arriba del mapa) y brújula al girar el mapa.
-- Video del recorrido en 3D: sobrevuelo con la línea que se va dibujando, título y distancia; MP4 para compartir.
+- Video del recorrido en 3D: sobrevuelo con la línea que se va dibujando, título y distancia; MP4 que se guarda en la
+  galería (álbum Cresta) y se comparte. Antes se eligen fondo (Mapa, Satélite, Relieve, Noche), velocidad y capas
+  (nombres de las calles cercanas, edificios 3D, senderos, curvas de nivel, título); mientras se genera se ve igual
+  que el video.
+- Mapa Noche (oscuro, con los colores de Cresta) y edificios en 3D.
 - Indicaciones la primera vez que se abre el mapa, se traza una ruta o se graba (se pueden volver a ver desde el
   perfil).
 - Trazar rutas escribiendo la salida, las paradas y el destino (tu ubicación, tus mapas o, con conexión, todo el
@@ -99,7 +103,6 @@ De la revisión del 12 nov 2026 (detalle en `pendientes.md`):
 - SMS periódico con la ubicación a contactos (solo Android; necesita algo de señal celular).
 - Identificador de cumbres con la cámara (o girar el mapa 3D con la brújula y nombrar las cumbres).
 - Sincronizar recorridos y expediciones entre teléfonos o con la nube.
-- Mapa base oscuro, a juego con el diseño de la app.
 - Versión para iPhone probada en un teléfono real.
 - Reloj inteligente (Wear OS / Apple Watch) para ver datos de la grabación.
 - Más plantillas de equipo (invierno, escalada en roca, trail running).

@@ -13,6 +13,7 @@ import '../offline/tile_math.dart';
 import '../routes/planned_route.dart';
 import '../tracking/track.dart';
 import 'map_layers.dart';
+import 'video_options.dart';
 
 /// Evento enviado por `assets/web/map.js` a través del canal `CrestaBridge`.
 class MapEvent {
@@ -218,12 +219,16 @@ class MapBridge {
   Future<void> flyRoute() => _call('flyRoute');
 
   /// Sobrevuelo 3D de un recorrido grabado; con [record], lo graba a video (llega en
-  /// eventos 'videoChunk' y 'videoEnd').
+  /// eventos 'videoChunk' y 'videoEnd'). [options]: lo que se ve en el video; [insetTop] e
+  /// [insetBottom]: lo que tapa Flutter arriba y abajo de la vista previa.
   Future<void> flyTrack(
     List<TrackPoint> points, {
     bool record = false,
     String? title,
     String? detail,
+    VideoOptions? options,
+    double insetTop = 0,
+    double insetBottom = 0,
   }) {
     final segments = <List<List<double>>>[];
     int? seg;
@@ -237,7 +242,8 @@ class MapBridge {
     return _call('flyTrack', [
       segments,
       record,
-      if (title != null) {'title': title, 'detail': detail ?? ''},
+      title == null ? null : {'title': title, 'detail': detail ?? ''},
+      {...?options?.toJson(), 'insetTop': insetTop, 'insetBottom': insetBottom},
     ]);
   }
 
