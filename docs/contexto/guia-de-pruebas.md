@@ -51,6 +51,8 @@ Lo que se corrigió a partir de tus observaciones en el Parque San Martín, y c�
   Mientras se genera se ve el video tal cual, con el punto que avanza; al terminar dice "Guardado en tu galería,
   álbum Cresta" (revisa que esté en Galería) y ofrece Compartir. Prueba "Noche" y "Rápido", y en la ciudad mira si
   los edificios tapan la línea y si los nombres de calles quedan solo junto al recorrido.
+- **Splash** (14 nov 2026): al abrir la app, la montaña va un poco más arriba del centro y no salta al aparecer el
+  nombre CRESTA.
 - **Noche de inicio** (14 nov 2026): el mapa abre oscuro. En Capas → Vista elige "Claro"; al volver a abrir el mapa
   debe seguir claro (y lo mismo al revés).
 - **Contorno sobre el mapa oscuro** (14 nov 2026): con Noche o Satélite, la barra de abajo, el título y los botones de

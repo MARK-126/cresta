@@ -27,6 +27,9 @@ Teléfono de pruebas: Samsung Galaxy S23 Ultra (SM-S918B), Android 16, salvo que
 
 ## 2026-11-14
 
+**Splash más arriba · `fix/splash-arriba`** (S23) — capturas cada 0.4 s al abrir: la montaña de Android y la de Flutter
+en el mismo lugar (~43 % del alto), sin salto; la marca debajo deja el conjunto centrado. **OK**.
+
 **Noche de inicio · `feat/noche-por-defecto`** (S23)
 - Sin `map.json`: el mapa libre abre en Noche; Vista dice Noche · Claro · Satélite · Relieve. Elegir Claro → se guarda
   `{"base": "topo"}` y al volver a entrar abre claro. Selector de zonas: Noche · Claro · Satélite, abre con la

@@ -342,7 +342,9 @@ Actualizado: 14 nov 2026 · opciones del video del recorrido, mapa Noche y edifi
   Grabar · Desde aquí (terracota), Explorar · Mapa libre (cian), Trazar ruta · De A a B (oro, abre el mapa libre en
   modo planear) y Planear · Expedición. Con un recorrido en curso, Grabar y Trazar se apagan y el aviso de arriba
   lleva al recorrido. Debajo, "Tus expediciones" con su cuenta y las rutas guardadas.
-- Splash de Android 12+ y splash cinematográfico de Flutter (mín. 2 s, "BY FRUTAL"); ícono propio.
+- Splash de Android 12+ y splash cinematográfico de Flutter (mín. 2 s, "BY FRUTAL"); ícono propio. La montaña
+  va 64 dp arriba del centro en ambos (`SplashScreen.lift`; `fix/splash-arriba`, 14 nov 2026) y el resplandor
+  en `Alignment(0, -.35)`.
 
 ## Estructura
 
