@@ -120,6 +120,11 @@
   cada cuadro espera a que el mapa esté listo y lleva su tiempo exacto: siempre 30 cuadros/s; tarda unos segundos más.
   Carteles y punto dibujados sobre el cuadro (no como capas del mapa): no compiten por espacio con las etiquetas ni
   parpadean. 9:16 para redes y teléfonos.
+- **Imagen del recorrido** (14 nov 2026, pedidos del usuario): de inicio solo la traza sobre un color; siempre
+  vertical (la traza se gira: se pierde el norte arriba pero ocupa todo el alto); "desde dónde hasta dónde" con el
+  lugar o la calle de cada extremo, sacado del mapa sin señal (no comercios); sin título y con la fecha vertical en
+  el costado (elegida entre cuatro opciones); foto de fondo opcional y oscurecible. Pintada en Flutter (no en el
+  WebView) para que la vista previa y el archivo sean idénticos; con mapa, se captura el lienzo a 1,080 px.
 - **Recortar para compartir** (14 nov 2026, pedido del usuario, por los robos de bicis vinculados a Strava): el
   usuario elige en cada recorrido dónde cortar (no metros fijos). Se guarda en el recorrido y se aplica a lo que
   sale del teléfono (video, GPX, imagen); no al SOS ni al plan de salida, donde la posición real es lo que importa.
@@ -188,6 +193,12 @@
 - Ícono generado con `tool/make_icon.py`; adaptativo y monocromático en Android 8+/13.
 
 ## Errores resueltos (síntoma → causa → solución)
+
+- **Segunda imagen no llegaba a la galería** (14 nov 2026) → con el mismo nombre, `Gal.putImage` no la guardaba (con
+  video sí agrega "(1)") → la hora va en el nombre.
+- **Lugares de los extremos: "Mendoza", luego comercios** → a la distancia del encuadre los mosaicos no traen parques,
+  lagos ni calles chicas, y el parque es un polígono (se medía a sus vértices) → acercarse a cada extremo, contar
+  "dentro" del polígono y aceptar solo lugares de referencia.
 
 - **"Grabar · Desde aquí" mostraba una zona descargada** (14 nov 2026, usuario) → el mapa libre encuadraba siempre la
   última zona descargada y, al grabar, no buscaba tu posición (esperaba la del grabador): se veía la zona durante los

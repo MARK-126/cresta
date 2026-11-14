@@ -17,6 +17,7 @@ import 'panels.dart';
 import 'photo_screen.dart';
 import 'recording_panel.dart';
 import 'share_trim_screen.dart';
+import 'track_image_screen.dart';
 import 'route_destination.dart';
 import 'theme.dart';
 import 'video_options_sheet.dart';
@@ -212,6 +213,23 @@ class _TrackScreenState extends State<TrackScreen> {
                 : () => _makeVideo(t),
             icon: const Icon(Icons.movie_outlined),
             label: const Text('Video del recorrido en 3D'),
+            style: OutlinedButton.styleFrom(
+              minimumSize: const Size.fromHeight(52),
+            ),
+          ),
+          const SizedBox(height: 8),
+          OutlinedButton.icon(
+            onPressed: _points == null || _points!.length < 2
+                ? null
+                : () => Navigator.push(
+                    context,
+                    MaterialPageRoute<void>(
+                      builder: (_) =>
+                          TrackImageScreen(track: t, points: _points!),
+                    ),
+                  ),
+            icon: const Icon(Icons.image_outlined),
+            label: const Text('Imagen del recorrido'),
             style: OutlinedButton.styleFrom(
               minimumSize: const Size.fromHeight(52),
             ),

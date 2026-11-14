@@ -65,8 +65,11 @@ Detalles técnicos en `estado.md`; qué se probó en `pruebas.md`.
   galería (álbum Cresta) y se comparte. Antes se eligen fondo (Mapa, Satélite, Relieve, Noche), velocidad y capas
   (nombres de las calles cercanas, edificios 3D, senderos, curvas de nivel, título); mientras se genera se ve igual
   que el video.
+- Imagen del recorrido para compartir: la traza vertical con desde dónde hasta dónde, la fecha y las cifras, sobre
+  un color, una foto (oscurecible), el mapa o sin fondo (sticker); historia, cuadrado o publicación; PNG o JPG a la
+  galería.
 - Recortar para compartir: en cada recorrido eliges qué parte se ve al compartir (para no mostrar tu casa); se
-  aplica al video y al GPX.
+  aplica al video, al GPX y a la imagen.
 - Mapa Noche (oscuro, con los colores de Cresta), el de inicio; el claro se elige en Capas y se recuerda. Edificios
   en 3D. Sobre Noche y Satélite, los botones y la barra
   llevan un contorno para no confundirse con el mapa.
