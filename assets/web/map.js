@@ -1113,7 +1113,8 @@
       // essential: con animaciones reducidas, MapLibre cambia flyTo por un salto que descarta el padding
       map.flyTo({ essential: true, center: [lng, lat], zoom, padding, pitch: is3d ? (pitch ?? map.getPitch()) : 0, ...(bearingDeg == null ? {} : { bearing: bearingDeg }), duration: ms(1600) });
     },
-    jumpTo(lng, lat, zoom) { map.jumpTo({ center: [lng, lat], zoom }); },
+    // Sin animación (p. ej. al abrir el mapa ya en tu posición); con pitch, también la inclinación
+    jumpTo(lng, lat, zoom, pitch) { map.jumpTo({ center: [lng, lat], zoom, padding, ...(pitch == null ? {} : { pitch: is3d ? pitch : 0 }) }); },
     // Para pruebas: grados de pendiente del relieve en un punto (null si no hay relieve)
     async slopeAt(lng, lat, z = 12) {
       const n = 2 ** z, xf = (lng + 180) / 360 * n;

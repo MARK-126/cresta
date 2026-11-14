@@ -241,7 +241,18 @@ class _MapScreenState extends State<MapScreen> {
     if (saved != null) await _bridge.setPois(saved.pois);
     if (civilJson != null) await _bridge.setCivil(civilJson);
     await _bridge.set3d(true);
-    // Mapa libre: encuadra la última zona descargada (todas juntas podrían abarcar medio mundo)
+    // Mapa libre sin nada que mostrar (explorar o "Grabar desde aquí"): directo a donde estás
+    final autoCenter =
+        _free &&
+        _route == null &&
+        widget.showTrackId == null &&
+        !_comparing &&
+        !widget.plan;
+    final here = autoCenter && !_recordingHere ? await _knownPosition() : null;
+    if (!mounted) return;
+    // Si no se sabe dónde estás, la última zona descargada (todas juntas podrían abarcar medio
+    // mundo). Antes se encuadraba siempre: al grabar se veía la zona descargada mientras salían
+    // los avisos y hasta la primera lectura del GPS
     final bounds = _free
         ? _services.maps.regions.lastOrNull?.bbox
         : _services.expeditions.statusOf(_expedition).bounds;
@@ -251,6 +262,9 @@ class _MapScreenState extends State<MapScreen> {
       await _bridge.setCompare(_compareLines());
     } else if (_route != null) {
       await _bridge.fitRoute();
+    } else if (here != null) {
+      await _bridge.setMyLocation(here.$1, here.$2);
+      await _bridge.jumpTo(here.$1, here.$2, 15, pitch: 55);
     } else if (bounds != null) {
       await _bridge.fitBounds(bounds);
     }
@@ -290,14 +304,7 @@ class _MapScreenState extends State<MapScreen> {
       showTipOnce(context, Tips.map);
     }
     if (mounted) {
-      await _autoLocate(
-        center:
-            _free &&
-            _route == null &&
-            widget.showTrackId == null &&
-            !_comparing &&
-            !widget.plan,
-      );
+      await _autoLocate(center: autoCenter);
     }
   }
 
@@ -1384,6 +1391,16 @@ class _MapScreenState extends State<MapScreen> {
     } else {
       _watchMe();
     }
+  }
+
+  /// Dónde estás sin esperar al GPS: la última posición que guardó el teléfono (llega al
+  /// instante y sin señal) o la última del grabador. Null sin permiso o si no se sabe.
+  Future<(double, double)?> _knownPosition() async {
+    if (!await _location.isGranted()) return null;
+    final last = await _location.lastKnown();
+    if (last != null) return (last.longitude, last.latitude);
+    final fix = _recorder.lastFix;
+    return fix == null ? null : (fix.lng, fix.lat);
   }
 
   /// Centra en tu posición sin cambiar la inclinación ni el giro que tenga el mapa.

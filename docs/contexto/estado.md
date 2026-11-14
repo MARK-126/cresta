@@ -327,6 +327,10 @@ Actualizado: 14 nov 2026 · opciones del video del recorrido, mapa Noche y edifi
   `render_height`), apagada de inicio, en General.
 
 ### Interfaz
+- **Abrir en tu posición** (`fix/grabar-en-tu-posicion`, 14 nov 2026): el mapa libre sin ruta (explorar y "Grabar ·
+  Desde aquí") salta sin animación a la última posición conocida (`_knownPosition`: `lastKnown` del teléfono o
+  `recorder.lastFix`) en vez de encuadrar la última zona descargada, que queda solo si no se sabe dónde estás.
+  `MapBridge.jumpTo` acepta `pitch` y usa el padding del mapa.
 - **Noche de inicio** (`feat/noche-por-defecto`, 14 nov 2026): `MapBaseStore` (`map/map_prefs.dart`, `map.json`,
   `services.mapBase`) recuerda la base; sin archivo, Noche. `MapBase` en orden Noche · Claro (antes "Topográfico") ·
   Satélite · Relieve. El selector de zonas ofrece Noche · Claro · Satélite y comparte la preferencia (Relieve ahí

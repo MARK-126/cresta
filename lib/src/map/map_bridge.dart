@@ -256,8 +256,8 @@ class MapBridge {
     double? pitch = 55,
     double? bearing,
   }) => _call('flyTo', [lng, lat, zoom, pitch, bearing]);
-  Future<void> jumpTo(double lng, double lat, double zoom) =>
-      _call('jumpTo', [lng, lat, zoom]);
+  Future<void> jumpTo(double lng, double lat, double zoom, {double? pitch}) =>
+      _call('jumpTo', [lng, lat, zoom, pitch]);
   Future<void> showCursorAtMeters(double m) => _call('showCursorAtMeters', [m]);
   Future<void> hideCursor() => _call('hideCursor');
   Future<void> setMembers(List<Map<String, Object>> members) =>
