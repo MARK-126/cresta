@@ -26,6 +26,7 @@ import '../places/places.dart';
 import '../tips/tips.dart';
 import '../routes/planned_route.dart';
 import '../routes/route_planner.dart';
+import '../tracking/share_trim.dart';
 import '../tracking/track.dart';
 import '../tracking/track_recorder.dart';
 import 'area_picker_screen.dart';
@@ -293,7 +294,9 @@ class _MapScreenState extends State<MapScreen> {
       await _bridge.setTrack(points, showEnd: true);
       await _bridge.setPhotos(_services.photos.forTrack(widget.showTrackId!));
       if (widget.video && points.length > 1) {
-        _startVideo(points);
+        // El video sale del teléfono: sin el inicio ni el fin que el usuario recortó
+        final t = _services.tracks.byId(widget.showTrackId!);
+        _startVideo(t == null ? points : forSharing(t, points));
       } else if (points.length > 1) {
         await _bridge.fitBounds(_boundsOf(points));
       }

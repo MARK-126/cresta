@@ -7,6 +7,7 @@ import 'package:share_plus/share_plus.dart';
 import '../app_services.dart';
 import '../data/trail_route.dart';
 import '../tracking/gpx.dart';
+import '../tracking/share_trim.dart';
 import '../tracking/track.dart';
 import 'elevation_profile.dart';
 import 'format.dart';
@@ -15,6 +16,7 @@ import 'offline_widgets.dart';
 import 'panels.dart';
 import 'photo_screen.dart';
 import 'recording_panel.dart';
+import 'share_trim_screen.dart';
 import 'route_destination.dart';
 import 'theme.dart';
 import 'video_options_sheet.dart';
@@ -184,6 +186,29 @@ class _TrackScreenState extends State<TrackScreen> {
           OutlinedButton.icon(
             onPressed: _points == null || _points!.length < 2
                 ? null
+                : () => _trim(t),
+            icon: const Icon(Icons.content_cut_rounded),
+            label: const Text('Recortar para compartir'),
+            style: OutlinedButton.styleFrom(
+              minimumSize: const Size.fromHeight(52),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.only(top: 6, bottom: 4),
+            child: Text(
+              t.trimmed
+                  ? 'Al compartir se ocultan ${fmtDistance(t.hideStart)} al inicio y ${fmtDistance(t.hideEnd)} al final.'
+                  : 'Al compartir se ve completo, también dónde empieza y termina.',
+              style: TextStyle(
+                fontSize: 12,
+                color: t.trimmed ? Andes.cyan : muted,
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          OutlinedButton.icon(
+            onPressed: _points == null || _points!.length < 2
+                ? null
                 : () => _makeVideo(t),
             icon: const Icon(Icons.movie_outlined),
             label: const Text('Video del recorrido en 3D'),
@@ -219,7 +244,7 @@ class _TrackScreenState extends State<TrackScreen> {
     final dir = await getTemporaryDirectory();
     final safe = t.name.replaceAll(RegExp(r'[^\w\- áéíóúñÁÉÍÓÚÑ]'), '').trim();
     final file = File('${dir.path}/${safe.isEmpty ? 'recorrido' : safe}.gpx');
-    await file.writeAsString(toGpx(t, _points!));
+    await file.writeAsString(toGpx(t, forSharing(t, _points!)));
     await SharePlus.instance.share(
       ShareParams(
         files: [XFile(file.path, mimeType: 'application/gpx+xml')],
@@ -229,6 +254,17 @@ class _TrackScreenState extends State<TrackScreen> {
             : box.localToGlobal(Offset.zero) & box.size,
       ),
     );
+  }
+
+  /// Elegir qué parte se ve al compartir (sin el inicio ni el fin, p. ej. tu casa).
+  Future<void> _trim(Track t) async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute<void>(
+        builder: (_) => ShareTrimScreen(track: t, points: _points!),
+      ),
+    );
+    if (mounted) setState(() {});
   }
 
   /// Elegir fondo, capas y velocidad, y abrir el mapa que genera el video.

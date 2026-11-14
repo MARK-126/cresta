@@ -27,6 +27,14 @@ Teléfono de pruebas: Samsung Galaxy S23 Ultra (SM-S918B), Android 16, salvo que
 
 ## 2026-11-14
 
+**Recortar para compartir · `feat/recorte-compartir`** (S23; recorrido 3 del usuario, respaldado y restaurado)
+- Detalle → "Recortar para compartir": mapa con la traza; tiradores a 698 m y 458 m → "Se ocultan 698 m al inicio y
+  458 m al final. Se ven 5.7 km de 6.8 km", lo oculto gris punteado. Guardar → `hideStartM: 698`, `hideEndM: 458` y
+  el estado en el detalle. **OK**.
+- Video rápido: empieza en 12 de Octubre (698 m después del inicio real) y el contador termina en 5.66 km. **OK**.
+  Nota: el título sigue con las cifras del recorrido completo (6.81 km).
+- Limpieza: `tracks.json` restaurado (md5 igual), video borrado de la galería.
+
 **Abrir en tu posición · `fix/grabar-en-tu-posicion`** (S23, en Mendoza) — Inicio → "Grabar · Desde aquí": con la hoja
 "Grabar recorrido" abierta el mapa ya está en tu posición (antes, la última zona descargada). Se cerró sin grabar: sin
 recorrido nuevo, datos iguales. **OK**.

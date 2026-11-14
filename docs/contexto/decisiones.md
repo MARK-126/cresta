@@ -120,6 +120,10 @@
   cada cuadro espera a que el mapa esté listo y lleva su tiempo exacto: siempre 30 cuadros/s; tarda unos segundos más.
   Carteles y punto dibujados sobre el cuadro (no como capas del mapa): no compiten por espacio con las etiquetas ni
   parpadean. 9:16 para redes y teléfonos.
+- **Recortar para compartir** (14 nov 2026, pedido del usuario, por los robos de bicis vinculados a Strava): el
+  usuario elige en cada recorrido dónde cortar (no metros fijos). Se guarda en el recorrido y se aplica a lo que
+  sale del teléfono (video, GPX, imagen); no al SOS ni al plan de salida, donde la posición real es lo que importa.
+  Por distancia a lo largo de la traza, no por círculo alrededor de un punto.
 - **Opciones del video** (14 nov 2026, pedido del usuario): una hoja antes de generar en vez de varias preguntas; se
   recuerda la última elección. De inicio: calles cercanas y edificios sí; senderos (en la ciudad son banquetas) y
   curvas no. "Normal" ya es más rápido que antes (~3.5 s/km); "Rápido", la mitad.

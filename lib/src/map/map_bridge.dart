@@ -113,6 +113,16 @@ class MapBridge {
       _call('setRoute', [route]);
 
   /// Varias rutas a la vez para compararlas: cada una `{coordinates, color}`; encuadra todas.
+  /// Partes del recorrido que se ocultan al compartir (grises y punteadas).
+  Future<void> setHidden(List<List<TrackPoint>> parts) => _call('setHidden', [
+    [
+      for (final part in parts)
+        [
+          for (final p in part) [p.lng, p.lat],
+        ],
+    ],
+  ]);
+
   Future<void> setCompare(List<Map<String, Object>> lines) =>
       _call('setCompare', [lines]);
 

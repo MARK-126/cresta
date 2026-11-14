@@ -249,6 +249,7 @@
         'track-ends': { type: 'geojson', data: empty },
         'video-track': { type: 'geojson', data: empty, lineMetrics: true },
         'video-streets': { type: 'geojson', data: empty },
+        'track-hidden': { type: 'geojson', data: empty },
         photos: { type: 'geojson', data: empty },
         regions: { type: 'geojson', data: empty },
         zones: { type: 'geojson', data: empty },
@@ -333,6 +334,8 @@
         { id: 'pois-label', type: 'symbol', source: 'pois', layout: {
           'text-field': ['get', 'name'], 'text-font': font('bold'), 'text-size': 11.5, 'text-offset': [0, 1.2], 'text-anchor': 'top', 'text-optional': true },
           paint: { 'text-color': '#0e1416', 'text-halo-color': 'rgba(255,255,255,0.92)', 'text-halo-width': 1.4 } },
+        // Recorte para compartir: lo que no se mostrará, gris y punteado bajo el recorrido
+        { id: 'track-hidden', type: 'line', source: 'track-hidden', layout: { 'line-join': 'round', 'line-cap': 'round' }, paint: { 'line-color': '#9aa5a8', 'line-width': 4, 'line-opacity': 0.85, 'line-dasharray': [1.2, 1.4] } },
         // Recorrido grabado (coral, el color de grabar; encima de la ruta planeada, que es teal)
         { id: 'track-casing', type: 'line', source: 'track', layout: { 'line-join': 'round', 'line-cap': 'round' }, paint: { 'line-color': '#0e1416', 'line-width': 8, 'line-opacity': 0.8 } },
         { id: 'track', type: 'line', source: 'track', layout: { 'line-join': 'round', 'line-cap': 'round' }, paint: { 'line-color': '#ffa089', 'line-width': 4.5 } },
@@ -538,7 +541,8 @@
   }
   const VIDEO = { w: 720, h: 1280, fps: 30 };
   // Capas que en el video solo estorban: cambian de lugar al girar la cámara y parpadean
-  const VIDEO_HIDE = ['poi-icons', 'road-names', 'places-minor', 'regions-line', 'track', 'track-casing', 'track-ends', 'track-ends-label', 'found-ring', 'found-dot', 'found-label'];
+  // Las fotos también: una tomada en casa mostraría el inicio que el usuario recortó
+  const VIDEO_HIDE = ['poi-icons', 'road-names', 'places-minor', 'regions-line', 'track', 'track-casing', 'track-ends', 'track-ends-label', 'track-hidden', 'photos', 'found-ring', 'found-dot', 'found-label'];
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   const nextRender = () => new Promise((r) => { map.once('render', r); map.triggerRepaint(); });
   const smooth = (x) => x * x * (3 - 2 * x);
@@ -1021,6 +1025,13 @@
       });
     },
     /// Tramos del recorrido: lista de listas de [lng, lat] (una por cada tramo entre pausas).
+    // Partes del recorrido que se ocultan al compartir (cada una, lista de [lng, lat])
+    setHidden(lines) {
+      whenReady(() => map.getSource('track-hidden').setData({
+        type: 'FeatureCollection',
+        features: lines.filter((l) => l.length > 1).map((coordinates) => ({ type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates } })),
+      }));
+    },
     setTrack(segments, showEnd = false) {
       const all = segments.flat();
       whenReady(() => {
