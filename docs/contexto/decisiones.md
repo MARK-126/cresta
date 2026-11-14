@@ -120,6 +120,8 @@
   cada cuadro espera a que el mapa esté listo y lleva su tiempo exacto: siempre 30 cuadros/s; tarda unos segundos más.
   Carteles y punto dibujados sobre el cuadro (no como capas del mapa): no compiten por espacio con las etiquetas ni
   parpadean. 9:16 para redes y teléfonos.
+- **Ícono del perfil = persona** (14 nov 2026, pedido del usuario): es lo que se reconoce como "tu cuenta"; la
+  credencial no se entendía.
 - **Imagen del recorrido** (14 nov 2026, pedidos del usuario): de inicio solo la traza sobre un color; siempre
   vertical (la traza se gira: se pierde el norte arriba pero ocupa todo el alto); "desde dónde hasta dónde" con el
   lugar o la calle de cada extremo, sacado del mapa sin señal (no comercios); sin título y con la fecha vertical en

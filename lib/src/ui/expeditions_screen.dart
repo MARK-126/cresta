@@ -37,7 +37,7 @@ class ExpeditionsScreen extends StatelessWidget {
             actions: [
               IconButton(
                 tooltip: 'Perfil de emergencia',
-                icon: const Icon(Icons.badge_outlined),
+                icon: const Icon(Icons.person_outline_rounded),
                 onPressed: () => openProfile(context),
               ),
               Padding(

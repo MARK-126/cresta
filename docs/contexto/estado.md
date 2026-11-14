@@ -355,6 +355,8 @@ Actualizado: 14 nov 2026 · opciones del video del recorrido, mapa Noche y edifi
   `render_height`), apagada de inicio, en General.
 
 ### Interfaz
+- Inicio: el botón del perfil usa `Icons.person_outline_rounded` (antes la credencial `badge_outlined`; pedido del
+  usuario, 14 nov 2026).
 - **Abrir en tu posición** (`fix/grabar-en-tu-posicion`, 14 nov 2026): el mapa libre sin ruta (explorar y "Grabar ·
   Desde aquí") salta sin animación a la última posición conocida (`_knownPosition`: `lastKnown` del teléfono o
   `recorder.lastFix`) en vez de encuadrar la última zona descargada, que queda solo si no se sabe dónde estás.

@@ -27,6 +27,8 @@ Teléfono de pruebas: Samsung Galaxy S23 Ultra (SM-S918B), Android 16, salvo que
 
 ## 2026-11-14
 
+**Ícono del perfil · `fix/icono-perfil`** (S23) — en el inicio, junto a SOS, la personita sola. **OK**.
+
 **Imagen del recorrido · `feat/imagen-recorrido`** (S23; recorrido 3 del usuario, solo leído)
 - Mapa de fondo al tamaño del recuadro: nombres enormes → mapa a 400 px lógicos reducido. **OK** después.
 - Fondo liso de inicio: traza vertical, "DESDE Juan Galo de Lavalle" y "HASTA Ciclovía" (antes "Mendoza" y luego
