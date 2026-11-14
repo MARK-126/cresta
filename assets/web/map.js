@@ -339,9 +339,10 @@
           paint: { 'text-color': '#0e1416', 'text-halo-color': 'rgba(255,255,255,0.92)', 'text-halo-width': 1.4 } },
         // Recorte para compartir: lo que no se mostrará, gris y punteado bajo el recorrido
         { id: 'track-hidden', type: 'line', source: 'track-hidden', layout: { 'line-join': 'round', 'line-cap': 'round' }, paint: { 'line-color': '#9aa5a8', 'line-width': 4, 'line-opacity': 0.85, 'line-dasharray': [1.2, 1.4] } },
-        // Recorrido grabado (coral, el color de grabar; encima de la ruta planeada, que es teal)
+        // Recorrido grabado en teal, el color de la app (pedido del usuario, 14 nov 2026; antes coral). Con un
+        // recorrido encima, la ruta planeada se atenúa (setTrack) para no confundirlas
         { id: 'track-casing', type: 'line', source: 'track', layout: { 'line-join': 'round', 'line-cap': 'round' }, paint: { 'line-color': '#0e1416', 'line-width': 8, 'line-opacity': 0.8 } },
-        { id: 'track', type: 'line', source: 'track', layout: { 'line-join': 'round', 'line-cap': 'round' }, paint: { 'line-color': '#ffa089', 'line-width': 4.5 } },
+        { id: 'track', type: 'line', source: 'track', layout: { 'line-join': 'round', 'line-cap': 'round' }, paint: { 'line-color': '#46eae5', 'line-width': 4.5 } },
         // Traza del video: se pinta con un degradado según el avance (sin recalcular la geometría)
         { id: 'video-casing', type: 'line', source: 'video-track', layout: { visibility: 'none', 'line-join': 'round', 'line-cap': 'round' }, paint: { 'line-width': 10, 'line-gradient': ['step', ['line-progress'], 'rgba(0,0,0,0)', 1, 'rgba(0,0,0,0)'] } },
         { id: 'video-line', type: 'line', source: 'video-track', layout: { visibility: 'none', 'line-join': 'round', 'line-cap': 'round' }, paint: { 'line-width': 6, 'line-gradient': ['step', ['line-progress'], 'rgba(0,0,0,0)', 1, 'rgba(0,0,0,0)'] } },
@@ -793,7 +794,7 @@
     map.getSource('video-track').setData({ type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: coords } });
     const progress = (p) => {
       const q = Math.max(1e-6, Math.min(1, p));
-      map.setPaintProperty('video-line', 'line-gradient', ['step', ['line-progress'], '#ffa089', q, 'rgba(255,160,137,0)']);
+      map.setPaintProperty('video-line', 'line-gradient', ['step', ['line-progress'], '#46eae5', q, 'rgba(70,234,229,0)']);
       map.setPaintProperty('video-casing', 'line-gradient', ['step', ['line-progress'], 'rgba(14,20,22,0.85)', q, 'rgba(14,20,22,0)']);
     };
     ['video-line', 'video-casing'].forEach((id) => map.setLayoutProperty(id, 'visibility', 'visible'));
@@ -851,8 +852,8 @@
       pill(g, x0, y0, 'INICIO', '#2f9e5f', maxY);
       if (!state.end) {
         const [hx, hy] = toVideo(state.head);
-        g.beginPath(); g.arc(hx, hy, 22, 0, Math.PI * 2); g.fillStyle = 'rgba(255,160,137,0.35)'; g.fill();
-        g.beginPath(); g.arc(hx, hy, 12, 0, Math.PI * 2); g.fillStyle = '#ffa089'; g.fill();
+        g.beginPath(); g.arc(hx, hy, 22, 0, Math.PI * 2); g.fillStyle = 'rgba(70,234,229,0.35)'; g.fill();
+        g.beginPath(); g.arc(hx, hy, 12, 0, Math.PI * 2); g.fillStyle = '#46eae5'; g.fill();
         g.lineWidth = 4; g.strokeStyle = '#ffffff'; g.stroke();
       }
       // Título, cifras y avance
@@ -869,7 +870,7 @@
       g.fillText(`${(state.m / 1000).toFixed(2)} km`, VIDEO.w - 32, VIDEO.h - 82);
       g.fillText('CRESTA', VIDEO.w - 32, VIDEO.h - 46);
       g.fillStyle = 'rgba(255,255,255,0.18)'; g.fillRect(0, VIDEO.h - 8, VIDEO.w, 8);
-      g.fillStyle = '#ffa089'; g.fillRect(0, VIDEO.h - 8, VIDEO.w * state.m / total, 8);
+      g.fillStyle = '#46eae5'; g.fillRect(0, VIDEO.h - 8, VIDEO.w * state.m / total, 8);
     };
 
     const muxer = new Mp4Muxer.Muxer({ target: new Mp4Muxer.ArrayBufferTarget(), video: { codec: 'avc', width: VIDEO.w, height: VIDEO.h, frameRate: fps }, fastStart: 'in-memory' });
@@ -1151,6 +1152,8 @@
       const all = segments.flat();
       whenReady(() => {
         map.getSource('track').setData({ type: 'Feature', properties: {}, geometry: { type: 'MultiLineString', coordinates: segments } });
+        // Recorrido y ruta son teal: con recorrido, la ruta queda tenue debajo
+        ['route', 'route-straight'].forEach((id) => map.getLayer(id) && map.setPaintProperty(id, 'line-opacity', all.length > 1 ? 0.45 : 1));
         const ends = all.length ? [pointFeature(all[0], { role: 'start' })] : [];
         if (showEnd && all.length > 1) ends.push(pointFeature(all[all.length - 1], { role: 'end' }));
         map.getSource('track-ends').setData({ type: 'FeatureCollection', features: ends });

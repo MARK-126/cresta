@@ -112,7 +112,7 @@
   mostraba "mejorar la precisión" en cada inicio y, si se rechazaba, cortaba el GPS; el proveedor `fused` del sistema
   (Android 12+) combina GPS y red sin ese aviso. En la montaña no hay Wi-Fi ni antenas de todos modos.
 - **Colores de líneas** (pedido del usuario): la ruta a seguir en teal (el color de la app); lo grabado en coral (el
-  color de grabar), como el naranja de Wikiloc. Inicio dorado, fin coral, en rutas y recorridos.
+  color de grabar), como el naranja de Wikiloc. **Reemplazado el 14 nov 2026:** lo grabado también es teal (ver arriba). Inicio dorado, fin coral, en rutas y recorridos.
 - **Íconos de lugares con emoji del sistema** dibujados en el teléfono: MapLibre necesita imágenes (sprite) y no hay
   sprite descargado; el emoji del sistema funciona sin señal. Sin nombre se ocultan estatuas y monumentos (ensuciaban).
 - **Video generado, no grabado** (13 nov 2026): con `MediaRecorder` cada cuadro lleva la hora real, así que si el mapa
@@ -173,6 +173,9 @@
 
 ## Diseño (UI)
 
+- **Recorrido en teal y mapa en 2D** (14 nov 2026, pedido del usuario; reemplaza "lo grabado en coral"): teal es el
+  color de la app. Para no confundir el recorrido con la ruta planeada (también teal), la ruta se atenúa cuando hay
+  recorrido. 2D de inicio: se lee mejor; el 3D queda a un toque.
 - **Rediseño del 14 nov 2026** (crítica con dos referencias del usuario, pantallas de producto con tipografía
   gigante): se toma su lenguaje, no su tema claro ni su tono de vitrina. Un protagonista por pantalla en Barlow
   Condensed (inicio, expedición, recorrido, resumen, bitácora); en el mapa y al grabar no. Barra de acción fija abajo

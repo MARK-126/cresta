@@ -163,7 +163,8 @@ class _MapScreenState extends State<MapScreen> {
   AppMode _mode = AppMode.mountain;
   late Map<String, bool> _layers = layerPreset(_mode);
   MapBase _base = MapBase.night;
-  bool _is3d = true;
+  // 2D de inicio (pedido del usuario, 14 nov 2026): se lee mejor; 3D con el botón
+  bool _is3d = false;
   double _exaggeration = 1.4;
   bool _flying = false;
   double? _cursor;
@@ -241,7 +242,7 @@ class _MapScreenState extends State<MapScreen> {
     if (_routeJson != null) await _bridge.setRoute(_routeJson);
     if (saved != null) await _bridge.setPois(saved.pois);
     if (civilJson != null) await _bridge.setCivil(civilJson);
-    await _bridge.set3d(true);
+    await _bridge.set3d(_is3d);
     // Mapa libre sin nada que mostrar (explorar o "Grabar desde aquí"): directo a donde estás
     final autoCenter =
         _free &&

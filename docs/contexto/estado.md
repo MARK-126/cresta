@@ -306,6 +306,14 @@ Actualizado: 14 nov 2026 · opciones del video del recorrido, mapa Noche y edifi
 - `showPlaceSearch` acepta `near` (sugerir alrededor de otro lugar, "CERCA DE …") y `me` (tu posición para "Tu
   ubicación"). `fmtKm` separa miles.
 
+### Ajustes de mapa e imagen (`feat/ajustes-mapa-imagen`, 14 nov 2026)
+- El mapa abre en 2D (`_is3d = false` en `MapScreen`; el video y el sobrevuelo siguen pasando a 3D).
+- Barra de acciones del mapa (`map_chrome.dart`): degradado de teal (`#117572`) a pizarra en vez del vidrio.
+- Recorrido grabado en teal (`#46EAE5`) en el mapa, el video (línea, punto y barra), la imagen y las siluetas; con
+  recorrido, la ruta planeada baja a 45 % de opacidad (`setTrack`).
+- Imagen: tamaños como proporción (9:16, 1:1, 4:5) y capas del mapa elegibles (Senderos, Curvas de nivel, Nombres,
+  Lugares; de inicio solo Nombres).
+
 ### Rediseño: jerarquía, barra fija y limpieza (`feat/rediseno-jerarquia`, 14 nov 2026)
 Tras la crítica de diseño con las referencias del usuario (tipografía gigante, un protagonista, un acento, barra de
 acción abajo):

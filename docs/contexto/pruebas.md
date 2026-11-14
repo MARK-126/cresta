@@ -27,6 +27,10 @@ Teléfono de pruebas: Samsung Galaxy S23 Ultra (SM-S918B), Android 16, salvo que
 
 ## 2026-11-14
 
+**Ajustes de mapa e imagen · `feat/ajustes-mapa-imagen`** (S23) — mapa libre en 2D (el botón ofrece "3D"); barra
+de acciones con degradado teal; "Ver en el mapa" del recorrido 3 con la traza teal; imagen con mapa sin senderos, con
+las capas elegibles y tamaños 9:16 · 1:1 · 4:5. **OK**.
+
 **Rediseño · `feat/rediseno-jerarquia`** (S23, solo vistas; datos iguales)
 - Inicio con "GRABAR" enorme y tres botones; Bitácora con km grandes y la forma de cada recorrido; Resumen "+80 m";
   Recorrido "6.81" con su forma, cifras parejas, perfil de 700 a 850 m (antes plano de 500 a 1,000) y barra fija;

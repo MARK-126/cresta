@@ -69,6 +69,34 @@ class _TrackImageScreenState extends State<TrackImageScreen> {
   MapBridge? _bridge;
   bool _mapReady = false;
   MapBase _base = MapBase.night;
+
+  /// Capas del mapa de fondo (las elige el usuario; los senderos se veían siempre y en la
+  /// ciudad son banquetas). 'places' = íconos de lugares.
+  final _mapLayers = {
+    'trails': false,
+    'contours': false,
+    'labels': true,
+    'places': false,
+  };
+  static const _mapLayerNames = {
+    'trails': 'Senderos',
+    'contours': 'Curvas de nivel',
+    'labels': 'Nombres',
+    'places': 'Lugares',
+  };
+
+  Future<void> _applyMapLayers() async {
+    final bridge = _bridge;
+    if (bridge == null) return;
+    await bridge.setLayers({
+      'track': true,
+      'trails': _mapLayers['trails']!,
+      'contours': _mapLayers['contours']!,
+      'labels': _mapLayers['labels']!,
+    });
+    await bridge.setClean(!_mapLayers['places']!);
+  }
+
   Size? _box;
 
   @override
@@ -85,8 +113,7 @@ class _TrackImageScreenState extends State<TrackImageScreen> {
       if (!mounted) return;
       await bridge.setBase(_base);
       await bridge.set3d(false);
-      await bridge.setLayers({'track': true, 'labels': true});
-      await bridge.setClean(true);
+      await _applyMapLayers();
       await bridge.setTrack(_visible, showEnd: true);
       // Primero los nombres (mueve la cámara, aún tapada) y después el encuadre
       final names = await bridge.findNames([_visible.first, _visible.last]);
@@ -502,6 +529,22 @@ class _TrackImageScreenState extends State<TrackImageScreen> {
               onSelected: (_) {
                 setState(() => _base = b);
                 _bridge?.setBase(b);
+              },
+            ),
+        ],
+      ),
+      const SizedBox(height: 6),
+      Wrap(
+        spacing: 8,
+        runSpacing: 4,
+        children: [
+          for (final e in _mapLayerNames.entries)
+            FilterChip(
+              label: Text(e.value),
+              selected: _mapLayers[e.key]!,
+              onSelected: (on) {
+                setState(() => _mapLayers[e.key] = on);
+                _applyMapLayers();
               },
             ),
         ],

@@ -51,6 +51,8 @@ Lo que se corrigió a partir de tus observaciones en el Parque San Martín, y c�
   Mientras se genera se ve el video tal cual, con el punto que avanza; al terminar dice "Guardado en tu galería,
   álbum Cresta" (revisa que esté en Galería) y ofrece Compartir. Prueba "Noche" y "Rápido", y en la ciudad mira si
   los edificios tapan la línea y si los nombres de calles quedan solo junto al recorrido.
+- **Mapa en 2D, barra teal y recorrido teal** (14 nov 2026): el mapa abre en 2D; graba un poco y mira que la
+  línea teal se distinga de la ruta (que se ve más tenue). En la imagen con mapa, prueba las capas.
 - **Rediseño** (14 nov 2026): recorre Inicio (GRABAR grande), Bitácora (la forma de cada recorrido), Resumen,
   el detalle de un recorrido (km enormes, perfil con relieve, barra "Ver en el mapa | Compartir") y una expedición
   (nombre gigante, "ABRIR MAPA" abajo con km y desnivel). Dime qué te gusta y qué no; al sol, si se lee.

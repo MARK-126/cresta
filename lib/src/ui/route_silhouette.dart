@@ -21,7 +21,7 @@ class RouteSilhouette extends StatelessWidget {
   const RouteSilhouette({
     super.key,
     required this.points,
-    this.color = const Color(0xFFFFA089),
+    this.color = const Color(0xFF46EAE5),
     this.strokeWidth = 3,
     this.segments,
   });

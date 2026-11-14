@@ -22,52 +22,62 @@ class MapDock extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Glass(
-      opacity: .94,
-      radius: 22,
-      child: SizedBox(
-        height: 64,
-        child: Row(
-          children: [
-            Expanded(
-              child: _DockItem(
-                icon: Icons.layers_outlined,
-                label: 'Capas',
-                onTap: onLayers,
+    // Degradado de teal a oscuro (pedido del usuario, 14 nov 2026): se distingue del mapa con
+    // cualquier fondo, también con Noche
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(22),
+      child: DecoratedBox(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xF2117572), Color(0xF20E1416)],
+          ),
+        ),
+        child: SizedBox(
+          height: 64,
+          child: Row(
+            children: [
+              Expanded(
+                child: _DockItem(
+                  icon: Icons.layers_outlined,
+                  label: 'Capas',
+                  onTap: onLayers,
+                ),
               ),
-            ),
-            if (onRecord != null)
-              Tooltip(
-                message: 'Grabar recorrido',
-                child: Material(
-                  color: recordColor,
-                  shape: const CircleBorder(),
-                  clipBehavior: Clip.antiAlias,
-                  child: InkWell(
-                    onTap: onRecord,
-                    child: const SizedBox(
-                      width: 56,
-                      height: 56,
-                      child: Icon(
-                        Icons.fiber_manual_record_rounded,
-                        color: Andes.onTerracotta,
-                        size: 30,
+              if (onRecord != null)
+                Tooltip(
+                  message: 'Grabar recorrido',
+                  child: Material(
+                    color: recordColor,
+                    shape: const CircleBorder(),
+                    clipBehavior: Clip.antiAlias,
+                    child: InkWell(
+                      onTap: onRecord,
+                      child: const SizedBox(
+                        width: 56,
+                        height: 56,
+                        child: Icon(
+                          Icons.fiber_manual_record_rounded,
+                          color: Andes.onTerracotta,
+                          size: 30,
+                        ),
                       ),
                     ),
                   ),
                 ),
+              Expanded(
+                child: onRoute == null
+                    ? const SizedBox.shrink()
+                    : _DockItem(
+                        icon: Icons.route_rounded,
+                        label: routeLabel,
+                        color: Andes.gold,
+                        onTap: onRoute!,
+                      ),
               ),
-            Expanded(
-              child: onRoute == null
-                  ? const SizedBox.shrink()
-                  : _DockItem(
-                      icon: Icons.route_rounded,
-                      label: routeLabel,
-                      color: Andes.gold,
-                      onTap: onRoute!,
-                    ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
