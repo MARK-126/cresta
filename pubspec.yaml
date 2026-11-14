@@ -89,6 +89,15 @@ flutter:
           weight: 800
         - asset: assets/fonts/inter/Inter-Black.ttf
           weight: 900
+    # Títulos y cifras protagonistas (condensada). Licencia OFL en assets/fonts/barlow-condensed/LICENSE.txt
+    - family: BarlowCondensed
+      fonts:
+        - asset: assets/fonts/barlow-condensed/BarlowCondensed-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/barlow-condensed/BarlowCondensed-Bold.ttf
+          weight: 700
+        - asset: assets/fonts/barlow-condensed/BarlowCondensed-ExtraBold.ttf
+          weight: 800
 
   assets:
     - assets/web/

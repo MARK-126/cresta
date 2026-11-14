@@ -25,135 +25,136 @@ class SummaryScreen extends StatelessWidget {
           body: ListView(
             padding: const EdgeInsets.fromLTRB(20, 0, 20, 32),
             children: [
-              Text('RESUMEN', style: labelStyle(context, color: Andes.gold)),
-              const SizedBox(height: 6),
-              Text('Tu montaña', style: signage(context, size: 34)),
-              const SizedBox(height: 4),
               Text(
                 s.all.count == 0
-                    ? 'Graba tu primer recorrido para ver tus cifras.'
-                    : '${s.all.count} ${s.all.count == 1 ? 'salida' : 'salidas'} · ${fmtKm(s.all.meters)} km en total',
-                style: dataStyle(
-                  context,
-                  color: Andes.onSurfaceVariant,
-                  weight: FontWeight.w500,
+                    ? 'RESUMEN'
+                    : 'RESUMEN · ${s.all.count} ${s.all.count == 1 ? 'SALIDA' : 'SALIDAS'} · ${fmtKm(s.all.meters)} KM EN TOTAL',
+                style: labelStyle(context, color: Andes.gold),
+              ),
+              const SizedBox(height: 6),
+              Text('Tu montaña', style: signage(context, size: 28)),
+              if (s.all.count == 0) ...[
+                const SizedBox(height: 8),
+                const Text(
+                  'Graba tu primer recorrido para ver tus cifras.',
+                  style: TextStyle(color: Andes.onSurfaceVariant),
+                ),
+              ],
+              const SizedBox(height: 18),
+              // Protagonista: el desnivel de la semana, enorme y sin tarjeta
+              Text(
+                'ESTA SEMANA · DESDE EL ${fmtDate(s.weekStart).toUpperCase()}',
+                style: labelStyle(context).copyWith(fontSize: 10),
+              ),
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerLeft,
+                child: Text.rich(
+                  TextSpan(
+                    children: [
+                      TextSpan(text: '+${fmtInt(s.week.gain)}'),
+                      TextSpan(
+                        text: ' m',
+                        style: display(
+                          context,
+                          size: 56,
+                          color: scheme.primary,
+                        ),
+                      ),
+                    ],
+                  ),
+                  style: display(context, size: 140),
                 ),
               ),
-              const SizedBox(height: 20),
-              TonalCard(
-                accent: scheme.primary,
-                padding: const EdgeInsets.fromLTRB(18, 16, 16, 18),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'ESTA SEMANA · DESDE EL ${fmtDate(s.weekStart).toUpperCase()}',
-                      style: labelStyle(context).copyWith(fontSize: 10),
-                    ),
-                    const SizedBox(height: 10),
-                    Figure(
-                      '+${fmtInt(s.week.gain)}',
-                      'metros de desnivel',
-                      unit: 'm',
-                      size: 48,
-                      labelColor: scheme.primary,
-                    ),
-                    const SizedBox(height: 16),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Figure(fmtKm(s.week.meters), 'km', size: 18),
-                        ),
-                        Expanded(
-                          child: Figure(
-                            '${s.week.count}',
-                            s.week.count == 1 ? 'salida' : 'salidas',
-                            size: 18,
-                          ),
-                        ),
-                        Expanded(
-                          child: Figure(
-                            fmtDuration(s.week.moving),
-                            'en movimiento',
-                            size: 18,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
+              Text(
+                'METROS DE DESNIVEL',
+                style: labelStyle(context, color: scheme.primary),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 18),
               Row(
                 children: [
+                  Expanded(child: Figure(fmtKm(s.week.meters), 'km', size: 22)),
                   Expanded(
-                    child: TonalCard(
-                      child: Figure(
-                        '+${fmtInt(s.month.gain)}',
-                        'desnivel del mes',
-                        unit: 'm',
-                        size: 22,
-                      ),
+                    child: Figure(
+                      '${s.week.count}',
+                      s.week.count == 1 ? 'salida' : 'salidas',
+                      size: 22,
                     ),
                   ),
-                  const SizedBox(width: 8),
                   Expanded(
-                    child: TonalCard(
-                      child: Figure(
-                        fmtKm(s.month.meters),
-                        'km del mes',
-                        size: 22,
-                      ),
+                    child: Figure(
+                      fmtDuration(s.week.moving),
+                      'en movimiento',
+                      size: 22,
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 8),
-              TonalCard(
-                accent: Andes.gold,
-                child: Row(
+              const SizedBox(height: 24),
+              // El mes solo si dice algo distinto de la semana (repetía las mismas cifras)
+              if (s.month.gain.round() != s.week.gain.round() ||
+                  s.month.meters.round() != s.week.meters.round()) ...[
+                Row(
                   children: [
                     Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Figure(
-                            s.all.maxAltitude == null
-                                ? '–'
-                                : fmtInt(s.all.maxAltitude!),
-                            'altitud máxima alcanzada',
-                            unit: 'm',
-                            size: 28,
-                            labelColor: Andes.gold,
-                          ),
-                          if (s.all.highest != null) ...[
-                            const SizedBox(height: 6),
-                            Text(
-                              '${s.all.highest!.name} · ${fmtDate(s.all.highest!.startedAt.toLocal())}',
-                              style: const TextStyle(
-                                fontSize: 12.5,
-                                color: Andes.onSurfaceVariant,
-                              ),
-                            ),
-                          ],
-                        ],
+                      child: TonalCard(
+                        child: Figure(
+                          '+${fmtInt(s.month.gain)}',
+                          'desnivel del mes',
+                          unit: 'm',
+                          size: 22,
+                        ),
                       ),
                     ),
-                    const Icon(
-                      Icons.landscape_rounded,
-                      color: Andes.gold,
-                      size: 36,
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: TonalCard(
+                        child: Figure(
+                          fmtKm(s.month.meters),
+                          'km del mes',
+                          size: 22,
+                        ),
+                      ),
                     ),
                   ],
                 ),
-              ),
-              const SizedBox(height: 28),
-              Text('DESNIVEL POR SEMANA', style: labelStyle(context)),
-              const SizedBox(height: 12),
+                const SizedBox(height: 8),
+              ],
               TonalCard(
-                padding: const EdgeInsets.fromLTRB(16, 18, 16, 12),
-                child: _WeeklyBars(summary: s),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Figure(
+                      s.all.maxAltitude == null
+                          ? '–'
+                          : fmtInt(s.all.maxAltitude!),
+                      'altitud máxima alcanzada',
+                      unit: 'm',
+                      size: 22,
+                    ),
+                    if (s.all.highest != null) ...[
+                      const SizedBox(height: 6),
+                      Text(
+                        '${s.all.highest!.name} · ${fmtDate(s.all.highest!.startedAt.toLocal())}',
+                        style: const TextStyle(
+                          fontSize: 12.5,
+                          color: Andes.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
               ),
+              // Con una sola semana con salidas, la gráfica eran siete barras vacías y una llena
+              if (s.weeklyGain.where((g) => g > 0).length >= 2) ...[
+                const SizedBox(height: 28),
+                Text('DESNIVEL POR SEMANA', style: labelStyle(context)),
+                const SizedBox(height: 12),
+                TonalCard(
+                  padding: const EdgeInsets.fromLTRB(16, 18, 16, 12),
+                  child: _WeeklyBars(summary: s),
+                ),
+              ],
               if (s.recent.isNotEmpty) ...[
                 const SizedBox(height: 28),
                 Text('ÚLTIMAS SALIDAS', style: labelStyle(context)),

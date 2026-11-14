@@ -27,6 +27,14 @@ Teléfono de pruebas: Samsung Galaxy S23 Ultra (SM-S918B), Android 16, salvo que
 
 ## 2026-11-14
 
+**Rediseño · `feat/rediseno-jerarquia`** (S23, solo vistas; datos iguales)
+- Inicio con "GRABAR" enorme y tres botones; Bitácora con km grandes y la forma de cada recorrido; Resumen "+80 m";
+  Recorrido "6.81" con su forma, cifras parejas, perfil de 700 a 850 m (antes plano de 500 a 1,000) y barra fija;
+  Compartir abre la hoja de cuatro opciones; Expedición "SALTO" con la ruta y "ABRIR MAPA | 3.3 km · +883 m";
+  "IZTACCÍHUATL POR LA ARISTA DEL SOL" en dos líneas. **OK**.
+- Falla: la forma del recorrido junto a los km salía diminuta (sin alto fijo en la fila) → `SizedBox` con alto. **OK**.
+- Mapa de Mendoza a z15: sin comida; las farmacias seguían llenándolo → fuera de "de lejos". **OK**.
+
 **Ícono del perfil · `fix/icono-perfil`** (S23) — en el inicio, junto a SOS, la personita sola. **OK**.
 
 **Imagen del recorrido · `feat/imagen-recorrido`** (S23; recorrido 3 del usuario, solo leído)

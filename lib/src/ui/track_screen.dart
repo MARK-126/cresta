@@ -16,6 +16,7 @@ import 'offline_widgets.dart';
 import 'panels.dart';
 import 'photo_screen.dart';
 import 'recording_panel.dart';
+import 'route_silhouette.dart';
 import 'share_trim_screen.dart';
 import 'track_image_screen.dart';
 import 'route_destination.dart';
@@ -88,44 +89,88 @@ class _TrackScreenState extends State<TrackScreen> {
       body: ListView(
         padding: const EdgeInsets.fromLTRB(20, 0, 20, 32),
         children: [
+          // Metadatos chiquitos arriba (como "OVER-EAR · WIRELESS" en las referencias)
           Text(
-            expedition == null
-                ? 'RECORRIDO LIBRE'
-                : 'RECORRIDO · ${expedition.name.toUpperCase()}',
+            [
+              expedition == null
+                  ? 'RECORRIDO LIBRE'
+                  : expedition.name.toUpperCase(),
+              fmtDate(t.startedAt).toUpperCase(),
+              '${_hhmm(t.startedAt)}${t.endedAt == null ? '' : '–${_hhmm(t.endedAt!)}'}',
+            ].join(' · '),
             style: labelStyle(context, color: Andes.gold),
           ),
           const SizedBox(height: 6),
-          Text(t.name, style: signage(context, size: 30)),
-          const SizedBox(height: 6),
-          Text(
-            '${fmtDate(t.startedAt)} · ${_hhmm(t.startedAt)}${t.endedAt == null ? '' : '–${_hhmm(t.endedAt!)}'}',
-            style: TextStyle(color: muted),
+          Text(trackTitle(t), style: signage(context, size: 28)),
+          const SizedBox(height: 12),
+          // Protagonista: los km enormes y, al lado, la forma del recorrido
+          SizedBox(
+            height: 150,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.bottomLeft,
+                        child: Text(
+                          fmtKm(s.meters, decimals: 2),
+                          style: display(context, size: 132),
+                        ),
+                      ),
+                      Text(
+                        'KILÓMETROS',
+                        style: labelStyle(
+                          context,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                if (_points != null && _points!.length > 1)
+                  // Alto fijo: en una fila, sin él la forma salía diminuta
+                  SizedBox(
+                    width: 96,
+                    height: 150,
+                    child: RouteSilhouette.ofTrack(_points!, strokeWidth: 3.5),
+                  ),
+              ],
+            ),
           ),
-          const SizedBox(height: 20),
-          Figure(
-            fmtKm(s.meters, decimals: 2),
-            'kilómetros',
-            size: 56,
-            labelColor: Theme.of(context).colorScheme.primary,
-          ),
-          const SizedBox(height: 18),
-          GridView.count(
-            crossAxisCount: 2,
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            mainAxisSpacing: 8,
-            crossAxisSpacing: 8,
-            childAspectRatio: 2.3,
+          const SizedBox(height: 22),
+          // Cuatro cifras en dos filas parejas (el tiempo total ya está arriba, en la hora)
+          Row(
             children: [
-              _Figure(fmtDuration(s.elapsed), 'tiempo total'),
-              _Figure(fmtDuration(s.moving), 'en movimiento'),
-              _Figure('+${fmtInt(s.gain)}', 'subida', unit: 'm', accent: true),
-              _Figure('−${fmtInt(s.loss)}', 'bajada', unit: 'm'),
-              _Figure(
-                s.maxAltitude == null ? '–' : fmtInt(s.maxAltitude!),
-                'altitud máx.',
-                unit: 'm',
-                gold: true,
+              Expanded(child: _Figure(fmtDuration(s.moving), 'en movimiento')),
+              const SizedBox(width: 8),
+              Expanded(
+                child: _Figure(
+                  s.maxAltitude == null ? '–' : fmtInt(s.maxAltitude!),
+                  'altitud máx.',
+                  unit: 'm',
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                child: _Figure('+${fmtInt(s.gain)}', 'subida', unit: 'm'),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                // "−0 m" parecía un error: sin signo cuando no hubo bajada
+                child: _Figure(
+                  s.loss.round() == 0 ? '0' : '−${fmtInt(s.loss)}',
+                  'bajada',
+                  unit: 'm',
+                ),
               ),
             ],
           ),
@@ -168,93 +213,143 @@ class _TrackScreenState extends State<TrackScreen> {
             ),
             const SizedBox(height: 12),
           ],
-          GlowButton(
-            onPressed: _points == null || _points!.isEmpty
-                ? null
-                : () => Navigator.push(
-                    context,
-                    MaterialPageRoute<void>(
-                      builder: (_) => MapScreen(
-                        expeditionId: t.expeditionId,
-                        showTrackId: t.id,
-                      ),
-                    ),
-                  ),
-            icon: Icons.map_outlined,
-            label: 'Ver en el mapa',
-          ),
-          const SizedBox(height: 8),
-          OutlinedButton.icon(
-            onPressed: _points == null || _points!.length < 2
-                ? null
-                : () => _trim(t),
-            icon: const Icon(Icons.content_cut_rounded),
-            label: const Text('Recortar para compartir'),
-            style: OutlinedButton.styleFrom(
-              minimumSize: const Size.fromHeight(52),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.only(top: 6, bottom: 4),
-            child: Text(
-              t.trimmed
-                  ? 'Al compartir se ocultan ${fmtDistance(t.hideStart)} al inicio y ${fmtDistance(t.hideEnd)} al final.'
-                  : 'Al compartir se ve completo, también dónde empieza y termina.',
-              style: TextStyle(
-                fontSize: 12,
-                color: t.trimmed ? Andes.cyan : muted,
-              ),
-            ),
-          ),
-          const SizedBox(height: 8),
-          OutlinedButton.icon(
-            onPressed: _points == null || _points!.length < 2
-                ? null
-                : () => _makeVideo(t),
-            icon: const Icon(Icons.movie_outlined),
-            label: const Text('Video del recorrido en 3D'),
-            style: OutlinedButton.styleFrom(
-              minimumSize: const Size.fromHeight(52),
-            ),
-          ),
-          const SizedBox(height: 8),
-          OutlinedButton.icon(
-            onPressed: _points == null || _points!.length < 2
-                ? null
-                : () => Navigator.push(
-                    context,
-                    MaterialPageRoute<void>(
-                      builder: (_) =>
-                          TrackImageScreen(track: t, points: _points!),
-                    ),
-                  ),
-            icon: const Icon(Icons.image_outlined),
-            label: const Text('Imagen del recorrido'),
-            style: OutlinedButton.styleFrom(
-              minimumSize: const Size.fromHeight(52),
-            ),
-          ),
-          const SizedBox(height: 8),
-          OutlinedButton.icon(
-            onPressed: _points == null || _points!.isEmpty
-                ? null
-                : () => _exportGpx(t),
-            icon: const Icon(Icons.ios_share_rounded),
-            label: const Text('Exportar GPX'),
-            style: OutlinedButton.styleFrom(
-              minimumSize: const Size.fromHeight(52),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.only(top: 6),
-            child: Text(
-              'El GPX se abre en Wikiloc, Strava, Garmin Connect o Google Earth.',
-              style: TextStyle(fontSize: 12, color: muted),
-            ),
-          ),
         ],
       ),
+      // Barra fija abajo (como "Add to bag | Free returns"): ver en el mapa y compartir. Antes
+      // eran cinco botones grises apilados al final de la pantalla
+      bottomNavigationBar: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+          child: Row(
+            children: [
+              Expanded(
+                child: GlowButton(
+                  onPressed: _points == null || _points!.isEmpty
+                      ? null
+                      : () => Navigator.push(
+                          context,
+                          MaterialPageRoute<void>(
+                            builder: (_) => MapScreen(
+                              expeditionId: t.expeditionId,
+                              showTrackId: t.id,
+                            ),
+                          ),
+                        ),
+                  icon: Icons.map_outlined,
+                  label: 'Ver en el mapa',
+                ),
+              ),
+              const SizedBox(width: 8),
+              SizedBox(
+                height: 56,
+                child: FilledButton.tonalIcon(
+                  onPressed: _points == null || _points!.isEmpty
+                      ? null
+                      : () => _share(t),
+                  icon: const Icon(Icons.ios_share_rounded),
+                  label: const Text('Compartir'),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: Andes.surfaceHighest,
+                    foregroundColor: Andes.onSurface,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
+  }
+
+  /// Todo lo que sale del teléfono, en un solo lugar: video, imagen, GPX y el recorte que
+  /// se aplica a los tres.
+  Future<void> _share(Track t) async {
+    final pts = _points!;
+    final many = pts.length > 1;
+    final choice = await showModalBottomSheet<String>(
+      context: context,
+      showDragHandle: true,
+      builder: (context) {
+        Widget item(
+          String id,
+          IconData icon,
+          String title,
+          String subtitle, {
+          bool enabled = true,
+          Color? subtitleColor,
+        }) => ListTile(
+          enabled: enabled,
+          leading: Icon(icon),
+          title: Text(title),
+          subtitle: Text(
+            subtitle,
+            style: TextStyle(fontSize: 12.5, color: subtitleColor),
+          ),
+          onTap: () => Navigator.pop(context, id),
+        );
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(24, 0, 24, 8),
+                child: Text('COMPARTIR', style: labelStyle(context)),
+              ),
+              item(
+                'video',
+                Icons.movie_outlined,
+                'Video en 3D',
+                'Sobrevuelo del recorrido para historias.',
+                enabled: many,
+              ),
+              item(
+                'image',
+                Icons.image_outlined,
+                'Imagen',
+                'La traza con tus cifras, sobre un color, una foto o el mapa.',
+                enabled: many,
+              ),
+              item(
+                'gpx',
+                Icons.route_outlined,
+                'Archivo GPX',
+                'Para Wikiloc, Strava, Garmin Connect o Google Earth.',
+              ),
+              item(
+                'trim',
+                Icons.content_cut_rounded,
+                'Recortar el inicio y el fin',
+                t.trimmed
+                    ? 'Se ocultan ${fmtDistance(t.hideStart)} al inicio y ${fmtDistance(t.hideEnd)} al final.'
+                    : 'Hoy se ve completo, también dónde empieza y termina.',
+                enabled: many,
+                subtitleColor: t.trimmed ? Andes.cyan : null,
+              ),
+            ],
+          ),
+        );
+      },
+    );
+    if (!mounted || choice == null) return;
+    switch (choice) {
+      case 'video':
+        await _makeVideo(t);
+      case 'image':
+        await Navigator.push(
+          context,
+          MaterialPageRoute<void>(
+            builder: (_) => TrackImageScreen(track: t, points: pts),
+          ),
+        );
+      case 'gpx':
+        await _exportGpx(t);
+      case 'trim':
+        await _trim(t);
+    }
   }
 
   Future<void> _exportGpx(Track t) async {
@@ -387,28 +482,18 @@ TrailRoute? profileOf(List<TrackPoint> points) {
 }
 
 class _Figure extends StatelessWidget {
-  const _Figure(
-    this.value,
-    this.label, {
-    this.unit,
-    this.accent = false,
-    this.gold = false,
-  });
+  const _Figure(this.value, this.label, {this.unit});
   final String value;
   final String label;
   final String? unit;
-  final bool accent;
-  final bool gold;
 
+  // Sin barra de color: un solo acento por pantalla (el de los km)
   @override
   Widget build(BuildContext context) => TonalCard(
-    accent: gold
-        ? Andes.gold
-        : (accent ? Theme.of(context).colorScheme.primary : null),
-    padding: const EdgeInsets.fromLTRB(14, 10, 10, 10),
+    padding: const EdgeInsets.fromLTRB(16, 12, 10, 12),
     child: Align(
       alignment: Alignment.centerLeft,
-      child: Figure(value, label, unit: unit, size: 20),
+      child: Figure(value, label, unit: unit, size: 22),
     ),
   );
 }

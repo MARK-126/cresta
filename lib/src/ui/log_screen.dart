@@ -4,6 +4,7 @@ import '../app_services.dart';
 import '../tracking/track.dart';
 import 'format.dart';
 import 'map_screen.dart';
+import 'route_silhouette.dart';
 import 'recording_panel.dart';
 import 'theme.dart';
 import 'track_screen.dart';
@@ -97,6 +98,23 @@ class LogScreen extends StatelessWidget {
 }
 
 /// Una entrada de la bitácora: estado, expedición, nombre y sus cifras.
+/// Puntos de cada recorrido para su silueta en la lista (se leen una vez por sesión; la
+/// clave lleva la cantidad de puntos, así un recorrido que sigue grabando se vuelve a leer).
+final _silhouettes = <String, Future<List<(double, double)>>>{};
+
+Future<List<(double, double)>> _silhouetteOf(AppServices services, Track t) =>
+    _silhouettes.putIfAbsent('${t.id}:${t.summary.points}', () async {
+      final pts = await services.tracks.readPoints(t.id);
+      // Con unos 200 puntos basta para la forma
+      final step = (pts.length / 200).ceil().clamp(1, 1 << 20);
+      return [
+        for (var i = 0; i < pts.length; i += step) (pts[i].lng, pts[i].lat),
+        if (pts.isNotEmpty) (pts.last.lng, pts.last.lat),
+      ];
+    });
+
+/// Un recorrido en la lista: la forma del recorrido al lado (lo más reconocible) y los km
+/// como protagonista. Sin "Terminado" en cada uno ni la fecha repetida en el nombre.
 class LogEntry extends StatelessWidget {
   const LogEntry({super.key, required this.track});
   final Track track;
@@ -107,21 +125,22 @@ class LogEntry extends StatelessWidget {
     final t = track;
     final s = t.summary;
     final expedition = services.expeditions.byId(t.expeditionId);
-    final (String status, Color color, IconData icon) = switch (t.status) {
-      TrackStatus.finished => ('Terminado', Andes.cyan, Icons.check_rounded),
-      TrackStatus.recording => (
-        'Grabando',
-        recordColor,
-        Icons.fiber_manual_record_rounded,
-      ),
-      TrackStatus.paused => ('En pausa', Andes.gold, Icons.pause_rounded),
+    final (String? status, Color? color) = switch (t.status) {
+      TrackStatus.finished => (null, null),
+      TrackStatus.recording => ('GRABANDO', recordColor),
+      TrackStatus.paused => ('EN PAUSA', Andes.gold),
     };
     final finished = t.status == TrackStatus.finished;
     final start = t.startedAt.toLocal();
+    final meta = [
+      fmtDate(start).toUpperCase(),
+      fmtTime(start),
+      expedition?.name.toUpperCase() ?? 'RECORRIDO LIBRE',
+    ].join(' · ');
 
     return TonalCard(
       accent: color,
-      padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
+      padding: const EdgeInsets.fromLTRB(16, 14, 12, 14),
       onTap: () => Navigator.push(
         context,
         MaterialPageRoute<void>(
@@ -130,93 +149,72 @@ class LogEntry extends StatelessWidget {
               : MapScreen(expeditionId: t.expeditionId),
         ),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
         children: [
-          Row(
-            children: [
-              Container(
-                width: 22,
-                height: 22,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: color.withValues(alpha: .16),
-                ),
-                child: Icon(icon, size: 14, color: color),
-              ),
-              const SizedBox(width: 8),
-              Text(
-                status.toUpperCase(),
-                style: labelStyle(context, color: color).copyWith(fontSize: 10),
-              ),
-              Expanded(
-                child: Text(
-                  '  ·  ${expedition?.name.toUpperCase() ?? 'RECORRIDO LIBRE'}',
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text.rich(
+                  TextSpan(
+                    children: [
+                      if (status != null)
+                        TextSpan(
+                          text: '$status · ',
+                          style: TextStyle(color: color),
+                        ),
+                      TextSpan(text: meta),
+                    ],
+                  ),
+                  maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: labelStyle(context).copyWith(fontSize: 10),
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          Text(t.name, style: signage(context, size: 18)),
-          const SizedBox(height: 14),
-          Row(
-            children: [
-              Expanded(
-                child: Figure(fmtKm(s.meters, decimals: 1), 'km', size: 18),
-              ),
-              Expanded(
-                child: Figure(
-                  '+${fmtInt(s.gain)}',
-                  'desnivel',
-                  unit: 'm',
-                  size: 18,
-                ),
-              ),
-              Expanded(
-                child: Figure(fmtDuration(s.moving), 'en movimiento', size: 18),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              const Icon(
-                Icons.schedule_rounded,
-                size: 14,
-                color: Andes.onSurfaceVariant,
-              ),
-              const SizedBox(width: 6),
-              Text(
-                '${fmtDate(start)} · ${fmtTime(start)}',
-                style: dataStyle(
-                  context,
-                  size: 12,
-                  color: Andes.onSurfaceVariant,
-                  weight: FontWeight.w500,
-                ),
-              ),
-              if (s.maxAltitude != null) ...[
-                const Spacer(),
-                const Icon(
-                  Icons.landscape_rounded,
-                  size: 14,
-                  color: Andes.gold,
-                ),
-                const SizedBox(width: 4),
+                const SizedBox(height: 6),
                 Text(
-                  '${fmtInt(s.maxAltitude!)} m',
+                  trackTitle(t),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: signage(context, size: 17),
+                ),
+                const SizedBox(height: 6),
+                Text.rich(
+                  TextSpan(
+                    children: [
+                      TextSpan(text: fmtKm(s.meters, decimals: 1)),
+                      TextSpan(
+                        text: ' KM',
+                        style: display(context, size: 20, color: Andes.cyan),
+                      ),
+                    ],
+                  ),
+                  style: display(context, size: 48),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '+${fmtInt(s.gain)} m  ·  ${fmtDuration(s.moving)} en movimiento'
+                  '${s.maxAltitude == null ? '' : '  ·  ${fmtInt(s.maxAltitude!)} m máx.'}',
                   style: dataStyle(
                     context,
                     size: 12,
-                    color: Andes.gold,
-                    weight: FontWeight.w700,
+                    color: Andes.onSurfaceVariant,
+                    weight: FontWeight.w500,
                   ),
                 ),
               ],
-            ],
+            ),
           ),
+          if (s.points > 1)
+            SizedBox(
+              width: 64,
+              height: 96,
+              child: FutureBuilder(
+                future: _silhouetteOf(services, t),
+                builder: (context, snap) => snap.hasData
+                    ? RouteSilhouette(points: snap.data!, strokeWidth: 2.5)
+                    : const SizedBox.shrink(),
+              ),
+            ),
         ],
       ),
     );

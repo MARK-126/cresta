@@ -42,6 +42,12 @@ Hechas en `feat/video-opciones` (detalle en `estado.md` y `pruebas.md`). El usua
 Queda: ver con datos reales si en la ciudad los edificios tapan la línea del recorrido (opacidad 0.85) y si los
 nombres de calles cambian de lugar entre cuadros.
 
+## Rediseño (crítica del 14 nov 2026)
+
+Hecho en `feat/rediseno-jerarquia` (ver `estado.md`). Queda de la crítica: el botón "i" de créditos del mapa queda
+sobre los nombres; la pantalla de Mapas sigue densa (tarjetas de zona con mucho texto); el SOS llama al "Número de
+emergencias" del perfil, que hoy es un celular (el usuario debería poner 911).
+
 ## Siguiente (revisión de diseño del 12 nov 2026)
 
 

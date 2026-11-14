@@ -306,6 +306,28 @@ Actualizado: 14 nov 2026 · opciones del video del recorrido, mapa Noche y edifi
 - `showPlaceSearch` acepta `near` (sugerir alrededor de otro lugar, "CERCA DE …") y `me` (tu posición para "Tu
   ubicación"). `fmtKm` separa miles.
 
+### Rediseño: jerarquía, barra fija y limpieza (`feat/rediseno-jerarquia`, 14 nov 2026)
+Tras la crítica de diseño con las referencias del usuario (tipografía gigante, un protagonista, un acento, barra de
+acción abajo):
+- Tipografía de títulos **Barlow Condensed** (600/700/800, OFL, `assets/fonts/barlow-condensed/`) y `display()` en
+  `theme.dart`: una vez por pantalla. `ui/route_silhouette.dart`: `RouteSilhouette` (la traza vertical sin mapa, con
+  `verticalRotation`) y `trackTitle` (el nombre sin la fecha automática).
+- Inicio: arriba la fecha; `_RecordHero` "GRABAR" enorme en terracota; Explorar, Trazar ruta y Expedición en tres
+  botones chicos con ícono cian, sin frases. Expediciones sin "lista sin conexión" ni peso: chip y barra solo si
+  falta algo.
+- Expedición: metadatos arriba, nombre en `display` (96/68/52 según el largo) con la silueta de la ruta; barra fija
+  `_OpenMapBar` "ABRIR MAPA | km · +m"; la sección Equipo se quitó (el check de Equipo abre la lista, `_Check.onTap`).
+- Recorrido: metadatos arriba, `trackTitle`, km en `display` 132 con la silueta; cuatro cifras parejas sin barras de
+  color; bajada "0 m" sin signo; barra fija "Ver en el mapa" + "Compartir" (hoja con video, imagen, GPX y recorte).
+- Bitácora (`LogEntry`): metadatos en una línea (estado solo si graba o está en pausa), km en `display`, silueta
+  (puntos leídos una vez, ~200).
+- Resumen: "+80 m" en `display` 140 sin tarjeta; el mes solo si difiere de la semana; altitud máxima sin acento; la
+  gráfica semanal solo con salidas en dos semanas o más.
+- Perfil de altura (`elevation_profile.dart`): eje con paso de 10 a 1,000 m (máx. cuatro líneas, mínimo 100 m de
+  alto); antes líneas fijas cada 500 m y el recorrido salía plano.
+- Mapa: íconos de ciudad desde z16 (antes z15); farmacias fuera de lo que se ve de lejos. La fuente topo se llama
+  "Mapa y senderos" (en las zonas: "Mapa", ya no "Topográfico").
+
 ### Imagen del recorrido (`feat/imagen-recorrido`, 14 nov 2026)
 - `share/track_image.dart`: `ImageBackground` (mapa, foto, color, sin fondo), `ImageAspect` (historia 9:16, cuadrado,
   publicación 4:5; 1,080 px de ancho), `ImageStat`, `imageSwatches` y `TrackImagePainter` (el mismo para la vista
@@ -399,5 +421,5 @@ lib/src/ui/                    pantallas; theme.dart = paleta y componentes del 
 assets/web/                    map.js, MapLibre, maplibre-contour, tipografías del mapa
 assets/fonts/inter/            tipografía de la app · assets/images/ textura del splash
 tool/                          scripts de datos (Python) e ícono; tool/dev/ herramientas de prueba
-test/                          217 pruebas
+test/                          219 pruebas
 ```

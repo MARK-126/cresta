@@ -172,8 +172,11 @@
       ['grocery', 'shop', 'alcohol_shop', 'clothing_store'], 'shop',
       ['sports_centre', 'stadium', 'pitch'], 'sport',
       '']];
-  // Lo que importa en la montaña se ve desde más lejos; lo de ciudad, solo de cerca
-  const POI_FAR = ['match', POI_KIND, ['water', 'hut', 'camp', 'health', 'toilets', 'view'], true, false];
+  // Lo que importa en la montaña se ve desde más lejos; lo de ciudad, solo de muy cerca (desde z16:
+  // en z15 la comida y las farmacias tapaban las calles, revisión del 14 nov 2026)
+  // Las farmacias, aunque son "salud", solo de cerca: en la ciudad hay una por cuadra
+  const POI_FAR = ['all', ['match', POI_KIND, ['water', 'hut', 'camp', 'health', 'toilets', 'view'], true, false],
+    ['!=', ['get', 'subclass'], 'pharmacy']];
   function poiImage(glyph, color) {
     const r = devicePixelRatio || 2, size = Math.round(26 * r), c = document.createElement('canvas');
     c.width = c.height = size;
@@ -367,7 +370,7 @@
         // Íconos de lugares: agua, refugios, camping, comida, salud…
         { id: 'poi-icons', type: 'symbol', source: 'topo', 'source-layer': 'poi', minzoom: 13,
           // Sin nombre solo lo útil aunque no lo tenga (agua, baños…): estatuas y monumentos sin nombre ensuciaban el mapa
-          filter: ['all', ['!=', POI_KIND, ''], ['any', ['>=', ['zoom'], 15], POI_FAR],
+          filter: ['all', ['!=', POI_KIND, ''], ['any', ['>=', ['zoom'], 16], POI_FAR],
             ['any', ['has', 'name'], ['match', POI_KIND, ['water', 'toilets', 'parking', 'hut', 'camp', 'health'], true, false]]],
           layout: { 'icon-image': ['concat', 'poi-', POI_KIND], 'symbol-sort-key': ['get', 'rank'],
             'text-field': ['step', ['zoom'], '', 15, ['get', 'name']], 'text-font': font('bold'), 'text-size': 11.5,

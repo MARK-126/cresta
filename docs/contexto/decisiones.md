@@ -173,6 +173,12 @@
 
 ## Diseño (UI)
 
+- **Rediseño del 14 nov 2026** (crítica con dos referencias del usuario, pantallas de producto con tipografía
+  gigante): se toma su lenguaje, no su tema claro ni su tono de vitrina. Un protagonista por pantalla en Barlow
+  Condensed (inicio, expedición, recorrido, resumen, bitácora); en el mapa y al grabar no. Barra de acción fija abajo
+  con dato al lado. Un acento por pantalla (las cifras ya no llevan barras de colores). Menos texto de ayuda. La forma
+  del recorrido como "producto" al centro.
+
 - Sistema **"Andes Industrial"** (Google Stitch del usuario, proyecto "Live Geolocation Tracking"; la
   exportación está en el escritorio del usuario: `stitch_live_geolocation_tracking.zip`).
 - **Solo oscuro.** Pizarra `#0E1416`; Cian Cumbre `#46EAE5` = acción, rastreo, listo; Oro Inca `#F0BF63` =

@@ -79,8 +79,25 @@ class _ProfilePainter extends CustomPainter {
 
   static const _left = 38.0, _right = 6.0, _top = 8.0, _bottom = 18.0;
 
-  double get _lo => (route.minElevation / 500).floor() * 500.0;
-  double get _hi => (route.maxElevation / 500).ceil() * 500.0;
+  /// Escala del eje vertical ajustada al desnivel: con líneas fijas cada 500 m, un recorrido
+  /// de 80 m de desnivel salía plano (de 500 a 1,000 m). Se elige el paso (10 a 1,000 m)
+  /// que deja como mucho cuatro líneas, y al menos 100 m de alto para no exagerar lo plano.
+  late final (double, double, double) _axis = () {
+    var min = route.minElevation, max = route.maxElevation;
+    if (max - min < 100) {
+      final mid = (max + min) / 2;
+      min = mid - 50;
+      max = mid + 50;
+    }
+    for (final step in const [10.0, 20.0, 50.0, 100.0, 200.0, 500.0]) {
+      final lo = (min / step).floor() * step, hi = (max / step).ceil() * step;
+      if ((hi - lo) / step <= 4) return (lo, hi, step);
+    }
+    const step = 1000.0;
+    return ((min / step).floor() * step, (max / step).ceil() * step, step);
+  }();
+  double get _lo => _axis.$1;
+  double get _hi => _axis.$2;
 
   double metersAt(double x, double width) =>
       ((x - _left) / (width - _left - _right)).clamp(0.0, 1.0) *
@@ -114,7 +131,7 @@ class _ProfilePainter extends CustomPainter {
       tp.paint(canvas, Offset(dx, at.dy - tp.height / 2));
     }
 
-    for (var e = _lo; e <= _hi; e += 500) {
+    for (var e = _lo; e <= _hi; e += _axis.$3) {
       canvas.drawLine(
         Offset(_left, sy(e)),
         Offset(size.width - _right, sy(e)),
