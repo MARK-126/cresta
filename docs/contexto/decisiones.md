@@ -166,6 +166,9 @@
   exportación está en el escritorio del usuario: `stitch_live_geolocation_tracking.zip`).
 - **Solo oscuro.** Pizarra `#0E1416`; Cian Cumbre `#46EAE5` = acción, rastreo, listo; Oro Inca `#F0BF63` =
   importante, pendiente; Terracota `#FFA089` = alertas, grabación, SOS. Tokens en `Andes` (`theme.dart`).
+- **Excepción: lo que flota sobre un mapa oscuro** (14 nov 2026, pedido del usuario): en Noche y Satélite la barra
+  de acciones se confundía con el mapa. Ahí `Glass` usa un tono más claro y un aro gris de 1.5 px (gris, no cian:
+  el cian es "acción"). Con el topográfico (claro) el vidrio oscuro ya resalta: sin aro.
 - Sin bordes de 1 px ni sombras: bloques por tono (desde el 12 nov 2026 también los botones secundarios: el "borde
   fantasma" al 35 % se quitó) (`TonalCard` con barra de acento). Cifras con `Figure` /
   `dataStyle` (Inter, números tabulares). Botón principal `GlowButton`. Sobre el mapa, `Glass`; el panel

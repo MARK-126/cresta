@@ -50,7 +50,9 @@ Lo que se corrigió a partir de tus observaciones en el Parque San Martín, y c�
   abre "Opciones del video" (fondo, velocidad, calles, edificios, senderos, curvas, título; recuerda lo último).
   Mientras se genera se ve el video tal cual, con el punto que avanza; al terminar dice "Guardado en tu galería,
   álbum Cresta" (revisa que esté en Galería) y ofrece Compartir. Prueba "Noche" y "Rápido", y en la ciudad mira si
-  los edificios tapan la línea y si los nombres de calles quedan solo junto al recorrido. Debe verse
+  los edificios tapan la línea y si los nombres de calles quedan solo junto al recorrido.
+- **Contorno sobre el mapa oscuro** (14 nov 2026): con Noche o Satélite, la barra de abajo, el título y los botones de
+  la derecha llevan un aro gris y un tono más claro. Revisa al sol y de noche que se distingan bien del mapa. Debe verse
   fluido, sin parpadeos ni cuadros en blanco, con carteles INICIO y FIN. Probar con un recorrido en la montaña (zona
   descargada) y en una zona que nunca se vio (los mosaicos bajan de internet: tarda más en generarse, pero debe salir
   igual de fluido).

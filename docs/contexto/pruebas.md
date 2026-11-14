@@ -27,6 +27,10 @@ Teléfono de pruebas: Samsung Galaxy S23 Ultra (SM-S918B), Android 16, salvo que
 
 ## 2026-11-14
 
+**Contorno sobre mapa oscuro · `feat/contorno-mapa-oscuro`** (S23, mapa libre en Mendoza)
+- Topográfico: barra, título y botones sin cambios. Noche y Satélite: tono más claro y aro gris; la barra y los
+  botones se separan del mapa. **OK**. Pruebas de widget: sin aro en mapa claro, con aro y opaco en oscuro.
+
 **Opciones del video · `feat/video-opciones`** (S23, desde Mendoza; recorridos 2 y 3 del usuario, solo leídos)
 - Hoja "Opciones del video": fondo de cuatro opciones en una fila, velocidad e interruptores. **OK**.
 - Recorrido 2 (1 km, Mapa, Normal): vista previa con el punto que avanza y FIN; al terminar "Guardado en tu galería,

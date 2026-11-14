@@ -227,296 +227,304 @@ class _AreaPickerScreenState extends State<AreaPickerScreen> {
 
     return Scaffold(
       resizeToAvoidBottomInset: false,
-      body: Stack(
-        children: [
-          Positioned.fill(child: WebViewWidget(controller: _bridge.controller)),
-          // Oscurece fuera del recuadro; no recibe toques para que el mapa se pueda mover
-          Positioned.fill(
-            child: IgnorePointer(
-              child: CustomPaint(painter: _FramePainter(frame, scheme.primary)),
+      body: DarkMapScope(
+        dark: _base == MapBase.sat,
+        child: Stack(
+          children: [
+            Positioned.fill(
+              child: WebViewWidget(controller: _bridge.controller),
             ),
-          ),
-          // Selector de mapa base (solo para orientarse)
-          Positioned(
-            right: 36,
-            top: frame.top + 12,
-            child: Material(
-              color: scheme.surface.withValues(alpha: .94),
-              borderRadius: BorderRadius.circular(20),
-              child: Padding(
-                padding: const EdgeInsets.all(2),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    for (final b in [MapBase.topo, MapBase.sat])
-                      ChoiceChip(
-                        label: Text(b.label),
-                        selected: _base == b,
-                        visualDensity: VisualDensity.compact,
-                        showCheckmark: false,
-                        onSelected: (_) {
-                          setState(() => _base = b);
-                          _bridge.setBase(b);
-                        },
-                      ),
-                  ],
+            // Oscurece fuera del recuadro; no recibe toques para que el mapa se pueda mover
+            Positioned.fill(
+              child: IgnorePointer(
+                child: CustomPaint(
+                  painter: _FramePainter(frame, scheme.primary),
                 ),
               ),
             ),
-          ),
-          // Barra superior: volver + buscador
-          Positioned(
-            left: 0,
-            right: 0,
-            top: 0,
-            child: SafeArea(
-              bottom: false,
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(8, 8, 12, 0),
-                child: Column(
-                  children: [
-                    Row(
-                      children: [
-                        Glass(
-                          radius: 14,
-                          child: IconButton(
-                            onPressed: () => Navigator.pop(context),
-                            icon: const Icon(Icons.arrow_back_rounded),
-                          ),
+            // Selector de mapa base (solo para orientarse)
+            Positioned(
+              right: 36,
+              top: frame.top + 12,
+              child: Material(
+                color: scheme.surface.withValues(alpha: .94),
+                borderRadius: BorderRadius.circular(20),
+                child: Padding(
+                  padding: const EdgeInsets.all(2),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      for (final b in [MapBase.topo, MapBase.sat])
+                        ChoiceChip(
+                          label: Text(b.label),
+                          selected: _base == b,
+                          visualDensity: VisualDensity.compact,
+                          showCheckmark: false,
+                          onSelected: (_) {
+                            setState(() => _base = b);
+                            _bridge.setBase(b);
+                          },
                         ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Glass(
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            // Barra superior: volver + buscador
+            Positioned(
+              left: 0,
+              right: 0,
+              top: 0,
+              child: SafeArea(
+                bottom: false,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(8, 8, 12, 0),
+                  child: Column(
+                    children: [
+                      Row(
+                        children: [
+                          Glass(
                             radius: 14,
-                            opacity: .9,
-                            child: TextField(
-                              controller: _query,
-                              autocorrect: false,
-                              enableSuggestions: false,
-                              textInputAction: TextInputAction.search,
-                              onSubmitted: _runSearch,
-                              decoration: InputDecoration(
-                                hintText: 'Buscar cumbre, parque o pueblo',
-                                prefixIcon: _searching
-                                    ? const Padding(
-                                        padding: EdgeInsets.all(14),
-                                        child: SizedBox.square(
-                                          dimension: 18,
-                                          child: CircularProgressIndicator(
-                                            strokeWidth: 2,
+                            child: IconButton(
+                              onPressed: () => Navigator.pop(context),
+                              icon: const Icon(Icons.arrow_back_rounded),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Glass(
+                              radius: 14,
+                              opacity: .9,
+                              child: TextField(
+                                controller: _query,
+                                autocorrect: false,
+                                enableSuggestions: false,
+                                textInputAction: TextInputAction.search,
+                                onSubmitted: _runSearch,
+                                decoration: InputDecoration(
+                                  hintText: 'Buscar cumbre, parque o pueblo',
+                                  prefixIcon: _searching
+                                      ? const Padding(
+                                          padding: EdgeInsets.all(14),
+                                          child: SizedBox.square(
+                                            dimension: 18,
+                                            child: CircularProgressIndicator(
+                                              strokeWidth: 2,
+                                            ),
                                           ),
-                                        ),
-                                      )
-                                    : const Icon(Icons.search_rounded),
-                                border: InputBorder.none,
-                                enabledBorder: InputBorder.none,
-                                focusedBorder: InputBorder.none,
-                                filled: false,
-                                contentPadding: const EdgeInsets.symmetric(
-                                  vertical: 14,
+                                        )
+                                      : const Icon(Icons.search_rounded),
+                                  border: InputBorder.none,
+                                  enabledBorder: InputBorder.none,
+                                  focusedBorder: InputBorder.none,
+                                  filled: false,
+                                  contentPadding: const EdgeInsets.symmetric(
+                                    vertical: 14,
+                                  ),
                                 ),
                               ),
                             ),
                           ),
-                        ),
-                      ],
-                    ),
-                    if (_results != null || _searchError != null)
-                      Container(
-                        margin: const EdgeInsets.only(left: 56, top: 6),
-                        constraints: const BoxConstraints(maxHeight: 280),
-                        decoration: BoxDecoration(
-                          color: Andes.surfaceHigh,
-                          borderRadius: BorderRadius.circular(14),
-                        ),
-                        child: _searchError != null
-                            ? Padding(
-                                padding: const EdgeInsets.all(14),
-                                child: Text(_searchError!),
-                              )
-                            : ListView(
-                                shrinkWrap: true,
-                                padding: EdgeInsets.zero,
-                                children: [
-                                  if (_offline)
-                                    Padding(
-                                      padding: const EdgeInsets.fromLTRB(
-                                        16,
-                                        12,
-                                        16,
-                                        4,
-                                      ),
-                                      child: Text(
-                                        'SIN CONEXIÓN · EN TUS MAPAS',
-                                        style: labelStyle(context),
-                                      ),
-                                    ),
-                                  for (final p in _results!)
-                                    ListTile(
-                                      dense: true,
-                                      title: Text(p.name),
-                                      subtitle: Text(
-                                        [p.kind, p.detail]
-                                            .where((s) => s.isNotEmpty)
-                                            .join(' · '),
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                      onTap: () => _pick(p),
-                                    ),
-                                ],
-                              ),
-                      ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-          // Panel inferior
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: 0,
-            child: Material(
-              color: Andes.surfaceLow,
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(24),
-              ),
-              child: SizedBox(
-                height: _panelHeight + mq.padding.bottom + mq.viewInsets.bottom,
-                child: ListView(
-                  padding: EdgeInsets.fromLTRB(
-                    20,
-                    18,
-                    20,
-                    16 + mq.padding.bottom,
-                  ),
-                  children: [
-                    Text(
-                      'NUEVA ZONA',
-                      style: labelStyle(context, color: Andes.gold),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Mueve el mapa para encuadrar la zona',
-                      style: signage(context, size: 20),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      est == null
-                          ? 'Calculando…'
-                          : '${_bbox!.widthKm.toStringAsFixed(0)} × ${_bbox!.heightKm.toStringAsFixed(0)} km · ≈ ${fmtBytes(est.bytes)} · ${fmtInt(est.tiles)} mosaicos',
-                      style: dataStyle(
-                        context,
-                        size: 12.5,
-                        color: est?.tooBig == true
-                            ? scheme.error
-                            : scheme.onSurfaceVariant,
-                      ),
-                    ),
-                    if (est?.tooBig == true)
-                      Text(
-                        est!.overSource == null
-                            ? 'Zona demasiado grande: acerca el mapa o usa detalle Básico.'
-                            : '${est.overSource!.label}: hasta ${fmtInt(est.overSource!.maxTilesPerDownload!)} mosaicos por descarga (lo pide su servicio). Acerca el mapa o usa detalle Básico.',
-                        style: TextStyle(color: scheme.error, fontSize: 12.5),
-                      ),
-                    const SizedBox(height: 10),
-                    SegmentedButton<DetailLevel>(
-                      segments: [
-                        for (final d in DetailLevel.values)
-                          ButtonSegment(value: d, label: Text(d.label)),
-                      ],
-                      selected: {_detail},
-                      showSelectedIcon: false,
-                      onSelectionChanged: (s) =>
-                          setState(() => _detail = s.first),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.only(top: 4),
-                      child: Text(
-                        _detail.description,
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: scheme.onSurfaceVariant,
-                        ),
-                      ),
-                    ),
-                    Wrap(
-                      spacing: 8,
-                      children: [
-                        for (final s in MapSource.values)
-                          FilterChip(
-                            label: Text(s.label),
-                            selected: _sources.contains(s),
-                            onSelected: s.required
-                                ? null
-                                : (on) => setState(
-                                    () => on
-                                        ? _sources.add(s)
-                                        : _sources.remove(s),
-                                  ),
-                          ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    TextField(
-                      controller: _name,
-                      onChanged: (_) => _nameEdited = true,
-                      decoration: const InputDecoration(
-                        labelText: 'Nombre de la zona',
-                        hintText: 'Ej. Nevado de Toluca',
-                        isDense: true,
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    ListenableBuilder(
-                      listenable: services.maps,
-                      builder: (context, _) => Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              services.maps.wifiOnly
-                                  ? 'Solo con Wi-Fi'
-                                  : 'Wi-Fi o datos móviles',
-                              style: TextStyle(
-                                fontSize: 12.5,
-                                color: scheme.onSurfaceVariant,
-                              ),
-                            ),
-                          ),
-                          Switch(
-                            value: services.maps.wifiOnly,
-                            onChanged: services.maps.setWifiOnly,
-                          ),
                         ],
                       ),
-                    ),
-                    FilledButton.icon(
-                      onPressed: est == null || est.tooBig ? null : _download,
-                      icon: const Icon(Icons.download_rounded),
-                      label: const Text('Descargar zona'),
-                      style: FilledButton.styleFrom(
-                        minimumSize: const Size.fromHeight(48),
-                      ),
-                    ),
-                    if (services.maps.blockedReason != null)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 6),
-                        child: Text(
-                          '${services.maps.blockedReason}: la zona se guardará y se descargará en cuanto se pueda.',
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: warnColor,
+                      if (_results != null || _searchError != null)
+                        Container(
+                          margin: const EdgeInsets.only(left: 56, top: 6),
+                          constraints: const BoxConstraints(maxHeight: 280),
+                          decoration: BoxDecoration(
+                            color: Andes.surfaceHigh,
+                            borderRadius: BorderRadius.circular(14),
                           ),
+                          child: _searchError != null
+                              ? Padding(
+                                  padding: const EdgeInsets.all(14),
+                                  child: Text(_searchError!),
+                                )
+                              : ListView(
+                                  shrinkWrap: true,
+                                  padding: EdgeInsets.zero,
+                                  children: [
+                                    if (_offline)
+                                      Padding(
+                                        padding: const EdgeInsets.fromLTRB(
+                                          16,
+                                          12,
+                                          16,
+                                          4,
+                                        ),
+                                        child: Text(
+                                          'SIN CONEXIÓN · EN TUS MAPAS',
+                                          style: labelStyle(context),
+                                        ),
+                                      ),
+                                    for (final p in _results!)
+                                      ListTile(
+                                        dense: true,
+                                        title: Text(p.name),
+                                        subtitle: Text(
+                                          [p.kind, p.detail]
+                                              .where((s) => s.isNotEmpty)
+                                              .join(' · '),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                        onTap: () => _pick(p),
+                                      ),
+                                  ],
+                                ),
                         ),
-                      ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),
-          ),
-        ],
+            // Panel inferior
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 0,
+              child: Material(
+                color: Andes.surfaceLow,
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(24),
+                ),
+                child: SizedBox(
+                  height:
+                      _panelHeight + mq.padding.bottom + mq.viewInsets.bottom,
+                  child: ListView(
+                    padding: EdgeInsets.fromLTRB(
+                      20,
+                      18,
+                      20,
+                      16 + mq.padding.bottom,
+                    ),
+                    children: [
+                      Text(
+                        'NUEVA ZONA',
+                        style: labelStyle(context, color: Andes.gold),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Mueve el mapa para encuadrar la zona',
+                        style: signage(context, size: 20),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        est == null
+                            ? 'Calculando…'
+                            : '${_bbox!.widthKm.toStringAsFixed(0)} × ${_bbox!.heightKm.toStringAsFixed(0)} km · ≈ ${fmtBytes(est.bytes)} · ${fmtInt(est.tiles)} mosaicos',
+                        style: dataStyle(
+                          context,
+                          size: 12.5,
+                          color: est?.tooBig == true
+                              ? scheme.error
+                              : scheme.onSurfaceVariant,
+                        ),
+                      ),
+                      if (est?.tooBig == true)
+                        Text(
+                          est!.overSource == null
+                              ? 'Zona demasiado grande: acerca el mapa o usa detalle Básico.'
+                              : '${est.overSource!.label}: hasta ${fmtInt(est.overSource!.maxTilesPerDownload!)} mosaicos por descarga (lo pide su servicio). Acerca el mapa o usa detalle Básico.',
+                          style: TextStyle(color: scheme.error, fontSize: 12.5),
+                        ),
+                      const SizedBox(height: 10),
+                      SegmentedButton<DetailLevel>(
+                        segments: [
+                          for (final d in DetailLevel.values)
+                            ButtonSegment(value: d, label: Text(d.label)),
+                        ],
+                        selected: {_detail},
+                        showSelectedIcon: false,
+                        onSelectionChanged: (s) =>
+                            setState(() => _detail = s.first),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.only(top: 4),
+                        child: Text(
+                          _detail.description,
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: scheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ),
+                      Wrap(
+                        spacing: 8,
+                        children: [
+                          for (final s in MapSource.values)
+                            FilterChip(
+                              label: Text(s.label),
+                              selected: _sources.contains(s),
+                              onSelected: s.required
+                                  ? null
+                                  : (on) => setState(
+                                      () => on
+                                          ? _sources.add(s)
+                                          : _sources.remove(s),
+                                    ),
+                            ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      TextField(
+                        controller: _name,
+                        onChanged: (_) => _nameEdited = true,
+                        decoration: const InputDecoration(
+                          labelText: 'Nombre de la zona',
+                          hintText: 'Ej. Nevado de Toluca',
+                          isDense: true,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      ListenableBuilder(
+                        listenable: services.maps,
+                        builder: (context, _) => Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                services.maps.wifiOnly
+                                    ? 'Solo con Wi-Fi'
+                                    : 'Wi-Fi o datos móviles',
+                                style: TextStyle(
+                                  fontSize: 12.5,
+                                  color: scheme.onSurfaceVariant,
+                                ),
+                              ),
+                            ),
+                            Switch(
+                              value: services.maps.wifiOnly,
+                              onChanged: services.maps.setWifiOnly,
+                            ),
+                          ],
+                        ),
+                      ),
+                      FilledButton.icon(
+                        onPressed: est == null || est.tooBig ? null : _download,
+                        icon: const Icon(Icons.download_rounded),
+                        label: const Text('Descargar zona'),
+                        style: FilledButton.styleFrom(
+                          minimumSize: const Size.fromHeight(48),
+                        ),
+                      ),
+                      if (services.maps.blockedReason != null)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 6),
+                          child: Text(
+                            '${services.maps.blockedReason}: la zona se guardará y se descargará en cuanto se pueda.',
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: warnColor,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
