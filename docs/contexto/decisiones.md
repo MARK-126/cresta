@@ -120,6 +120,18 @@
   cada cuadro espera a que el mapa esté listo y lleva su tiempo exacto: siempre 30 cuadros/s; tarda unos segundos más.
   Carteles y punto dibujados sobre el cuadro (no como capas del mapa): no compiten por espacio con las etiquetas ni
   parpadean. 9:16 para redes y teléfonos.
+- **Opciones del video** (14 nov 2026, pedido del usuario): una hoja antes de generar en vez de varias preguntas; se
+  recuerda la última elección. De inicio: calles cercanas y edificios sí; senderos (en la ciudad son banquetas) y
+  curvas no. "Normal" ya es más rápido que antes (~3.5 s/km); "Rápido", la mitad.
+- **Nombres de calles solo junto al recorrido**: filtrar `road-names` por nombre no basta (en una cuadrícula casi
+  toda calle larga pasa cerca y el nombre salía lejos); se copian los pedazos cercanos a una fuente propia. `within`
+  no sirve: pide la calle entera dentro del área.
+- **Vista previa = el cuadro del video**: el lienzo que se codifica se muestra en la página, así se ve exactamente lo
+  que saldrá (punto, carteles, recorte 9:16), sin dibujarlo dos veces.
+- **Guardar en la galería solo**: el usuario lo pidió; `gal` (MIT) en vez de compartir para guardar. Si falla (sin
+  permiso o espacio), la tarjeta lo dice y queda Compartir.
+- **Mapa Noche** con los mismos mosaicos (solo colores; nada que descargar). **Edificios 3D** con la altura de
+  OpenStreetMap (`render_height`; sin dato, ~5 m): no hay fuente fotorrealista que permita guardar los datos.
 - **Video del recorrido** (primera versión, reemplazada): grabado en el propio WebView (`MediaRecorder` sobre una copia reducida del lienzo) en vez
   de un plugin de video: no suma dependencias nativas. Copia a 720 px porque a resolución completa falló el
   codificador del S23 ("Can't obtain input buffer"). Se copia en `render` (sin `preserveDrawingBuffer`, después el

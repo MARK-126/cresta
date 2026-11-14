@@ -74,6 +74,8 @@
 	</array>
 	<key>NSCameraUsageDescription</key>
 	<string>Cresta usa la cámara para tomar fotos durante el recorrido y ubicarlas en el mapa.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>Cresta guarda en tus fotos el video de tu recorrido.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Cresta guarda en el recorrido las fotos que tomas, con su ubicación.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>

@@ -1,6 +1,6 @@
 # Estado: qué está hecho
 
-Actualizado: 12 nov 2026 · avisos al acercarse a los puntos de interés de la ruta y "Próximo" en el panel.
+Actualizado: 14 nov 2026 · opciones del video del recorrido, mapa Noche y edificios en 3D.
 
 ## Fases
 
@@ -306,6 +306,26 @@ Actualizado: 12 nov 2026 · avisos al acercarse a los puntos de interés de la r
 - `showPlaceSearch` acepta `near` (sugerir alrededor de otro lugar, "CERCA DE …") y `me` (tu posición para "Tu
   ubicación"). `fmtKm` separa miles.
 
+### Opciones del video (`feat/video-opciones`, 14 nov 2026)
+- `ui/video_options_sheet.dart` (`showVideoOptions`): antes de generar, fondo (Mapa, Satélite, Relieve, Noche),
+  velocidad (Normal/Rápido) y nombres de calles cercanas, edificios 3D, senderos, curvas de nivel, título y cifras.
+  `VideoOptions` y `VideoOptionsStore` (`map/video_options.dart`, `video.json`) recuerdan la última elección;
+  `services.video`. `MapBridge.flyTrack(options:, insetTop:, insetBottom:)` los manda como 4.º argumento de `flyTrack`.
+- `flyTrack` (`map.js`): vuelo de ~3.5 s/km (8–25 s); rápido, ~1.75 s/km (5–12 s) e inicio/final más cortos.
+  Alejamiento final con márgenes dentro del recorte 9:16 (antes 120–320 px fijos) y −0.15 de zoom (antes −0.4).
+  Oculta senderos, curvas y edificios según las opciones; cambia el fondo y lo devuelve al terminar.
+- Calles cercanas: celdas de 90 m alrededor del recorrido (±2 = ~200 m); cada 15 cuadros `querySourceFeatures` de
+  `transportation_name`, cada calle se parte cada ~20 m y se guardan los pedazos cercanos de ≥ 60 m en la fuente
+  `video-streets` (capa `video-streets`, mismos colores que `road-names`).
+- Vista previa: el lienzo del video (`c`) se pone en la página sobre el mapa entre `insetTop` (barra de arriba) e
+  `insetBottom` (`videoCardSpace`, tarjeta del avance abajo); los botones laterales se ocultan.
+- Al terminar se guarda solo en la galería (`gal` 3.0.0, álbum Cresta; en Android queda en `Pictures/Cresta`) y la
+  tarjeta "VIDEO LISTO" ofrece Compartir. Permisos: `WRITE_EXTERNAL_STORAGE` hasta Android 10 y
+  `NSPhotoLibraryAddUsageDescription`.
+- Mapa base **Noche** (`MapBase.night`, `NIGHT` y `paintNight` en `map.js`): el topográfico con colores oscuros;
+  nombres claros como en el satélite. Capa **Edificios en 3D** (`buildings3d`, `fill-extrusion` desde z14 con
+  `render_height`), apagada de inicio, en General.
+
 ### Interfaz
 - Botones secundarios (`OutlinedButton`, 23 en la app): tonales `surfaceHighest` sin borde, desde el tema.
 - Pestaña Mapas: "Descargar una zona" abre `AreaPickerScreen()` sin expedición (zona suelta, centrada en la última
@@ -336,5 +356,5 @@ lib/src/ui/                    pantallas; theme.dart = paleta y componentes del 
 assets/web/                    map.js, MapLibre, maplibre-contour, tipografías del mapa
 assets/fonts/inter/            tipografía de la app · assets/images/ textura del splash
 tool/                          scripts de datos (Python) e ícono; tool/dev/ herramientas de prueba
-test/                          193 pruebas
+test/                          197 pruebas
 ```

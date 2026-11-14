@@ -5,6 +5,7 @@ import 'dart:math' as math;
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import 'package:gal/gal.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
@@ -19,6 +20,7 @@ import '../group/group_simulator.dart';
 import '../location/location_service.dart';
 import '../map/map_bridge.dart';
 import '../map/map_layers.dart';
+import '../map/video_options.dart';
 import '../offline/tile_math.dart';
 import '../places/places.dart';
 import '../tips/tips.dart';
@@ -60,6 +62,7 @@ class MapScreen extends StatefulWidget {
     this.plan = false,
     this.record = false,
     this.video = false,
+    this.videoOptions,
   });
   final String? expeditionId;
 
@@ -80,6 +83,9 @@ class MapScreen extends StatefulWidget {
 
   /// Con [showTrackId]: sobrevuelo 3D del recorrido grabado a video, y compartirlo.
   final bool video;
+
+  /// Fondo, capas y velocidad del video (sin ellas, las de siempre).
+  final VideoOptions? videoOptions;
 
   @override
   State<MapScreen> createState() => _MapScreenState();
@@ -868,9 +874,14 @@ class _MapScreenState extends State<MapScreen> {
     });
     final t = _services.tracks.byId(widget.showTrackId!);
     final s = t?.summary;
+    final pad = MediaQuery.paddingOf(context);
     _bridge.flyTrack(
       points,
       record: true,
+      options: widget.videoOptions,
+      // La vista previa queda entre la barra de arriba y la tarjeta del avance
+      insetTop: pad.top + 70,
+      insetBottom: pad.bottom + videoCardSpace,
       title: t?.name,
       detail: s == null
           ? null
@@ -900,20 +911,47 @@ class _MapScreenState extends State<MapScreen> {
         '${dir.path}/${safe.isEmpty ? 'recorrido' : safe}.$ext',
       );
       await file.writeAsBytes(bytes.takeBytes(), flush: true);
+      // Directo a la galería (álbum Cresta); si no se puede, queda compartir
+      String? galleryError;
+      try {
+        if (!await Gal.hasPermission(toAlbum: true)) {
+          await Gal.requestPermission(toAlbum: true);
+        }
+        await Gal.putVideo(file.path, album: 'Cresta');
+      } on GalException catch (e) {
+        galleryError = switch (e.type) {
+          GalExceptionType.permissionDenied =>
+            'Sin permiso para guardar en la galería.',
+          GalExceptionType.notEnoughSpace => 'No hay espacio en el teléfono.',
+          _ => 'No se pudo guardar en la galería.',
+        };
+      }
       if (!mounted) return;
-      setState(() => _video = null);
-      await SharePlus.instance.share(
-        ShareParams(
-          files: [XFile(file.path, mimeType: 'video/$ext')],
-          subject: t?.name,
-        ),
-      );
+      setState(() {
+        job
+          ..saving = false
+          ..file = file
+          ..mime = 'video/$ext'
+          ..galleryError = galleryError;
+      });
     } on Object catch (e) {
       if (mounted) setState(() => _video = null);
       messenger.showSnackBar(
         SnackBar(content: Text('No se pudo guardar el video: $e')),
       );
     }
+  }
+
+  Future<void> _shareVideo() async {
+    final file = _video?.file;
+    if (file == null) return;
+    final t = _services.tracks.byId(widget.showTrackId!);
+    await SharePlus.instance.share(
+      ShareParams(
+        files: [XFile(file.path, mimeType: _video?.mime)],
+        subject: t?.name,
+      ),
+    );
   }
 
   /// Foto durante la grabación: abre la cámara del teléfono y la guarda en el recorrido con
@@ -1578,57 +1616,59 @@ class _MapScreenState extends State<MapScreen> {
                         ),
                       ),
                     ),
-                    Positioned(
-                      right: 12,
-                      top: MediaQuery.paddingOf(context).top + 70,
-                      child: Column(
-                        children: [
-                          // Brújula: solo con el mapa girado; la aguja apunta al norte y al
-                          // tocarla el mapa vuelve a quedar con el norte arriba
-                          if (_bearing.abs() > 2) ...[
+                    if (_video == null)
+                      Positioned(
+                        right: 12,
+                        top: MediaQuery.paddingOf(context).top + 70,
+                        child: Column(
+                          children: [
+                            // Brújula: solo con el mapa girado; la aguja apunta al norte y al
+                            // tocarla el mapa vuelve a quedar con el norte arriba
+                            if (_bearing.abs() > 2) ...[
+                              _MapButton(
+                                icon: Icons.navigation_rounded,
+                                iconAngle: -_bearing * math.pi / 180,
+                                color: Andes.terracottaContainer,
+                                tooltip: 'Norte arriba',
+                                onPressed: _bridge.resetNorth,
+                              ),
+                              const SizedBox(height: 8),
+                            ],
                             _MapButton(
-                              icon: Icons.navigation_rounded,
-                              iconAngle: -_bearing * math.pi / 180,
+                              icon: Icons.sos_rounded,
                               color: Andes.terracottaContainer,
-                              tooltip: 'Norte arriba',
-                              onPressed: _bridge.resetNorth,
-                            ),
-                            const SizedBox(height: 8),
-                          ],
-                          _MapButton(
-                            icon: Icons.sos_rounded,
-                            color: Andes.terracottaContainer,
-                            tooltip: 'SOS: tu ubicación y llamar a emergencias',
-                            onPressed: () => Navigator.push(
-                              context,
-                              MaterialPageRoute<void>(
-                                builder: (_) => SosScreen(
-                                  expeditionName: _free
-                                      ? null
-                                      : _expedition.name,
+                              tooltip:
+                                  'SOS: tu ubicación y llamar a emergencias',
+                              onPressed: () => Navigator.push(
+                                context,
+                                MaterialPageRoute<void>(
+                                  builder: (_) => SosScreen(
+                                    expeditionName: _free
+                                        ? null
+                                        : _expedition.name,
+                                  ),
                                 ),
                               ),
                             ),
-                          ),
-                          const SizedBox(height: 8),
-                          _MapButton(
-                            icon: _following
-                                ? Icons.my_location_rounded
-                                : Icons.location_searching_rounded,
-                            tooltip: _following
-                                ? 'Siguiendo tu posición'
-                                : 'Seguir mi posición',
-                            onPressed: _locateMe,
-                          ),
-                          const SizedBox(height: 8),
-                          _MapButton(
-                            label: _is3d ? '2D' : '3D',
-                            tooltip: _is3d ? 'Cambiar a 2D' : 'Cambiar a 3D',
-                            onPressed: () => _set3d(!_is3d),
-                          ),
-                        ],
+                            const SizedBox(height: 8),
+                            _MapButton(
+                              icon: _following
+                                  ? Icons.my_location_rounded
+                                  : Icons.location_searching_rounded,
+                              tooltip: _following
+                                  ? 'Siguiendo tu posición'
+                                  : 'Seguir mi posición',
+                              onPressed: _locateMe,
+                            ),
+                            const SizedBox(height: 8),
+                            _MapButton(
+                              label: _is3d ? '2D' : '3D',
+                              tooltip: _is3d ? 'Cambiar a 2D' : 'Cambiar a 3D',
+                              onPressed: () => _set3d(!_is3d),
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
                     if (_found != null)
                       Positioned(
                         left: 8,
@@ -1676,7 +1716,12 @@ class _MapScreenState extends State<MapScreen> {
                           child: _bottomChrome(civil),
                         ),
                       ),
-                    if (_video != null) _VideoOverlay(job: _video!),
+                    if (_video != null)
+                      _VideoOverlay(
+                        job: _video!,
+                        onShare: _shareVideo,
+                        onClose: () => setState(() => _video = null),
+                      ),
                   ],
                 ),
               ),
@@ -1820,6 +1865,9 @@ class _SearchPill extends StatelessWidget {
   );
 }
 
+/// Alto que ocupa abajo la tarjeta del avance del video (la vista previa queda encima).
+const videoCardSpace = 132.0;
+
 /// Video del recorrido: los pedazos que manda el mapa (base64) hasta 'videoEnd'.
 class _VideoJob {
   final chunks = <int, String>{};
@@ -1827,19 +1875,91 @@ class _VideoJob {
 
   /// Avance de la generación (0–1); null mientras se prepara el inicio.
   double? progress;
+
+  /// El video terminado, y si no se pudo guardar en la galería, por qué.
+  File? file;
+  String? mime;
+  String? galleryError;
 }
 
 /// Mientras se prepara el video, tapa el mapa (si no, se ve el punto por defecto y el salto
-/// al recorrido); mientras se genera, muestra el avance. El mapa no se toca: un toque movería
-/// la cámara de un cuadro.
+/// al recorrido); mientras se genera, abajo el avance y encima la vista previa (el mismo cuadro
+/// que va al video, la dibuja `map.js`). Al terminar: guardado en la galería y compartir.
 class _VideoOverlay extends StatelessWidget {
-  const _VideoOverlay({required this.job});
+  const _VideoOverlay({
+    required this.job,
+    required this.onShare,
+    required this.onClose,
+  });
   final _VideoJob job;
+  final VoidCallback onShare;
+  final VoidCallback onClose;
 
   @override
   Widget build(BuildContext context) {
     final p = job.progress;
-    final muted = Theme.of(context).colorScheme.onSurfaceVariant;
+    const muted = Andes.onSurfaceVariant;
+    final pad = MediaQuery.paddingOf(context);
+    if (job.file != null) {
+      final error = job.galleryError;
+      return Positioned(
+        left: 12,
+        right: 12,
+        bottom: 12 + pad.bottom,
+        child: Glass(
+          opacity: .94,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(18, 12, 8, 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Row(
+                  children: [
+                    Icon(
+                      error == null
+                          ? Icons.check_circle_rounded
+                          : Icons.error_outline_rounded,
+                      color: error == null ? Andes.cyan : Andes.error,
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'VIDEO LISTO',
+                            style: labelStyle(context, color: Andes.gold),
+                          ),
+                          Text(
+                            error ?? 'Guardado en tu galería, álbum Cresta.',
+                            style: const TextStyle(fontWeight: FontWeight.w700),
+                          ),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      tooltip: 'Cerrar',
+                      icon: const Icon(Icons.close_rounded),
+                      onPressed: onClose,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Padding(
+                  padding: const EdgeInsets.only(right: 10),
+                  child: GlowButton(
+                    label: 'Compartir',
+                    icon: Icons.share_rounded,
+                    onPressed: onShare,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
     final text = job.saving
         ? 'Guardando el video…'
         : p == null
@@ -1858,8 +1978,14 @@ class _VideoOverlay extends StatelessWidget {
             LinearProgressIndicator(value: job.saving ? null : p),
             const SizedBox(height: 8),
             Text(
-              p == null ? 'Cargando el mapa y el relieve del inicio.' : 'Cada cuadro espera a que cargue el mapa: así sale fluido. No toques el mapa.',
-              style: TextStyle(color: muted, fontSize: 12.5, height: 1.35),
+              p == null
+                  ? 'Cargando el mapa y el relieve del inicio.'
+                  : 'Así se verá el video. No toques la pantalla.',
+              style: const TextStyle(
+                color: muted,
+                fontSize: 12.5,
+                height: 1.35,
+              ),
             ),
           ],
         ),
@@ -1878,14 +2004,10 @@ class _VideoOverlay extends StatelessWidget {
                 ),
               )
             : Align(
-                alignment: Alignment.topCenter,
+                alignment: Alignment.bottomCenter,
                 child: Padding(
-                  padding: EdgeInsets.only(
-                    top: MediaQuery.paddingOf(context).top + 76,
-                    left: 16,
-                    right: 80,
-                  ),
-                  child: card,
+                  padding: EdgeInsets.fromLTRB(16, 0, 16, 12 + pad.bottom),
+                  child: SizedBox(height: videoCardSpace - 24, child: card),
                 ),
               ),
       ),

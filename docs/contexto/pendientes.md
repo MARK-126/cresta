@@ -26,6 +26,22 @@ Queda:
 - Video: es MP4 fragmentado (lo que da `MediaRecorder` de Chrome): el reproductor del teléfono lo abre; falta probar
   que WhatsApp e Instagram lo acepten.
 
+## Observaciones del video del recorrido (14 nov 2026)
+
+Hechas en `feat/video-opciones` (detalle en `estado.md` y `pruebas.md`). El usuario había pedido:
+
+- Mientras se genera, en pantalla no se ve el punto que avanza (solo en el video exportado).
+- Guardarlo en la galería (hoy solo "Compartir").
+- Más rápido; el alejamiento final, menor (que el recorrido llene la pantalla).
+- Quitar los senderos (en la ciudad son banquetas punteadas).
+- Nombres de las calles a unas dos cuadras (~200 m) del recorrido.
+- Otra estética del mapa (p. ej. "Noche" con los colores de Cresta) y elegir las capas del video.
+- Ciudad en 3D: edificios en volumen con la altura de OpenStreetMap (fotorrealista no: pide cuenta, solo en
+  línea y prohíbe guardar).
+
+Queda: ver con datos reales si en la ciudad los edificios tapan la línea del recorrido (opacidad 0.85) y si los
+nombres de calles cambian de lugar entre cuadros.
+
 ## Siguiente (revisión de diseño del 12 nov 2026)
 
 

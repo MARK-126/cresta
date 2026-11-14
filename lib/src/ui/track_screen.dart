@@ -17,6 +17,7 @@ import 'photo_screen.dart';
 import 'recording_panel.dart';
 import 'route_destination.dart';
 import 'theme.dart';
+import 'video_options_sheet.dart';
 
 /// Detalle de un recorrido grabado: cifras, perfil de elevación, ver en el mapa y exportar GPX.
 class TrackScreen extends StatefulWidget {
@@ -183,16 +184,7 @@ class _TrackScreenState extends State<TrackScreen> {
           OutlinedButton.icon(
             onPressed: _points == null || _points!.length < 2
                 ? null
-                : () => Navigator.push(
-                    context,
-                    MaterialPageRoute<void>(
-                      builder: (_) => MapScreen(
-                        expeditionId: t.expeditionId,
-                        showTrackId: t.id,
-                        video: true,
-                      ),
-                    ),
-                  ),
+                : () => _makeVideo(t),
             icon: const Icon(Icons.movie_outlined),
             label: const Text('Video del recorrido en 3D'),
             style: OutlinedButton.styleFrom(
@@ -235,6 +227,26 @@ class _TrackScreenState extends State<TrackScreen> {
         sharePositionOrigin: box == null
             ? null
             : box.localToGlobal(Offset.zero) & box.size,
+      ),
+    );
+  }
+
+  /// Elegir fondo, capas y velocidad, y abrir el mapa que genera el video.
+  Future<void> _makeVideo(Track t) async {
+    final store = AppScope.of(context).video;
+    final options = await showVideoOptions(context, store.value);
+    if (options == null || !mounted) return;
+    await store.save(options);
+    if (!mounted) return;
+    await Navigator.push(
+      context,
+      MaterialPageRoute<void>(
+        builder: (_) => MapScreen(
+          expeditionId: t.expeditionId,
+          showTrackId: t.id,
+          video: true,
+          videoOptions: options,
+        ),
       ),
     );
   }
