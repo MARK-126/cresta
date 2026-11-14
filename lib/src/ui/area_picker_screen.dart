@@ -41,7 +41,7 @@ class _AreaPickerScreenState extends State<AreaPickerScreen> {
   BBox? _bbox;
   DetailLevel _detail = DetailLevel.detailed;
   final _sources = {MapSource.dem, MapSource.sat, MapSource.topo};
-  MapBase _base = MapBase.topo;
+  MapBase _base = MapBase.night;
   List<Place>? _results;
   bool _searching = false;
   String? _searchError;
@@ -55,12 +55,16 @@ class _AreaPickerScreenState extends State<AreaPickerScreen> {
     super.didChangeDependencies();
     if (_sub != null) return;
     final services = AppScope.of(context);
+    _base = services.mapBase.value == MapBase.relief
+        ? MapBase.night
+        : services.mapBase.value;
     _bridge.load(services.server.baseUri);
     _sub = _bridge.events
         .where((e) => e.type == 'moveEnd')
         .listen((_) => _updateBounds());
     _bridge.ready.then((_) async {
       await _bridge.setPickerMode(true);
+      await _bridge.setBase(_base);
       if (!mounted) return;
       // Lo que se busca queda al centro del recuadro
       final mq = MediaQuery.of(context);
@@ -228,7 +232,7 @@ class _AreaPickerScreenState extends State<AreaPickerScreen> {
     return Scaffold(
       resizeToAvoidBottomInset: false,
       body: DarkMapScope(
-        dark: _base == MapBase.sat,
+        dark: _base == MapBase.sat || _base == MapBase.night,
         child: Stack(
           children: [
             Positioned.fill(
@@ -254,7 +258,11 @@ class _AreaPickerScreenState extends State<AreaPickerScreen> {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      for (final b in [MapBase.topo, MapBase.sat])
+                      for (final b in [
+                        MapBase.night,
+                        MapBase.topo,
+                        MapBase.sat,
+                      ])
                         ChoiceChip(
                           label: Text(b.label),
                           selected: _base == b,
@@ -263,6 +271,7 @@ class _AreaPickerScreenState extends State<AreaPickerScreen> {
                           onSelected: (_) {
                             setState(() => _base = b);
                             _bridge.setBase(b);
+                            AppScope.of(context).mapBase.save(b);
                           },
                         ),
                     ],

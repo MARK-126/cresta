@@ -161,7 +161,7 @@ class _MapScreenState extends State<MapScreen> {
 
   AppMode _mode = AppMode.mountain;
   late Map<String, bool> _layers = layerPreset(_mode);
-  MapBase _base = MapBase.topo;
+  MapBase _base = MapBase.night;
   bool _is3d = true;
   double _exaggeration = 1.4;
   bool _flying = false;
@@ -188,6 +188,7 @@ class _MapScreenState extends State<MapScreen> {
     if (_started) return;
     _started = true;
     _services = AppScope.of(context);
+    _base = _services.mapBase.value;
     _routeId = widget.routeId;
     _expedition = _free
         ? Expedition(
@@ -1139,6 +1140,7 @@ class _MapScreenState extends State<MapScreen> {
                 setState(() => _base = b);
                 setSheet(() {});
                 _bridge.setBase(b);
+                _services.mapBase.save(b);
               },
               on3d: (v) {
                 _set3d(v);

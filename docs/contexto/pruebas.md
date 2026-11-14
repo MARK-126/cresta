@@ -27,6 +27,11 @@ Teléfono de pruebas: Samsung Galaxy S23 Ultra (SM-S918B), Android 16, salvo que
 
 ## 2026-11-14
 
+**Noche de inicio · `feat/noche-por-defecto`** (S23)
+- Sin `map.json`: el mapa libre abre en Noche; Vista dice Noche · Claro · Satélite · Relieve. Elegir Claro → se guarda
+  `{"base": "topo"}` y al volver a entrar abre claro. Selector de zonas: Noche · Claro · Satélite, abre con la
+  preferencia y elegir Noche la guarda. **OK**. Se borró `map.json` al terminar; datos del usuario iguales.
+
 **Contorno sobre mapa oscuro · `feat/contorno-mapa-oscuro`** (S23, mapa libre en Mendoza)
 - Topográfico: barra, título y botones sin cambios. Noche y Satélite: tono más claro y aro gris; la barra y los
   botones se separan del mapa. **OK**. Pruebas de widget: sin aro en mapa claro, con aro y opaco en oscuro.
